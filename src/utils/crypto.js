@@ -66,3 +66,26 @@ export function generateSessionToken() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return toHex(bytes);
 }
+
+export async function hashEmail(env, email) {
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(env.HASH_KEY),
+    {
+      name: "HMAC",
+      hash: "SHA-256"
+    },
+    false,
+    ["sign"]
+  );
+
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    new TextEncoder().encode(normalizedEmail)
+  );
+
+  return toHex(signature);
+}
