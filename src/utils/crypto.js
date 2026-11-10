@@ -1,12 +1,18 @@
 
-export function toHex(buffer) {
-  return Array.from(new Uint8Array(buffer))
+const encoder = new TextEncoder();
+
+export function toHex(bytes) {
+  return Array.from(new Uint8Array(bytes))
     .map(byte => byte.toString(16).padStart(2, "0"))
     .join("");
 }
 
 export function fromHex(hex) {
-  if (typeof hex !== "string" || !/^[0-9a-f]+$/i.test(hex) || hex.length % 2 !== 0) {
+  if (
+    typeof hex !== "string" ||
+    !/^[0-9a-f]+$/i.test(hex) ||
+    hex.length % 2 !== 0
+  ) {
     throw new Error("Invalid hexadecimal value");
   }
 
@@ -16,23 +22,24 @@ export function fromHex(hex) {
 }
 
 export async function sha256(value) {
-  const data = new TextEncoder().encode(value);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return toHex(hash);
+  const result = await crypto.subtle.digest(
+    "SHA-256",
+    encoder.encode(value)
+  );
+
+  return toHex(result);
 }
 
-export async function createPasswordHash(password, saltHex) {
-  const salt = fromHex(saltHex);
-
+async function derivePasswordBits(password, salt) {
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(password),
+    encoder.encode(password),
     "PBKDF2",
     false,
     ["deriveBits"]
   );
 
-  const bits = await crypto.subtle.deriveBits(
+  return crypto.subtle.deriveBits(
     {
       name: "PBKDF2",
       salt,
@@ -42,50 +49,80 @@ export async function createPasswordHash(password, saltHex) {
     key,
     256
   );
-
-  return toHex(bits);
 }
 
-export async function verifyPassword(password, saltHex, expectedHash) {
-  const actualHash = await createPasswordHash(password, saltHex);
+export async function createPasswordHash(password) {
+  const salt = crypto.getRandomValues(new Uint8Array(16));
 
-  if (actualHash.length !== expectedHash.length) {
+  const derived = await derivePasswordBits(password, salt);
+
+  return {
+    salt: toHex(salt),
+    hash: "pbkdf2-sha256$100000$" + toHex(derived)
+  };
+}
+
+export async function verifyPassword(password, saltHex, storedHash) {
+  try {
+    const parts = storedHash.split("$");
+
+    if (
+      parts.length !== 3 ||
+      parts[0] !== "pbkdf2-sha256" ||
+      parts[1] !== "100000"
+    ) {
+      return false;
+    }
+
+    const salt = fromHex(saltHex);
+    const expectedHash = fromHex(parts[2]);
+
+    if (salt.length !== 16 || expectedHash.length !== 32) {
+      return false;
+    }
+
+    const derived = new Uint8Array(
+      await derivePasswordBits(password, salt)
+    );
+
+    let difference = 0;
+
+    for (let i = 0; i < expectedHash.length; i++) {
+      difference |= derived[i] ^ expectedHash[i];
+    }
+
+    return difference === 0;
+  } catch {
     return false;
   }
-
-  let difference = 0;
-
-  for (let i = 0; i < actualHash.length; i++) {
-    difference |= actualHash.charCodeAt(i) ^ expectedHash.charCodeAt(i);
-  }
-
-  return difference === 0;
 }
 
 export function generateSessionToken() {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return toHex(bytes);
+  return toHex(crypto.getRandomValues(new Uint8Array(32)));
 }
 
 export async function hashEmail(env, email) {
-  const normalizedEmail = email.trim().toLowerCase();
+  const keyBytes = fromHex(env.HASH_KEY);
+
+  if (keyBytes.length !== 32) {
+    throw new Error("HASH_KEY must be 32 bytes");
+  }
 
   const key = await crypto.subtle.importKey(
     "raw",
-    new TextEncoder().encode(env.HASH_KEY),
-    {
-      name: "HMAC",
-      hash: "SHA-256"
-    },
+    keyBytes,
+    { name: "HMAC", hash: "SHA-256" },
     false,
     ["sign"]
   );
 
-  const signature = await crypto.subtle.sign(
+  const normalizedEmail = email.trim().toLowerCase();
+
+  const result = await crypto.subtle.sign(
     "HMAC",
     key,
-    new TextEncoder().encode(normalizedEmail)
+    encoder.encode(normalizedEmail)
   );
 
-  return toHex(signature);
+  return toHex(result);
 }
