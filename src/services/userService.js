@@ -1,9 +1,9 @@
 
-export async function getUserByEmail(env, email) {
+export async function getUserByEmail(env, emailHash) {
   return await env.DB.prepare(`
     SELECT
       ua.user_id,
-      ua.username,
+      ua.full_name,
       ua.password_hash,
       ua.password_salt,
       ua.account_status,
@@ -12,9 +12,9 @@ export async function getUserByEmail(env, email) {
     FROM user_accounts ua
     INNER JOIN user_identifiers ui
       ON ui.user_id = ua.user_id
-    WHERE lower(ui.email_hash) = lower(?)
+    WHERE ui.email_hash = ?
     LIMIT 1
-  `).bind(email).first();
+  `).bind(emailHash).first();
 }
 
 export async function getUserRoles(env, userId) {
@@ -26,6 +26,5 @@ export async function getUserRoles(env, userId) {
     WHERE ur.user_id = ?
   `).bind(userId).all();
 
-  return result.results.map(row => row.role_name);
+  return (result.results || []).map(row => row.role_name);
 }
-
