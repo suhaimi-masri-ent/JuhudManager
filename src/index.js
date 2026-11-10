@@ -1,6 +1,7 @@
 
 import { healthHandler } from "./routes/health.js";
 import { loginHandler } from "./routes/login.js";
+import { meHandler } from "./routes/me.js";
 import { getCorsHeaders } from "./config/cors.js";
 import { jsonResponse } from "./utils/response.js";
 
@@ -27,6 +28,12 @@ export default {
         request.method === "POST"
       ) {
         response = await loginHandler(request, env);
+
+      } else if (
+        url.pathname === "/api/auth/me" &&
+        request.method === "GET"
+      ) {
+        response = await meHandler(request, env);
 
       } else {
         response = jsonResponse(
