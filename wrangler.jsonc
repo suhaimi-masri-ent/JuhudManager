@@ -8,7 +8,7 @@
   "vars": {
     "ALLOWED_ORIGIN": "https://suhaimi-masri-ent.github.io",
     "COOKIE_NAME": "juhud_session",
-    "SESSION_DAYS": "7"
+    "SESSION_DAYS": "0.5"
   },
 
   "d1_databases": [
