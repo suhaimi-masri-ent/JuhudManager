@@ -22,19 +22,30 @@ function table(headers,rows){return `<table><thead><tr>${headers.map(h=>`<th>${h
 function isAdmin(){return currentUser?.roles?.some(r=>["SUPER_ADMIN","ADMIN"].includes(r))}
 function canReview(){return currentUser?.roles?.some(r=>["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(r))}
 function switchView(name){document.querySelectorAll(".view").forEach(v=>v.classList.add("hidden"));$(`${name}Panel`).classList.remove("hidden");document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.view===name));if(name==="admin")loadAdmin().catch(e=>alert(e.message));}
-async function loadMe(){
-  const data=await api("/api/me");currentUser=data.user;
-  $("loginView").classList.add("hidden");$("appView").classList.remove("hidden");$("logoutBtn").classList.remove("hidden");
-  $("greeting").textContent=`${language==="my"?"Selamat datang":"Welcome"}, ${currentUser.fullName}`;
-  $("rolePill").textContent=currentUser.roles.join(" · ");
-  document.querySelectorAll(".admin-only").forEach(x=>x.classList.toggle("hidden",!isAdmin()&&!canReview()));
-  const p=data.profile||{};
-  const map={dob:"date_of_birth",gender:"gender",marital:"marital_status",nationality:"nationality",country:"country",state:"state_province",city:"city_district",postcode:"postcode",street:"street_address",buildingNo:"building_number",buildingName:"building_name",address2:"address_line_2"};
-  Object.entries(map).forEach(([id,key])=>$(id).value=p[key]||"");
-  await loadActivities();
+async function loadMe() {
+  const data = await api("/api/auth/me");
+
+  currentUser = {
+    ...data.user,
+    fullName: data.user.full_name,
+    roles: data.roles || []
+  };
+
+  $("loginView").classList.add("hidden");
+  $("appView").classList.remove("hidden");
+  $("logoutBtn").classList.remove("hidden");
+
+  $("greeting").textContent =
+    `${language === "my" ? "Selamat datang" : "Welcome"}, ${currentUser.fullName}`;
+
+  $("rolePill").textContent = currentUser.roles.join(" · ");
+
+  document.querySelectorAll(".admin-only").forEach(x =>
+    x.classList.toggle("hidden", !isAdmin() && !canReview())
+  );
+
   switchView("dashboard");
-}
-async function loadActivities(){
+}async function loadActivities(){
   const d=await api("/api/activities");activityTypes=d.types;records=d.records;
   $("activityType").innerHTML=activityTypes.map(x=>`<option value="${x.activity_type_id}">${escapeHtml(x.activity_name)} (${escapeHtml(x.frequency)})</option>`).join("");
   $("statMine").textContent=records.length;$("statPending").textContent=records.filter(x=>x.review_status==="PENDING").length;
@@ -55,7 +66,26 @@ async function loadAdmin(){
     $("submissionsTable").querySelectorAll("[data-review]").forEach(btn=>btn.addEventListener("click",async()=>{const remarks=prompt("Reviewer remarks (optional):")||"";try{await api(`/api/admin/submissions/${btn.dataset.review}`,{method:"PATCH",body:JSON.stringify({reviewStatus:btn.dataset.status,remarks})});await loadAdmin();}catch(e){alert(e.message)}}));
   }
 }
-$("loginForm").addEventListener("submit",async e=>{e.preventDefault();showMessage("loginMessage","");try{const loginResult=await api("/api/auth/login",{method:"POST",body:JSON.stringify({loginType:$("loginType").value,loginIdentifier:$("loginIdentifier").value,password:$("password").value})});sessionStorage.setItem("juhud_token",loginResult.token);await loadMe();}catch(err){showMessage("loginMessage",err.message,true)}});
+$("loginForm").addEventListener("submit", async e => {
+  e.preventDefault();
+  showMessage("loginMessage", "");
+
+  try {
+    const loginResult = await api("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({
+        email: $("loginIdentifier").value,
+        password: $("password").value
+      })
+    });
+
+    sessionStorage.setItem("juhud_token", loginResult.token);
+    await loadMe();
+
+  } catch (err) {
+    showMessage("loginMessage", err.message, true);
+  }
+});
 $("logoutBtn").addEventListener("click",async()=>{try{await api("/api/auth/logout",{method:"POST"});}finally{sessionStorage.removeItem("juhud_token");currentUser=null;$("appView").classList.add("hidden");$("loginView").classList.remove("hidden");$("logoutBtn").classList.add("hidden");$("password").value="";}});
 $("languageSelect").addEventListener("change",e=>{language=e.target.value;applyLanguage();if(currentUser)$("greeting").textContent=`${language==="my"?"Selamat datang":"Welcome"}, ${currentUser.fullName}`;});
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
@@ -66,4 +96,8 @@ $("activityForm").addEventListener("submit",async e=>{e.preventDefault();try{awa
 $("createUserForm").addEventListener("submit",async e=>{e.preventDefault();try{await api("/api/admin/users",{method:"POST",body:JSON.stringify({fullName:$("newFullName").value,loginType:$("newLoginType").value,loginIdentifier:$("newIdentifier").value,email:$("newEmail").value,whatsapp:$("newWhatsApp").value,password:$("newPassword").value,role:$("newRole").value})});showMessage("createUserMessage","User created.");$("createUserForm").reset();await loadAdmin();}catch(e){showMessage("createUserMessage",e.message,true)}});
 $("createTypeForm").addEventListener("submit",async e=>{e.preventDefault();try{await api("/api/admin/activity-types",{method:"POST",body:JSON.stringify({activityName:$("typeName").value,frequency:$("typeFrequency").value,description:$("typeDescription").value})});showMessage("createTypeMessage","Activity type created.");$("createTypeForm").reset();await loadActivities();}catch(e){showMessage("createTypeMessage",e.message,true)}});
 applyLanguage();
-api("/api/me").then(loadMe).catch(()=>{});
+if (sessionStorage.getItem("juhud_token")) {
+  loadMe().catch(() => {
+    sessionStorage.removeItem("juhud_token");
+  });
+}
