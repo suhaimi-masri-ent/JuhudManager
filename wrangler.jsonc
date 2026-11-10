@@ -1,1 +1,22 @@
 
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "juhudmanager-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+
+  "vars": {
+    "ALLOWED_ORIGIN": "https://suhaimi-masri-ent.github.io",
+    "COOKIE_NAME": "juhud_session",
+    "SESSION_DAYS": "7"
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "JuhudDB",
+      "database_id": "7846a32c-60b4-41a3-9c85-41fbabe544d9"
+    }
+  ]
+}
+
