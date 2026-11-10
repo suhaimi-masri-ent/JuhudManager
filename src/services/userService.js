@@ -12,7 +12,8 @@ export async function getUserByEmail(env, emailHash) {
     FROM user_accounts ua
     INNER JOIN user_identifiers ui
       ON ui.user_id = ua.user_id
-    WHERE ui.email_hash = ?
+    WHERE ui.identifier_type = 'EMAIL'
+      AND ui.lookup_hash = ?
     LIMIT 1
   `).bind(emailHash).first();
 }
