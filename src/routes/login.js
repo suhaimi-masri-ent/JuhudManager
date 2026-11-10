@@ -1,8 +1,41 @@
 
 import { jsonResponse } from "../utils/response.js";
-import { verifyPassword, generateSessionToken } from "../utils/crypto.js";
-import { getUserByEmail, getUserRoles } from "../services/userService.js";
+import {
+  verifyPassword,
+  generateSessionToken
+} from "../utils/crypto.js";
+
+import {
+  getUserByEmail,
+  getUserRoles
+} from "../services/userService.js";
+
 import { createSession } from "../services/sessionService.js";
+
+async function writeAudit(
+  env,
+  userId,
+  action,
+  details = {}
+) {
+  await env.DB.prepare(`
+    INSERT INTO audit_logs (
+      audit_id,
+      actor_user_id,
+      action,
+      target_type,
+      target_id,
+      details_json
+    )
+    VALUES (?, ?, ?, 'USER', ?, ?)
+  `).bind(
+    crypto.randomUUID(),
+    userId,
+    action,
+    userId,
+    JSON.stringify(details)
+  ).run();
+}
 
 export async function loginHandler(request, env) {
   let body;
@@ -10,7 +43,10 @@ export async function loginHandler(request, env) {
   try {
     body = await request.json();
   } catch {
-    return jsonResponse({ error: "Invalid JSON request" }, 400);
+    return jsonResponse(
+      { error: "Invalid JSON request" },
+      400
+    );
   }
 
   const email = body.email;
@@ -24,7 +60,10 @@ export async function loginHandler(request, env) {
     email.length > 254 ||
     password.length > 1024
   ) {
-    return jsonResponse({ error: "Email and password are required" }, 400);
+    return jsonResponse(
+      { error: "Email and password are required" },
+      400
+    );
   }
 
   const user = await getUserByEmail(env, email);
@@ -43,9 +82,11 @@ export async function loginHandler(request, env) {
     );
   }
 
+  const now = new Date();
+
   if (
     user.locked_until &&
-    new Date(user.locked_until).getTime() > Date.now()
+    new Date(user.locked_until).getTime() > now.getTime()
   ) {
     return jsonResponse(
       { error: "Account temporarily locked. Please try again later." },
@@ -60,29 +101,59 @@ export async function loginHandler(request, env) {
   );
 
   if (!validPassword) {
-    const nextAttempts = user.failed_login_attempts + 1;
-    const lockUntil = new Date(Date.now() + 15 * 60 * 1000).toISOString();
+    const attempts =
+      (user.failed_login_attempts || 0) + 1;
+
+    const lockedUntil = attempts >= 5
+      ? new Date(now.getTime() + 15 * 60 * 1000).toISOString()
+      : null;
 
     await env.DB.prepare(`
       UPDATE user_accounts
       SET
-        failed_login_attempts = failed_login_attempts + 1,
-        locked_until = CASE
-          WHEN failed_login_attempts + 1 >= 5 THEN ?
-          ELSE locked_until
-        END
+        failed_login_attempts = ?,
+        locked_until = ?,
+        updated_at = ?
       WHERE user_id = ?
-    `).bind(lockUntil, user.user_id).run();
+    `).bind(
+      attempts,
+      lockedUntil,
+      now.toISOString(),
+      user.user_id
+    ).run();
+
+    await writeAudit(
+      env,
+      user.user_id,
+      "LOGIN_FAILED",
+      {
+        reason: "Invalid password",
+        attempts
+      }
+    );
 
     return jsonResponse(
-      { error: "Invalid email or password" },
+      {
+        error: "Invalid email or password",
+        attempts_remaining: Math.max(0, 5 - attempts)
+      },
       401
     );
   }
 
   const token = generateSessionToken();
-  const session = await createSession(env, user.user_id, token, request);
-  const roles = await getUserRoles(env, user.user_id);
+
+  const session = await createSession(
+    env,
+    user.user_id,
+    token,
+    request
+  );
+
+  const roles = await getUserRoles(
+    env,
+    user.user_id
+  );
 
   await env.DB.prepare(`
     UPDATE user_accounts
@@ -90,17 +161,30 @@ export async function loginHandler(request, env) {
       failed_login_attempts = 0,
       locked_until = NULL,
       last_login_at = ?,
-      last_access_at = ?
+      last_access_at = ?,
+      updated_at = ?
     WHERE user_id = ?
   `).bind(
-    new Date().toISOString(),
-    new Date().toISOString(),
+    now.toISOString(),
+    now.toISOString(),
+    now.toISOString(),
     user.user_id
   ).run();
 
+  await writeAudit(
+    env,
+    user.user_id,
+    "LOGIN_SUCCESS",
+    {
+      session_id: session.sessionId
+    }
+  );
+
   return jsonResponse({
     success: true,
+    message: "Login successful",
     token,
+    token_type: "Bearer",
     expires_at: session.expiresAt,
     user: {
       user_id: user.user_id,
@@ -110,4 +194,3 @@ export async function loginHandler(request, env) {
     roles
   });
 }
-
