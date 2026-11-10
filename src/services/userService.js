@@ -1,5 +1,9 @@
 
-export async function getUserByEmail(env, emailHash) {
+import { hashEmail } from "../utils/crypto.js";
+
+export async function getUserByEmail(env, email) {
+  const emailHash = await hashEmail(env, email);
+
   return await env.DB.prepare(`
     SELECT
       ua.user_id,
