@@ -14,7 +14,7 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "JuhudDB",
+      "database_name": "juhudmanager-db",
       "database_id": "7846a32c-60b4-41a3-9c85-41fbabe544d9"
     }
   ]
