@@ -6,8 +6,14 @@ export async function createSession(env, userId, token, request) {
   const tokenHash = await sha256(token);
 
   const expiresAt = new Date(
-    Date.now() + Number(env.SESSION_DAYS || 7) * 86400000
+    Date.now() + Number(env.SESSION_DAYS || 0.5) * 86400000
   ).toISOString();
+
+  const ip = request.headers.get("CF-Connecting-IP") || "";
+  const ipHash = ip ? await sha256(ip) : null;
+
+  const userAgent =
+    request.headers.get("User-Agent") || null;
 
   await env.DB.prepare(`
     INSERT INTO user_sessions (
@@ -24,8 +30,8 @@ export async function createSession(env, userId, token, request) {
     userId,
     tokenHash,
     expiresAt,
-    null,
-    request.headers.get("User-Agent") || null
+    ipHash,
+    userAgent
   ).run();
 
   return {
@@ -72,4 +78,3 @@ export async function revokeSession(env, token) {
 
   return true;
 }
-
