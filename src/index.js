@@ -1,14 +1,12 @@
 
+import { healthHandler } from "./routes/health.js";
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
     if (url.pathname === "/health" && request.method === "GET") {
-      return Response.json({
-        status: "ok",
-        service: "juhudmanager-api",
-        database: env.DB ? "connected" : "not_bound"
-      });
+      return healthHandler(env);
     }
 
     return Response.json(
@@ -17,4 +15,3 @@ export default {
     );
   }
 };
-
