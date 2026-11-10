@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="JuhudManager HR Management Portal">
+  <title>JuhudManager</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="brand-mark">J</span><span>JuhudManager</span></div>
+    <div class="top-actions">
+      <select id="languageSelect" aria-label="Language">
+        <option value="en">English</option><option value="my">Bahasa Malaysia</option>
+      </select>
+      <button id="logoutBtn" class="btn btn-outline hidden" data-i18n="logout">Logout</button>
+    </div>
+  </header>
+  <main class="container">
+    <section id="loginView" class="auth-layout">
+      <div class="hero">
+        <p class="eyebrow">PEOPLE · ACTIVITIES · PROGRESS</p>
+        <h1 data-i18n="welcome">A clearer way to manage people and activities.</h1>
+        <p class="muted" data-i18n="intro">One secure workspace for profiles, periodic updates and administrative review.</p>
+        <div class="feature-points">
+          <span>✓ <span data-i18n="feature1">Personal information</span></span>
+          <span>✓ <span data-i18n="feature2">Daily to yearly activities</span></span>
+          <span>✓ <span data-i18n="feature3">Review and reporting workflow</span></span>
+        </div>
+      </div>
+      <form id="loginForm" class="panel login-panel">
+        <h2 data-i18n="signIn">Sign in</h2>
+        <label for="loginType" data-i18n="loginWith">Login using</label>
+        <select id="loginType">
+          <option value="NRIC">NRIC</option><option value="PASSPORT">Passport</option>
+          <option value="EMAIL">Email</option><option value="WHATSAPP">WhatsApp</option>
+        </select>
+        <label for="loginIdentifier" data-i18n="identifier">NRIC / Passport / Email / WhatsApp</label>
+        <input id="loginIdentifier" autocomplete="username" required>
+        <label for="password" data-i18n="password">Password</label>
+        <input id="password" type="password" autocomplete="current-password" required>
+        <button class="btn btn-primary full" type="submit" data-i18n="signIn">Sign in</button>
+        <p id="loginMessage" class="message" role="status"></p>
+        <p class="small muted" data-i18n="accountNote">Accounts are created by an administrator.</p>
+      </form>
+    </section>
+
+    <section id="appView" class="hidden">
+      <div class="welcome-row">
+        <div><p class="eyebrow" data-i18n="workspace">WORKSPACE</p><h1 id="greeting">Dashboard</h1></div>
+        <span id="rolePill" class="pill">USER</span>
+      </div>
+      <nav class="tabs">
+        <button class="tab active" data-view="dashboard" data-i18n="dashboard">Dashboard</button>
+        <button class="tab" data-view="profile" data-i18n="myProfile">My Profile</button>
+        <button class="tab" data-view="activities" data-i18n="activities">Activities</button>
+        <button class="tab admin-only hidden" data-view="admin" data-i18n="administration">Administration</button>
+      </nav>
+
+      <section id="dashboardPanel" class="view">
+        <div class="stat-grid">
+          <article class="stat-card"><span data-i18n="mySubmissions">My submissions</span><strong id="statMine">0</strong></article>
+          <article class="stat-card"><span data-i18n="pendingReview">Pending review</span><strong id="statPending">0</strong></article>
+          <article class="stat-card"><span data-i18n="accountStatus">Account status</span><strong class="status-active" data-i18n="active">Active</strong></article>
+        </div>
+        <div class="panel"><div class="panel-heading"><h2 data-i18n="recentActivity">Recent activity</h2><button class="btn btn-light" data-go="activities" data-i18n="viewAll">View all</button></div><div id="recentRecords" class="table-wrap"></div></div>
+      </section>
+
+      <section id="profilePanel" class="view hidden">
+        <div class="panel"><div class="panel-heading"><div><h2 data-i18n="personalProfile">Personal profile</h2><p class="muted small" data-i18n="profileHint">Keep your contact and address information up to date.</p></div></div>
+          <form id="profileForm" class="form-grid">
+            <label><span data-i18n="dateOfBirth">Date of birth</span><input id="dob" type="date"></label>
+            <label><span data-i18n="gender">Gender</span><select id="gender"><option value="">—</option><option value="MALE">Male</option><option value="FEMALE">Female</option><option value="OTHER">Other</option><option value="UNDISCLOSED">Prefer not to say</option></select></label>
+            <label><span data-i18n="marital">Marital status</span><select id="marital"><option value="">—</option><option value="SINGLE">Single</option><option value="MARRIED">Married</option><option value="DIVORCED">Divorced</option><option value="WIDOWED">Widowed</option><option value="UNDISCLOSED">Prefer not to say</option></select></label>
+            <label><span data-i18n="nationality">Nationality</span><input id="nationality"></label>
+            <label><span data-i18n="country">Country</span><input id="country" autocomplete="country-name"></label>
+            <label><span data-i18n="state">State / Province</span><input id="state" autocomplete="address-level1"></label>
+            <label><span data-i18n="city">City / District</span><input id="city" autocomplete="address-level2"></label>
+            <label><span data-i18n="postcode">Postcode</span><input id="postcode" autocomplete="postal-code"></label>
+            <label class="span-2"><span data-i18n="street">Street address</span><input id="street" autocomplete="street-address"></label>
+            <label><span data-i18n="buildingNo">Building number</span><input id="buildingNo"></label>
+            <label><span data-i18n="buildingName">Building name</span><input id="buildingName"></label>
+            <label class="span-2"><span data-i18n="address2">Address line 2</span><input id="address2"></label>
+            <div class="span-2"><button class="btn btn-primary" type="submit" data-i18n="saveProfile">Save profile</button><span id="profileMessage" class="message"></span></div>
+          </form>
+        </div>
+      </section>
+
+      <section id="activitiesPanel" class="view hidden">
+        <div class="two-col">
+          <div class="panel"><h2 data-i18n="submitActivity">Submit an activity</h2>
+            <form id="activityForm" class="stack">
+              <label><span data-i18n="activityType">Activity type</span><select id="activityType" required></select></label>
+              <label><span data-i18n="activityDate">Activity date</span><input id="activityDate" type="date" required></label>
+              <label><span data-i18n="periodStart">Period start (optional)</span><input id="periodStart" type="date"></label>
+              <label><span data-i18n="periodEnd">Period end (optional)</span><input id="periodEnd" type="date"></label>
+              <label><span data-i18n="description">Description / update</span><textarea id="activityDescription" rows="5" required></textarea></label>
+              <label><span data-i18n="progress">Progress</span><select id="progress"><option value="COMPLETED">Completed</option><option value="IN_PROGRESS">In progress</option><option value="NOT_STARTED">Not started</option></select></label>
+              <button class="btn btn-primary" type="submit" data-i18n="submitForReview">Submit for review</button><p id="activityMessage" class="message"></p>
+            </form>
+          </div>
+          <div class="panel"><h2 data-i18n="myHistory">My activity history</h2><div id="activityHistory" class="table-wrap"></div></div>
+        </div>
+      </section>
+
+      <section id="adminPanel" class="view hidden">
+        <div class="admin-grid">
+          <div class="panel"><h2 data-i18n="createUser">Create user</h2>
+            <form id="createUserForm" class="stack">
+              <label><span data-i18n="fullName">Full name</span><input id="newFullName" required></label>
+              <label><span data-i18n="loginType">Primary login type</span><select id="newLoginType"><option value="NRIC">NRIC</option><option value="PASSPORT">Passport</option><option value="EMAIL">Email</option><option value="WHATSAPP">WhatsApp</option></select></label>
+              <label><span data-i18n="loginIdentifier">Login identifier</span><input id="newIdentifier" required></label>
+              <label><span data-i18n="emailOptional">Email (optional)</span><input id="newEmail" type="email"></label>
+              <label><span data-i18n="whatsappOptional">WhatsApp (optional)</span><input id="newWhatsApp"></label>
+              <label><span data-i18n="temporaryPassword">Initial password (12+ characters)</span><input id="newPassword" type="password" minlength="12" required></label>
+              <label><span data-i18n="role">Role</span><select id="newRole"><option value="USER">User</option><option value="SUPERVISOR">Supervisor</option><option value="ADMIN">Administrator</option></select></label>
+              <button class="btn btn-primary" type="submit" data-i18n="createAccount">Create account</button><p id="createUserMessage" class="message"></p>
+            </form>
+          </div>
+          <div class="panel"><h2 data-i18n="users">Users</h2><div id="usersTable" class="table-wrap"></div></div>
+          <div class="panel"><h2 data-i18n="createActivityType">Create activity type</h2>
+            <form id="createTypeForm" class="stack">
+              <label><span data-i18n="activityName">Activity name</span><input id="typeName" required></label>
+              <label><span data-i18n="frequency">Frequency</span><select id="typeFrequency"><option value="DAILY">Daily</option><option value="WEEKLY">Weekly</option><option value="MONTHLY">Monthly</option><option value="YEARLY">Yearly</option><option value="AD_HOC">Ad hoc</option></select></label>
+              <label><span data-i18n="description">Description</span><textarea id="typeDescription" rows="3"></textarea></label>
+              <button class="btn btn-primary" type="submit" data-i18n="createActivity">Create activity</button><p id="createTypeMessage" class="message"></p>
+            </form>
+          </div>
+          <div class="panel"><h2 data-i18n="reviewSubmissions">Review submissions</h2><div id="submissionsTable" class="table-wrap"></div></div>
+        </div>
+      </section>
+    </section>
+    <footer>JuhudManager · <span data-i18n="footer">People, activities and progress</span></footer>
+  </main>
+  <script src="config.js"></script><script src="app.js"></script>
+</body>
+</html>
