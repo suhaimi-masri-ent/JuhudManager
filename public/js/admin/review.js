@@ -187,6 +187,10 @@ document.addEventListener("click", event => {
   );
 
   if (viewButton) {
+    alert("VIEW BUTTON CLICK DETECTED");
+  }
+  
+  if (viewButton) {
     viewSubmission(viewButton.dataset.viewSubmission);
     return;
   }
