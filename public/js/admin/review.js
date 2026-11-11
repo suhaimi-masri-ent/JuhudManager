@@ -184,6 +184,8 @@ let loadActivitiesCallback = async () => {};
 
 document.addEventListener("click", event => {
 
+  alert("Document click detected");
+  
   const viewButton = event.target.closest("[data-view-submission]");
 
   if (viewButton) {
