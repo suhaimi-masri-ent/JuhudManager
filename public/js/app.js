@@ -224,6 +224,66 @@ function table(headers, rows) {
   `;
 }
 
+/* =========================
+   ACTIVITY DETAILS POPUP
+========================= */
+
+function showActivityDetails(recordId) {
+  const r = records.find(x =>
+    String(x.record_id) === String(recordId)
+  );
+
+  if (!r) return;
+
+  const labels = language === "my"
+    ? {
+        activity: "Jenis aktiviti",
+        startDate: "Tarikh mula",
+        startTime: "Masa mula",
+        endDate: "Tarikh tamat",
+        endTime: "Masa tamat",
+        description: "Penerangan",
+        progress: "Kemajuan",
+        review: "Status semakan",
+        submitted: "Tarikh dihantar"
+      }
+    : {
+        activity: "Activity type",
+        startDate: "Start date",
+        startTime: "Start time",
+        endDate: "End date",
+        endTime: "End time",
+        description: "Description",
+        progress: "Progress",
+        review: "Review status",
+        submitted: "Submitted at"
+      };
+
+  const rows = [
+    [labels.activity, r.activity_name],
+    [labels.startDate, r.activity_date],
+    [labels.startTime, r.start_time],
+    [labels.endDate, r.end_date],
+    [labels.endTime, r.end_time],
+    [labels.description, r.description],
+    [labels.progress, r.progress_status],
+    [labels.review, r.review_status],
+    [labels.submitted, r.submitted_at]
+  ];
+
+  $("activityDetailsContent").innerHTML = rows.map(([label, value]) =>
+    `<div class="detail-row">
+      <strong>${escapeHtml(label)}</strong>
+      <span>${escapeHtml(value || "—")}</span>
+    </div>`
+  ).join("");
+
+  $("activityDetailsTitle").textContent =
+    language === "my" ? "Butiran aktiviti" : "Activity details";
+
+  $("activityDetailsDialog").showModal();
+}
+
 function isAdmin() {
   return currentUser?.roles?.some(r =>
     ["SUPER_ADMIN", "ADMIN"].includes(r)
@@ -349,13 +409,20 @@ async function loadActivities() {
   );
 
   $("activityHistory").innerHTML = table(
-    ["Activity", "Date", "Progress", "Review"],
+    ["Activity", "Date", "Progress", "Review", "Details"],
     records.map(r =>
       `<tr>
         <td>${escapeHtml(r.activity_name)}</td>
         <td>${escapeHtml(r.activity_date)}</td>
         <td>${escapeHtml(r.progress_status)}</td>
         <td>${tag(r.review_status)}</td>
+        <td>
+          <button
+            class="table-action"
+            type="button"
+            data-activity-view="${escapeHtml(r.record_id)}"
+          >${language === "my" ? "Lihat" : "View"}</button>
+        </td>
       </tr>`
     )
   );
@@ -557,6 +624,30 @@ setActivityStartNow();
 
 $("activityType").addEventListener("change", () => {
   setActivityStartNow();
+});
+
+/* Activity history View button */
+
+$("activityHistory").addEventListener("click", e => {
+  const button = e.target.closest("[data-activity-view]");
+
+  if (!button) return;
+
+  showActivityDetails(button.dataset.activityView);
+});
+
+/* Close popup button */
+
+$("closeActivityDetails").addEventListener("click", () => {
+  $("activityDetailsDialog").close();
+});
+
+/* Close popup when clicking outside */
+
+$("activityDetailsDialog").addEventListener("click", e => {
+  if (e.target === $("activityDetailsDialog")) {
+    $("activityDetailsDialog").close();
+  }
 });
 
 $("activityForm").addEventListener("submit", async e => {
