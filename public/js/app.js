@@ -245,6 +245,7 @@ function showActivityDetails(recordId) {
         description: "Penerangan",
         progress: "Kemajuan",
         review: "Status semakan",
+        remarks: "Komen penyemak",
         submitted: "Tarikh dihantar"
       }
     : {
@@ -256,6 +257,7 @@ function showActivityDetails(recordId) {
         description: "Description",
         progress: "Progress",
         review: "Review status",
+        remarks: "Reviewer remarks",
         submitted: "Submitted at"
       };
 
@@ -268,6 +270,7 @@ function showActivityDetails(recordId) {
     [labels.description, r.description],
     [labels.progress, r.progress_status],
     [labels.review, r.review_status],
+    [labels.remarks, r.reviewer_remarks],
     [labels.submitted, r.submitted_at]
   ];
 
