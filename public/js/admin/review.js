@@ -180,31 +180,27 @@ function editReview(recordId, loadActivities) {
    EVENT DELEGATION
 ========================= */
 
-const submissionsTable = $("submissionsTable");
-
-if (submissionsTable) {
-  submissionsTable.addEventListener("click", event => {
-
-    const viewButton = event.target.closest("[data-view-submission]");
-
-    if (viewButton) {
-      viewSubmission(viewButton.dataset.viewSubmission);
-      return;
-    }
-
-    const editButton = event.target.closest("[data-edit-submission]");
-
-    if (editButton) {
-      editReview(
-        editButton.dataset.editSubmission,
-        loadActivitiesCallback
-      );
-    }
-  });
-}
-
 let loadActivitiesCallback = async () => {};
 
+document.addEventListener("click", event => {
+
+  const viewButton = event.target.closest("[data-view-submission]");
+
+  if (viewButton) {
+    viewSubmission(viewButton.dataset.viewSubmission);
+    return;
+  }
+
+  const editButton = event.target.closest("[data-edit-submission]");
+
+  if (editButton) {
+    editReview(
+      editButton.dataset.editSubmission,
+      loadActivitiesCallback
+    );
+  }
+
+});
 
 /* =========================
    LOAD ADMIN SUBMISSIONS
