@@ -3,6 +3,7 @@ import { healthHandler } from "./routes/health.js";
 import { loginHandler } from "./routes/login.js";
 import { meHandler } from "./routes/me.js";
 import { logoutHandler } from "./routes/logout.js";
+import { profileHandler } from "./routes/profile.js";
 import { getCorsHeaders } from "./config/cors.js";
 import { jsonResponse } from "./utils/response.js";
 
@@ -36,6 +37,12 @@ export default {
       ) {
         response = await meHandler(request, env);
 
+      } else if (
+        url.pathname === "/api/profile" &&
+        (request.method === "GET" || request.method === "PUT")
+      ) {
+        response = await profileHandler(request, env);
+        
       } else if (
         url.pathname === "/api/auth/logout" &&
         request.method === "POST"
