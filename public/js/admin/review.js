@@ -79,6 +79,10 @@ function viewSubmission(recordId) {
 
   const dialog = $("activityDetailsDialog");
 
+  if (dialog.parentElement !== document.body) {
+    document.body.appendChild(dialog);
+  }
+
   alert("Dialog found: " + !!dialog);
 
   if (!dialog) {
