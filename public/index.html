@@ -90,14 +90,51 @@
         <div class="two-col">
           <div class="panel"><h2 data-i18n="submitActivity">Submit an activity</h2>
             <form id="activityForm" class="stack">
-              <label><span data-i18n="activityType">Activity type</span><select id="activityType" required></select></label>
-              <label><span data-i18n="activityDate">Activity date</span><input id="activityDate" type="date" required></label>
-              <label><span data-i18n="periodStart">Period start (optional)</span><input id="periodStart" type="date"></label>
-              <label><span data-i18n="periodEnd">Period end (optional)</span><input id="periodEnd" type="date"></label>
-              <label><span data-i18n="description">Description / update</span><textarea id="activityDescription" rows="5" required></textarea></label>
-              <label><span data-i18n="progress">Progress</span><select id="progress"><option value="COMPLETED">Completed</option><option value="IN_PROGRESS">In progress</option><option value="NOT_STARTED">Not started</option></select></label>
-              <button class="btn btn-primary" type="submit" data-i18n="submitForReview">Submit for review</button><p id="activityMessage" class="message"></p>
-            </form>
+              <label>
+                <span data-i18n="activityType">Activity Type</span>
+                <select id="activityType" required></select>
+              </label>
+            
+              <label>
+                <span>Start Date</span>
+                <input id="activityDate" type="date" required>
+              </label>
+            
+              <label>
+                <span>Start Time</span>
+                <input id="startTime" type="time" required>
+              </label>
+            
+              <label>
+                <span>End Date (optional)</span>
+                <input id="endDate" type="date">
+              </label>
+            
+              <label>
+                <span>End Time (optional)</span>
+                <input id="endTime" type="time">
+              </label>
+            
+              <label>
+                <span data-i18n="description">Description / update</span>
+                <textarea id="activityDescription" rows="5"></textarea>
+              </label>
+            
+              <label>
+                <span data-i18n="progress">Progress</span>
+                <select id="progress">
+                  <option value="COMPLETED">Completed</option>
+                  <option value="IN_PROGRESS">In progress</option>
+                  <option value="NOT_STARTED">Not started</option>
+                </select>
+              </label>
+            
+              <button class="btn btn-primary" type="submit" data-i18n="submitForReview">
+                Submit for review
+              </button>
+            
+              <p id="activityMessage" class="message"></p>
+            </form>          
           </div>
           <div class="panel"><h2 data-i18n="myHistory">My activity history</h2><div id="activityHistory" class="table-wrap"></div></div>
         </div>
