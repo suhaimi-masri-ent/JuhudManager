@@ -65,6 +65,7 @@ function createReviewDialog() {
 ========================= */
 
 function viewSubmission(recordId) {
+  alert("viewSubmission called: " + recordId);
   const s = submissions.find(x =>
     String(x.record_id) === String(recordId)
   );
