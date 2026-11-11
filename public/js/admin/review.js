@@ -5,6 +5,7 @@ import { escapeHtml, tag, table } from "../core/helpers.js";
 const $ = id => document.getElementById(id);
 
 let submissions = [];
+let loadActivitiesCallback = async () => {};
 
 const reviewStatuses = [
   "PENDING",
@@ -111,7 +112,7 @@ function viewSubmission(recordId) {
    EDIT REVIEW
 ========================= */
 
-function editReview(recordId, loadActivities) {
+function editReview(recordId) {
   const s = submissions.find(x =>
     String(x.record_id) === String(recordId)
   );
@@ -164,8 +165,8 @@ function editReview(recordId, loadActivities) {
 
       alert("Review updated successfully.");
 
-      await loadReviews(loadActivities);
-      await loadActivities();
+      await loadReviews(loadActivitiesCallback);
+      await loadActivitiesCallback();
 
     } catch (error) {
       $("reviewEditMessage").textContent = error.message;
@@ -180,37 +181,34 @@ function editReview(recordId, loadActivities) {
    EVENT DELEGATION
 ========================= */
 
-let loadActivitiesCallback = async () => {};
-
 document.addEventListener("click", event => {
 
-  if (event.target.closest("[data-view-submission]")) {
-    alert("View Details button detected");
-  }
-  
-  const viewButton = event.target.closest("[data-view-submission]");
+  const viewButton = event.target.closest(
+    "[data-view-submission]"
+  );
 
   if (viewButton) {
     viewSubmission(viewButton.dataset.viewSubmission);
     return;
   }
 
-  const editButton = event.target.closest("[data-edit-submission]");
+  const editButton = event.target.closest(
+    "[data-edit-submission]"
+  );
 
   if (editButton) {
-    editReview(
-      editButton.dataset.editSubmission,
-      loadActivitiesCallback
-    );
+    editReview(editButton.dataset.editSubmission);
   }
 
 });
+
 
 /* =========================
    LOAD ADMIN SUBMISSIONS
 ========================= */
 
 export async function loadReviews(loadActivities) {
+
   loadActivitiesCallback = loadActivities;
 
   const data = await api("/api/admin/submissions");
@@ -219,15 +217,22 @@ export async function loadReviews(loadActivities) {
 
   $("submissionsTable").innerHTML = table(
     ["User", "Activity", "Date", "Status", "Actions"],
+
     submissions.map(s =>
       `<tr>
         <td>${escapeHtml(s.full_name)}</td>
+
         <td>
           ${escapeHtml(s.activity_name)}<br>
-          <span class="muted">${escapeHtml(s.description)}</span>
+          <span class="muted">
+            ${escapeHtml(s.description)}
+          </span>
         </td>
+
         <td>${escapeHtml(s.activity_date)}</td>
+
         <td>${tag(s.review_status)}</td>
+
         <td>
           <button
             class="table-action"
