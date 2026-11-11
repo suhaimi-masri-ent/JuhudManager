@@ -450,6 +450,7 @@ async function loadAdmin() {
     await api("/api/admin/activity-types");
   }
 
+
   if (canReview()) {
     const d = await api("/api/admin/submissions");
 
@@ -465,16 +466,70 @@ async function loadAdmin() {
           <td>${escapeHtml(s.activity_date)}</td>
           <td>${tag(s.review_status)}</td>
           <td>
-            ${s.review_status === "PENDING"
-              ? `<button class="table-action" data-review="${escapeHtml(s.record_id)}" data-status="APPROVED">Approve</button>
-                 <button class="table-action" data-review="${escapeHtml(s.record_id)}" data-status="NEEDS_REVISION">Revise</button>
-                 <button class="table-action" data-review="${escapeHtml(s.record_id)}" data-status="REJECTED">Reject</button>`
-              : "—"
-            }
+            <button
+              class="table-action"
+              data-edit-review="${escapeHtml(s.record_id)}"
+              data-status="${escapeHtml(s.review_status)}"
+              data-remarks="${escapeHtml(s.reviewer_remarks || "")}"
+            >Edit Review</button>
           </td>
         </tr>`
       )
     );
+
+      $("submissionsTable")
+        .querySelectorAll("[data-edit-review]")
+        .forEach(btn => {
+          btn.addEventListener("click", async () => {
+            const recordId = btn.dataset.editReview;
+            const currentStatus = btn.dataset.status;
+            const currentRemarks = btn.dataset.remarks;
+  
+            const statusInput = prompt(
+              "Review Status:\nAPPROVED\nNEEDS_REVISION\nREJECTED\nPENDING",
+              currentStatus
+            );
+  
+            if (statusInput === null) return;
+  
+            const reviewStatus = statusInput.trim().toUpperCase();
+  
+            const allowedStatuses = [
+              "PENDING",
+              "APPROVED",
+              "NEEDS_REVISION",
+              "REJECTED"
+            ];
+  
+            if (!allowedStatuses.includes(reviewStatus)) {
+              alert("Invalid review status.");
+              return;
+            }
+  
+            const remarksInput = prompt(
+              "Reviewer Remarks:",
+              currentRemarks
+            );
+  
+            if (remarksInput === null) return;
+  
+            try {
+              await api(`/api/admin/submissions/${recordId}`, {
+                method: "PATCH",
+                body: JSON.stringify({
+                  reviewStatus,
+                  remarks: remarksInput.trim()
+                })
+              });
+  
+              alert("Review updated successfully.");
+              await loadAdmin();
+            } catch (e) {
+              alert(e.message);
+            }
+          });
+        });
+    }
 
     $("submissionsTable")
       .querySelectorAll("[data-review]")
