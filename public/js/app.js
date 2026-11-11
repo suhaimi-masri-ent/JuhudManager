@@ -69,8 +69,12 @@ async function loadMe() {
   switchView("dashboard");
 }
 
+
 async function loadProfile() {
   const data = await api("/api/profile");
+
+  console.log("PROFILE API RESPONSE:", data);
+
   const p = data.profile;
 
   $("dob").value = p.date_of_birth || "";
