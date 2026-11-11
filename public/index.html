@@ -117,7 +117,45 @@
               <button class="btn btn-primary" type="submit" data-i18n="createAccount">Create account</button><p id="createUserMessage" class="message"></p>
             </form>
           </div>
-          <div class="panel"><h2 data-i18n="users">Users</h2><div id="usersTable" class="table-wrap"></div></div>
+
+          <div class="panel">
+            <h2>Create User</h2>
+          
+            <form id="createUserForm">
+              <label for="newUserName">Full Name</label>
+              <input
+                type="text"
+                id="newUserName"
+                maxlength="200"
+                required
+              >
+          
+              <label for="newUserEmail">Email Address</label>
+              <input
+                type="email"
+                id="newUserEmail"
+                maxlength="254"
+                required
+              >
+          
+              <label for="newUserPassword">Temporary Password</label>
+              <input
+                type="password"
+                id="newUserPassword"
+                minlength="12"
+                maxlength="1024"
+                required
+              >
+          
+              <button type="submit">Create User</button>
+              <p id="createUserMessage" role="status"></p>
+            </form>
+          </div>
+          
+          <div class="panel">
+            <h2 data-i18n="users">Users</h2>
+            <div id="usersTable" class="table-wrap"></div>
+          </div>
           <div class="panel"><h2 data-i18n="createActivityType">Create activity type</h2>
             <form id="createTypeForm" class="stack">
               <label><span data-i18n="activityName">Activity name</span><input id="typeName" required></label>
