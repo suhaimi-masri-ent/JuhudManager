@@ -187,8 +187,20 @@ function escapeHtml(s) {
   }[c]));
 }
 
-function dateToday() {
-  return new Date().toISOString().slice(0, 10);
+function setActivityStartNow() {
+  const now = new Date();
+
+  const date =
+    now.getFullYear() + "-" +
+    String(now.getMonth() + 1).padStart(2, "0") + "-" +
+    String(now.getDate()).padStart(2, "0");
+
+  const time =
+    String(now.getHours()).padStart(2, "0") + ":" +
+    String(now.getMinutes()).padStart(2, "0");
+
+  $("activityDate").value = date;
+  $("startTime").value = time;
 }
 
 function tag(status) {
@@ -535,7 +547,11 @@ $("profileForm").addEventListener("submit", async e => {
    ACTIVITIES
 ========================= */
 
-$("activityDate").value = dateToday();
+setActivityStartNow();
+
+$("activityType").addEventListener("change", () => {
+  setActivityStartNow();
+});
 
 $("activityForm").addEventListener("submit", async e => {
   e.preventDefault();
@@ -546,12 +562,31 @@ $("activityForm").addEventListener("submit", async e => {
       body: JSON.stringify({
         activityTypeId: $("activityType").value,
         activityDate: $("activityDate").value,
-        periodStart: $("periodStart").value,
-        periodEnd: $("periodEnd").value,
+        startTime: $("startTime").value,
+        endDate: $("endDate").value,
+        endTime: $("endTime").value,
         description: $("activityDescription").value,
         progressStatus: $("progress").value
       })
     });
+
+    $("activityDescription").value = "";
+    $("endDate").value = "";
+    $("endTime").value = "";
+
+    showMessage(
+      "activityMessage",
+      language === "my"
+        ? "Aktiviti dihantar untuk semakan."
+        : "Activity submitted for review."
+    );
+
+    await loadActivities();
+
+  } catch (e) {
+    showMessage("activityMessage", e.message, true);
+  }
+});
 
     $("activityDescription").value = "";
 
