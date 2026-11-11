@@ -13,7 +13,11 @@ const reviewStatuses = [
   "REJECTED"
 ];
 
-// CREATE EDIT REVIEW DIALOG
+
+/* =========================
+   CREATE EDIT REVIEW DIALOG
+========================= */
+
 function createReviewDialog() {
   if ($("reviewEditDialog")) return;
 
@@ -54,13 +58,27 @@ function createReviewDialog() {
   });
 }
 
-// VIEW SUBMISSION DETAILS
+
+/* =========================
+   VIEW SUBMISSION DETAILS
+========================= */
+
 function viewSubmission(recordId) {
   const s = submissions.find(x =>
     String(x.record_id) === String(recordId)
   );
 
-  if (!s) return;
+  if (!s) {
+    alert("Submission record not found.");
+    return;
+  }
+
+  const dialog = $("activityDetailsDialog");
+
+  if (!dialog) {
+    alert("Activity Details dialog not found in index.html.");
+    return;
+  }
 
   const rows = [
     ["User", s.full_name],
@@ -85,16 +103,23 @@ function viewSubmission(recordId) {
 
   $("activityDetailsTitle").textContent = "Submission Details";
 
-  $("activityDetailsDialog").showModal();
+  dialog.showModal();
 }
 
-// EDIT REVIEW
-function editReview(recordId, loadReviews, loadActivities) {
+
+/* =========================
+   EDIT REVIEW
+========================= */
+
+function editReview(recordId, loadActivities) {
   const s = submissions.find(x =>
     String(x.record_id) === String(recordId)
   );
 
-  if (!s) return;
+  if (!s) {
+    alert("Submission record not found.");
+    return;
+  }
 
   createReviewDialog();
 
@@ -109,9 +134,9 @@ function editReview(recordId, loadReviews, loadActivities) {
   $("reviewEditMessage").textContent = "";
 
   const dialog = $("reviewEditDialog");
+
   dialog.showModal();
 
-  // Replace old save listener safely
   const oldButton = $("saveReviewEdit");
   const newButton = oldButton.cloneNode(true);
 
@@ -150,8 +175,44 @@ function editReview(recordId, loadReviews, loadActivities) {
   });
 }
 
-// LOAD ADMIN SUBMISSIONS
+
+/* =========================
+   EVENT DELEGATION
+========================= */
+
+const submissionsTable = $("submissionsTable");
+
+if (submissionsTable) {
+  submissionsTable.addEventListener("click", event => {
+
+    const viewButton = event.target.closest("[data-view-submission]");
+
+    if (viewButton) {
+      viewSubmission(viewButton.dataset.viewSubmission);
+      return;
+    }
+
+    const editButton = event.target.closest("[data-edit-submission]");
+
+    if (editButton) {
+      editReview(
+        editButton.dataset.editSubmission,
+        loadActivitiesCallback
+      );
+    }
+  });
+}
+
+let loadActivitiesCallback = async () => {};
+
+
+/* =========================
+   LOAD ADMIN SUBMISSIONS
+========================= */
+
 export async function loadReviews(loadActivities) {
+  loadActivitiesCallback = loadActivities;
+
   const data = await api("/api/admin/submissions");
 
   submissions = data.submissions || [];
@@ -183,25 +244,4 @@ export async function loadReviews(loadActivities) {
       </tr>`
     )
   );
-
-  $("submissionsTable")
-    .querySelectorAll("[data-view-submission]")
-    .forEach(button => {
-      button.addEventListener("click", () => {
-        viewSubmission(button.dataset.viewSubmission);
-      });
-    });
-
-  $("submissionsTable")
-    .querySelectorAll("[data-edit-submission]")
-    .forEach(button => {
-      button.addEventListener("click", () => {
-        editReview(
-          button.dataset.editSubmission,
-          loadReviews,
-          loadActivities
-        );
-      });
-    });
 }
-
