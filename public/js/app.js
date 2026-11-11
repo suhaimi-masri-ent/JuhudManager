@@ -322,9 +322,15 @@ async function loadActivities() {
   activityTypes = d.types || [];
   records = d.records || [];
 
+  const selectedType = $("activityType").value;
+
   $("activityType").innerHTML = activityTypes.map(x =>
     `<option value="${escapeHtml(x.activity_type_id)}">${escapeHtml(x.activity_name)} (${escapeHtml(x.frequency)})</option>`
   ).join("");
+
+  if (activityTypes.some(x => x.activity_type_id === selectedType)) {
+    $("activityType").value = selectedType;
+  }
 
   $("statMine").textContent = records.length;
 
@@ -573,22 +579,6 @@ $("activityForm").addEventListener("submit", async e => {
     $("activityDescription").value = "";
     $("endDate").value = "";
     $("endTime").value = "";
-
-    showMessage(
-      "activityMessage",
-      language === "my"
-        ? "Aktiviti dihantar untuk semakan."
-        : "Activity submitted for review."
-    );
-
-    await loadActivities();
-
-  } catch (e) {
-    showMessage("activityMessage", e.message, true);
-  }
-});
-
-    $("activityDescription").value = "";
 
     showMessage(
       "activityMessage",
