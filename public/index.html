@@ -136,7 +136,23 @@
               <p id="activityMessage" class="message"></p>
             </form>          
           </div>
-          <div class="panel"><h2 data-i18n="myHistory">My activity history</h2><div id="activityHistory" class="table-wrap"></div></div>
+          <div class="panel">
+            <h2 data-i18n="myHistory">My activity history</h2>
+            <div id="activityHistory" class="table-wrap"></div>
+          </div>
+          
+          <dialog id="activityDetailsDialog" class="details-dialog">
+            <div class="details-header">
+              <h2 id="activityDetailsTitle">Activity details</h2>
+              <button
+                id="closeActivityDetails"
+                class="btn btn-outline"
+                type="button"
+              >Close</button>
+            </div>
+          
+            <div id="activityDetailsContent" class="details-content"></div>
+          </dialog>
         </div>
       </section>
 
