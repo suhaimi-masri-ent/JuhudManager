@@ -14,7 +14,14 @@ async function api(path, options={}) {
   if(!response.ok) throw new Error(data.error || `Request failed (${response.status})`);
   return data;
 }
-function showMessage(id,msg,error=false){const el=$(id);el.textContent=msg;el.classList.toggle("error",error)}
+function showMessage(id, msg, error = false) {
+  const el = $(id);
+  if (!el) return;
+
+  el.textContent = msg || "";
+  el.classList.toggle("error", error);
+  el.classList.toggle("hidden", !msg);
+}
 function escapeHtml(s){return String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function dateToday(){return new Date().toISOString().slice(0,10)}
 function tag(status){const s=String(status||"").toLowerCase();return `<span class="tag ${s}">${escapeHtml(status||"—")}</span>`}
