@@ -77,7 +77,7 @@ function viewSubmission(recordId) {
   const dialog = $("activityDetailsDialog");
 
   if (!dialog) {
-    alert("Activity Details dialog not found in index.html.");
+    alert("Activity Details dialog not found.");
     return;
   }
 
@@ -135,7 +135,6 @@ function editReview(recordId) {
   $("reviewEditMessage").textContent = "";
 
   const dialog = $("reviewEditDialog");
-
   dialog.showModal();
 
   const oldButton = $("saveReviewEdit");
@@ -208,6 +207,8 @@ document.addEventListener("click", event => {
 ========================= */
 
 export async function loadReviews(loadActivities) {
+
+  alert("loadReviews is running");
 
   loadActivitiesCallback = loadActivities;
 
