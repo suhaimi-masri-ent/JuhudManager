@@ -431,6 +431,10 @@ async function loadActivities() {
   );
 }
 
+/* =========================
+   ADMIN
+========================= */
+
 async function loadAdmin() {
   if (isAdmin()) {
     const d = await api("/api/admin/users");
@@ -450,7 +454,6 @@ async function loadAdmin() {
     await api("/api/admin/activity-types");
   }
 
-
   if (canReview()) {
     const d = await api("/api/admin/submissions");
 
@@ -468,6 +471,7 @@ async function loadAdmin() {
           <td>
             <button
               class="table-action"
+              type="button"
               data-edit-review="${escapeHtml(s.record_id)}"
               data-status="${escapeHtml(s.review_status)}"
               data-remarks="${escapeHtml(s.reviewer_remarks || "")}"
@@ -477,76 +481,65 @@ async function loadAdmin() {
       )
     );
 
-      $("submissionsTable")
-        .querySelectorAll("[data-edit-review]")
-        .forEach(btn => {
-          btn.addEventListener("click", async () => {
-            const recordId = btn.dataset.editReview;
-            const currentStatus = btn.dataset.status;
-            const currentRemarks = btn.dataset.remarks;
-  
-            const statusInput = prompt(
-              "Review Status:\nAPPROVED\nNEEDS_REVISION\nREJECTED\nPENDING",
-              currentStatus
-            );
-  
-            if (statusInput === null) return;
-  
-            const reviewStatus = statusInput.trim().toUpperCase();
-  
-            const allowedStatuses = [
-              "PENDING",
-              "APPROVED",
-              "NEEDS_REVISION",
-              "REJECTED"
-            ];
-  
-            if (!allowedStatuses.includes(reviewStatus)) {
-              alert("Invalid review status.");
-              return;
-            }
-  
-            const remarksInput = prompt(
-              "Reviewer Remarks:",
-              currentRemarks
-            );
-  
-            if (remarksInput === null) return;
-  
-            try {
-              await api(`/api/admin/submissions/${recordId}`, {
-                method: "PATCH",
-                body: JSON.stringify({
-                  reviewStatus,
-                  remarks: remarksInput.trim()
-                })
-              });
-  
-              alert("Review updated successfully.");
-              await loadAdmin();
-            } catch (e) {
-              alert(e.message);
-            }
-          });
-        });
-    }
-
+    // EDIT REVIEW BUTTON
     $("submissionsTable")
-      .querySelectorAll("[data-review]")
+      .querySelectorAll("[data-edit-review]")
       .forEach(btn => {
         btn.addEventListener("click", async () => {
-          const remarks = prompt("Reviewer remarks (optional):") || "";
+          const recordId = btn.dataset.editReview;
+          const currentStatus = btn.dataset.status;
+          const currentRemarks = btn.dataset.remarks;
+
+          // ASK FOR NEW STATUS
+          const statusInput = prompt(
+            "Review Status:\nAPPROVED\nNEEDS_REVISION\nREJECTED\nPENDING",
+            currentStatus
+          );
+
+          if (statusInput === null) {
+            return;
+          }
+
+          const reviewStatus = statusInput.trim().toUpperCase();
+
+          const allowedStatuses = [
+            "PENDING",
+            "APPROVED",
+            "NEEDS_REVISION",
+            "REJECTED"
+          ];
+
+          if (!allowedStatuses.includes(reviewStatus)) {
+            alert("Invalid review status.");
+            return;
+          }
+
+          // ASK FOR REMARKS
+          const remarksInput = prompt(
+            "Reviewer Remarks:",
+            currentRemarks
+          );
+
+          if (remarksInput === null) {
+            return;
+          }
 
           try {
-            await api(`/api/admin/submissions/${btn.dataset.review}`, {
+            await api(`/api/admin/submissions/${encodeURIComponent(recordId)}`, {
               method: "PATCH",
               body: JSON.stringify({
-                reviewStatus: btn.dataset.status,
-                remarks
+                reviewStatus,
+                remarks: remarksInput.trim()
               })
             });
 
+            alert("Review updated successfully.");
+
             await loadAdmin();
+
+            // REFRESH USER ACTIVITY RECORDS
+            await loadActivities();
+
           } catch (e) {
             alert(e.message);
           }
