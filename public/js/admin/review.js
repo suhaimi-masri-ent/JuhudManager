@@ -70,6 +70,8 @@ function viewSubmission(recordId) {
     String(x.record_id) === String(recordId)
   );
 
+  alert("Submission data: " + JSON.stringify(s));
+
   if (!s) {
     alert("Submission record not found.");
     return;
