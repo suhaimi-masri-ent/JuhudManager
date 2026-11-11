@@ -120,26 +120,40 @@ async function loadAdmin(){
   }
 }
 
+
 $("createUserForm").addEventListener("submit", async e => {
   e.preventDefault();
 
   showMessage("createUserMessage", "");
 
-  const submitButton = $("createUserForm").querySelector(
-    'button[type="submit"]'
-  );
-
+  const submitButton = $("createUserForm").querySelector('button[type="submit"]');
   submitButton.disabled = true;
 
   try {
     const result = await api("/api/admin/users", {
       method: "POST",
       body: JSON.stringify({
-        full_name: $("newUserName").value.trim(),
-        email: $("newUserEmail").value.trim(),
-        password: $("newUserPassword").value
+        full_name: $("newFullName").value.trim(),
+        email: $("newEmail").value.trim(),
+        password: $("newPassword").value
       })
     });
+
+    $("createUserForm").reset();
+
+    showMessage(
+      "createUserMessage",
+      result.message || "User created successfully"
+    );
+
+    await loadAdmin();
+
+  } catch (err) {
+    showMessage("createUserMessage", err.message, true);
+  } finally {
+    submitButton.disabled = false;
+  }
+});
 
     $("createUserForm").reset();
 
