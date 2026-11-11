@@ -44,8 +44,13 @@ function createReviewDialog() {
       ></textarea>
 
       <div class="dialog-actions">
-        <button type="button" id="cancelReviewEdit">Cancel</button>
-        <button type="button" id="saveReviewEdit">OK</button>
+        <button type="button" id="cancelReviewEdit">
+          Cancel
+        </button>
+
+        <button type="button" id="saveReviewEdit">
+          Save
+        </button>
       </div>
 
       <p id="reviewEditMessage"></p>
@@ -65,12 +70,10 @@ function createReviewDialog() {
 ========================= */
 
 function viewSubmission(recordId) {
-  alert("viewSubmission called: " + recordId);
+
   const s = submissions.find(x =>
     String(x.record_id) === String(recordId)
   );
-
-  alert("Submission data: " + JSON.stringify(s));
 
   if (!s) {
     alert("Submission record not found.");
@@ -79,15 +82,16 @@ function viewSubmission(recordId) {
 
   const dialog = $("activityDetailsDialog");
 
-  if (dialog.parentElement !== document.body) {
-    document.body.appendChild(dialog);
-  }
-
-  alert("Dialog found: " + !!dialog);
-
   if (!dialog) {
     alert("Activity Details dialog not found.");
     return;
+  }
+
+  // MOVE DIALOG TO BODY
+  // This allows it to work from the Administration tab.
+
+  if (dialog.parentElement !== document.body) {
+    document.body.appendChild(dialog);
   }
 
   const rows = [
@@ -113,11 +117,7 @@ function viewSubmission(recordId) {
 
   $("activityDetailsTitle").textContent = "Submission Details";
 
-  alert("Opening dialog now");
-  
   dialog.showModal();
-  
-  alert("Dialog opened: " + dialog.open);
 }
 
 
@@ -126,6 +126,7 @@ function viewSubmission(recordId) {
 ========================= */
 
 function editReview(recordId) {
+
   const s = submissions.find(x =>
     String(x.record_id) === String(recordId)
   );
@@ -148,7 +149,10 @@ function editReview(recordId) {
   $("reviewEditMessage").textContent = "";
 
   const dialog = $("reviewEditDialog");
+
   dialog.showModal();
+
+  // Replace save button to prevent duplicate event listeners.
 
   const oldButton = $("saveReviewEdit");
   const newButton = oldButton.cloneNode(true);
@@ -156,12 +160,14 @@ function editReview(recordId) {
   oldButton.replaceWith(newButton);
 
   newButton.addEventListener("click", async () => {
+
     const reviewStatus = $("reviewStatusSelect").value;
     const remarks = $("reviewRemarksInput").value.trim();
 
     newButton.disabled = true;
 
     try {
+
       await api(
         `/api/admin/submissions/${encodeURIComponent(recordId)}`,
         {
@@ -181,10 +187,15 @@ function editReview(recordId) {
       await loadActivitiesCallback();
 
     } catch (error) {
+
       $("reviewEditMessage").textContent = error.message;
+
     } finally {
+
       newButton.disabled = false;
+
     }
+
   });
 }
 
@@ -200,11 +211,9 @@ document.addEventListener("click", event => {
   );
 
   if (viewButton) {
-    alert("VIEW BUTTON CLICK DETECTED");
-  }
-  
-  if (viewButton) {
+
     viewSubmission(viewButton.dataset.viewSubmission);
+
     return;
   }
 
@@ -213,7 +222,9 @@ document.addEventListener("click", event => {
   );
 
   if (editButton) {
+
     editReview(editButton.dataset.editSubmission);
+
   }
 
 });
@@ -224,8 +235,6 @@ document.addEventListener("click", event => {
 ========================= */
 
 export async function loadReviews(loadActivities) {
-
-  alert("loadReviews is running");
 
   loadActivitiesCallback = loadActivities;
 
@@ -238,6 +247,7 @@ export async function loadReviews(loadActivities) {
 
     submissions.map(s =>
       `<tr>
+
         <td>${escapeHtml(s.full_name)}</td>
 
         <td>
@@ -252,19 +262,27 @@ export async function loadReviews(loadActivities) {
         <td>${tag(s.review_status)}</td>
 
         <td>
+
           <button
             class="table-action"
             type="button"
             data-view-submission="${escapeHtml(s.record_id)}"
-          >View Details</button>
+          >
+            View Details
+          </button>
 
           <button
             class="table-action"
             type="button"
             data-edit-submission="${escapeHtml(s.record_id)}"
-          >Edit Review</button>
+          >
+            Edit Review
+          </button>
+
         </td>
+
       </tr>`
     )
   );
+
 }
