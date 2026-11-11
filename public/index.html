@@ -105,16 +105,27 @@
 
       <section id="adminPanel" class="view hidden">
         <div class="admin-grid">
-          <div class="panel"><h2 data-i18n="createUser">Create user</h2>
+
+          <div class="panel">
+            <h2 data-i18n="createUser">Create user</h2>
             <form id="createUserForm" class="stack">
-              <label><span data-i18n="fullName">Full name</span><input id="newFullName" required></label>
-              <label><span data-i18n="loginType">Primary login type</span><select id="newLoginType"><option value="NRIC">NRIC</option><option value="PASSPORT">Passport</option><option value="EMAIL">Email</option><option value="WHATSAPP">WhatsApp</option></select></label>
-              <label><span data-i18n="loginIdentifier">Login identifier</span><input id="newIdentifier" required></label>
-              <label><span data-i18n="emailOptional">Email (optional)</span><input id="newEmail" type="email"></label>
-              <label><span data-i18n="whatsappOptional">WhatsApp (optional)</span><input id="newWhatsApp"></label>
-              <label><span data-i18n="temporaryPassword">Initial password (12+ characters)</span><input id="newPassword" type="password" minlength="12" required></label>
-              <label><span data-i18n="role">Role</span><select id="newRole"><option value="USER">User</option><option value="SUPERVISOR">Supervisor</option><option value="ADMIN">Administrator</option></select></label>
-              <button class="btn btn-primary" type="submit" data-i18n="createAccount">Create account</button><p id="createUserMessage" class="message"></p>
+              <label>
+                <span data-i18n="fullName">Full name</span>
+                <input id="newFullName" maxlength="200" required>
+              </label>
+          
+              <label>
+                <span>Email address</span>
+                <input id="newEmail" type="email" maxlength="254" required>
+              </label>
+          
+              <label>
+                <span data-i18n="temporaryPassword">Initial password (12+ characters)</span>
+                <input id="newPassword" type="password" minlength="12" maxlength="1024" required>
+              </label>
+          
+              <button class="btn btn-primary" type="submit" data-i18n="createAccount">Create account</button>
+              <p id="createUserMessage" class="message" role="status"></p>
             </form>
           </div>
 
