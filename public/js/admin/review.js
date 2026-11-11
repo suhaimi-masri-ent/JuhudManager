@@ -79,6 +79,8 @@ function viewSubmission(recordId) {
 
   const dialog = $("activityDetailsDialog");
 
+  alert("Dialog found: " + !!dialog);
+
   if (!dialog) {
     alert("Activity Details dialog not found.");
     return;
