@@ -119,6 +119,46 @@ async function loadAdmin(){
     $("submissionsTable").querySelectorAll("[data-review]").forEach(btn=>btn.addEventListener("click",async()=>{const remarks=prompt("Reviewer remarks (optional):")||"";try{await api(`/api/admin/submissions/${btn.dataset.review}`,{method:"PATCH",body:JSON.stringify({reviewStatus:btn.dataset.status,remarks})});await loadAdmin();}catch(e){alert(e.message)}}));
   }
 }
+
+$("createUserForm").addEventListener("submit", async e => {
+  e.preventDefault();
+
+  showMessage("createUserMessage", "");
+
+  const submitButton = $("createUserForm").querySelector(
+    'button[type="submit"]'
+  );
+
+  submitButton.disabled = true;
+
+  try {
+    const result = await api("/api/admin/users", {
+      method: "POST",
+      body: JSON.stringify({
+        full_name: $("newUserName").value.trim(),
+        email: $("newUserEmail").value.trim(),
+        password: $("newUserPassword").value
+      })
+    });
+
+    $("createUserForm").reset();
+
+    showMessage(
+      "createUserMessage",
+      result.message || "User created successfully"
+    );
+
+    await loadAdmin();
+
+  } catch (err) {
+    showMessage("createUserMessage", err.message, true);
+
+  } finally {
+    submitButton.disabled = false;
+  }
+});
+
+
 $("loginForm").addEventListener("submit", async e => {
   e.preventDefault();
   showMessage("loginMessage", "");
