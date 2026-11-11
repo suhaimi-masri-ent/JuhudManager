@@ -109,7 +109,11 @@ function viewSubmission(recordId) {
 
   $("activityDetailsTitle").textContent = "Submission Details";
 
+  alert("Opening dialog now");
+  
   dialog.showModal();
+  
+  alert("Dialog opened: " + dialog.open);
 }
 
 
