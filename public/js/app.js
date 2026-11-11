@@ -21,7 +21,29 @@ function tag(status){const s=String(status||"").toLowerCase();return `<span clas
 function table(headers,rows){return `<table><thead><tr>${headers.map(h=>`<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.length?rows.join(""):`<tr><td colspan="${headers.length}" class="muted">No records yet</td></tr>`}</tbody></table>`}
 function isAdmin(){return currentUser?.roles?.some(r=>["SUPER_ADMIN","ADMIN"].includes(r))}
 function canReview(){return currentUser?.roles?.some(r=>["SUPER_ADMIN","ADMIN","SUPERVISOR"].includes(r))}
-function switchView(name){document.querySelectorAll(".view").forEach(v=>v.classList.add("hidden"));$(`${name}Panel`).classList.remove("hidden");document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("active",b.dataset.view===name));if(name==="admin")loadAdmin().catch(e=>alert(e.message));}
+
+function switchView(name) {
+  document.querySelectorAll(".view").forEach(v =>
+    v.classList.add("hidden")
+  );
+
+  $(`${name}Panel`).classList.remove("hidden");
+
+  document.querySelectorAll(".tab").forEach(b =>
+    b.classList.toggle("active", b.dataset.view === name)
+  );
+
+  if (name === "profile") {
+    loadProfile().catch(e =>
+      showMessage("profileMessage", e.message, true)
+    );
+  }
+
+  if (name === "admin") {
+    loadAdmin().catch(e => alert(e.message));
+  }
+}
+
 async function loadMe() {
   const data = await api("/api/auth/me");
 
