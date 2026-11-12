@@ -125,12 +125,94 @@ function initAdminProfileEditor(loadActivities) {
   });
 }
 
+
+/* =========================
+   AUDIT DETAIL VIEWER
+========================= */
+
+function showAuditDetails(log) {
+  let details = {};
+
+  try {
+    details = JSON.parse(log.details_json || "{}");
+  } catch (e) {
+    details = {};
+  }
+
+  const client = details.client || {};
+
+  const rows = {
+    "Audit ID": log.audit_id,
+    "Date / Time": log.created_at,
+    "Actor": log.actor_name || log.actor_user_id || "System",
+    "Actor User ID": log.actor_user_id,
+    "Action": log.action,
+    "Target Type": log.target_type,
+    "Target": log.target_name || log.target_id,
+    "Target ID": log.target_id,
+    "IP Hash": client.ip_hash,
+    "Browser": client.browser,
+    "Operating System": client.os,
+    "Device": client.device,
+    "Country": client.country,
+    "Cloudflare Ray ID": client.ray_id
+  };
+
+  const information = Object.entries(rows)
+    .map(([label, value]) => `
+      <div>
+        <strong>${escapeHtml(label)}</strong>
+        <div>${escapeHtml(String(value || "—"))}</div>
+      </div>
+    `)
+    .join("");
+
+  const additionalDetails = Object.entries(details)
+    .filter(([key]) => key !== "client")
+    .map(([key, value]) => `
+      <div>
+        <strong>${escapeHtml(key)}</strong>
+        <div>${escapeHtml(
+          typeof value === "object"
+            ? JSON.stringify(value, null, 2)
+            : String(value ?? "—")
+        )}</div>
+      </div>
+    `)
+    .join("");
+
+  $("auditDetailContent").innerHTML = `
+    <h3>Audit Information</h3>
+    ${information}
+
+    <h3>Additional Details</h3>
+    ${additionalDetails || "<p>No additional details.</p>"}
+  `;
+
+  $("auditDetailDialog").showModal();
+}
+
+function initAuditDetailViewer() {
+  const closeButton = $("auditDetailClose");
+
+  if (!closeButton) return;
+  if (closeButton.dataset.initialized === "true") return;
+
+  closeButton.dataset.initialized = "true";
+
+  closeButton.addEventListener("click", () => {
+    $("auditDetailDialog").close();
+  });
+}
+
+
 /* =========================
    AUDIT TRAIL CONTROLS
 ========================= */
 
 let auditLogsCache = [];
 let auditCurrentPage = 1;
+
 
 function renderAuditTrail() {
   const search = $("auditSearch").value.trim().toLowerCase();
@@ -195,7 +277,11 @@ function renderAuditTrail() {
 
       const client = details.client || {};
 
-      return `<tr>
+      return `<tr
+        data-audit-id="${escapeHtml(log.audit_id)}"
+        style="cursor:pointer"
+        title="Click to view audit details"
+      >
         <td>${escapeHtml(log.created_at || "—")}</td>
         <td>${escapeHtml(log.actor_name || log.actor_user_id || "System")}</td>
         <td>${escapeHtml(log.action || "—")}</td>
@@ -209,6 +295,17 @@ function renderAuditTrail() {
       </tr>`;
     })
   );
+
+  $("auditTrailTable").querySelectorAll("[data-audit-id]")
+    .forEach(row => {
+      row.addEventListener("click", () => {
+        const log = auditLogsCache.find(
+          item => item.audit_id === row.dataset.auditId
+        );
+
+        if (log) showAuditDetails(log);
+      });
+    });
 
   $("auditPagination").innerHTML = `
     <span>
@@ -250,6 +347,7 @@ function renderAuditTrail() {
 
 function initAuditTrail(data) {
   auditLogsCache = data.audit_logs || [];
+  initAuditDetailViewer();
 
   const actions = [...new Set(
     auditLogsCache.map(log => log.action).filter(Boolean)
