@@ -2,7 +2,7 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "juhudmanager-api",
-  "main": "src/index.js",
+  "main": "worker/src/index.js",
   "compatibility_date": "2026-11-01",
 
   "vars": {
