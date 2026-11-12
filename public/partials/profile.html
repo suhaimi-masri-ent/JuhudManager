@@ -1,1 +1,111 @@
 
+
+<section id="profilePanel" class="view hidden">
+
+  <div class="panel">
+
+    <div class="panel-heading">
+      <div>
+        <h2>My Profile</h2>
+        <p class="muted small">
+          Manage your personal information and address.
+        </p>
+      </div>
+    </div>
+
+    <form id="profileForm">
+
+      <h3>Personal Information</h3>
+
+      <div class="form-grid">
+
+        <label>
+          Date of Birth
+          <input type="date" id="dob">
+        </label>
+
+        <label>
+          Gender
+          <select id="gender">
+            <option value="">Select gender</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+            <option value="Other">Other</option>
+          </select>
+        </label>
+
+        <label>
+          Marital Status
+          <select id="marital">
+            <option value="">Select status</option>
+            <option value="Single">Single</option>
+            <option value="Married">Married</option>
+            <option value="Divorced">Divorced</option>
+            <option value="Widowed">Widowed</option>
+          </select>
+        </label>
+
+        <label>
+          Nationality
+          <input type="text" id="nationality">
+        </label>
+
+      </div>
+
+      <h3>Address Information</h3>
+
+      <div class="form-grid">
+
+        <label>
+          Country
+          <input type="text" id="country">
+        </label>
+
+        <label>
+          State / Province
+          <input type="text" id="state">
+        </label>
+
+        <label>
+          City / District
+          <input type="text" id="city">
+        </label>
+
+        <label>
+          Postcode
+          <input type="text" id="postcode">
+        </label>
+
+        <label class="span-2">
+          Street Address
+          <input type="text" id="street">
+        </label>
+
+        <label>
+          Building Number
+          <input type="text" id="buildingNo">
+        </label>
+
+        <label>
+          Building Name
+          <input type="text" id="buildingName">
+        </label>
+
+        <label class="span-2">
+          Address Line 2
+          <input type="text" id="address2">
+        </label>
+
+      </div>
+
+      <div style="margin-top:20px">
+        <button type="submit" class="btn btn-primary">
+          Save Profile
+        </button>
+      </div>
+
+    </form>
+
+  </div>
+
+</section>
