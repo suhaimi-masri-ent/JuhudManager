@@ -44,7 +44,22 @@ export function setActivityStartNow() {
 
 export function tag(status) {
   const value = status || "—";
-  const className = String(status || "").toLowerCase();
+
+  const allowedClasses = [
+    "pending",
+    "approved",
+    "needs_revision",
+    "rejected",
+    "active",
+    "inactive",
+    "suspended"
+  ];
+
+  const requestedClass = String(status || "").toLowerCase();
+
+  const className = allowedClasses.includes(requestedClass)
+    ? requestedClass
+    : "";
 
   return `<span class="tag ${className}">${escapeHtml(value)}</span>`;
 }
@@ -67,4 +82,3 @@ export function table(headers, rows) {
     </table>
   `;
 }
-
