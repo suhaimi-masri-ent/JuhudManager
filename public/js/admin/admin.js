@@ -17,6 +17,9 @@ export function canReview() {
   );
 }
 
+/* =========================
+   ADMIN PROFILE EDITOR
+========================= */
 
 function initAdminProfileEditor(loadActivities) {
   const dialog = $("editUserProfileDialog");
@@ -55,7 +58,6 @@ function initAdminProfileEditor(loadActivities) {
     if (!button) return;
 
     selectedUserId = button.dataset.editUser;
-
     $("adminEditProfileMessage").textContent = "Loading profile...";
 
     try {
@@ -64,7 +66,6 @@ function initAdminProfileEditor(loadActivities) {
       );
 
       const user = result.user;
-
       $("adminEditFullName").value = user.full_name || "";
 
       for (const [field, id] of Object.entries(fields)) {
@@ -109,9 +110,7 @@ function initAdminProfileEditor(loadActivities) {
 
       await loadAdmin(loadActivities);
 
-      setTimeout(() => {
-        dialog.close();
-      }, 700);
+      setTimeout(() => dialog.close(), 700);
 
     } catch (err) {
       $("adminEditProfileMessage").textContent = err.message;
@@ -126,7 +125,6 @@ function initAdminProfileEditor(loadActivities) {
   });
 }
 
-
 /* =========================
    AUDIT TRAIL CONTROLS
 ========================= */
@@ -140,7 +138,7 @@ function renderAuditTrail() {
   const country = $("auditCountryFilter").value;
   const dateFrom = $("auditDateFrom").value;
   const dateTo = $("auditDateTo").value;
-  const pageSize = Number($("auditPageSize").value);
+  const pageSize = Number($("auditPageSize").value) || 25;
 
   const filtered = auditLogsCache.filter(log => {
     let details = {};
@@ -253,9 +251,6 @@ function renderAuditTrail() {
 function initAuditTrail(data) {
   auditLogsCache = data.audit_logs || [];
 
-  const actionSelect = $("auditActionFilter");
-  const countrySelect = $("auditCountryFilter");
-
   const actions = [...new Set(
     auditLogsCache.map(log => log.action).filter(Boolean)
   )].sort();
@@ -270,13 +265,13 @@ function initAuditTrail(data) {
     }).filter(Boolean)
   )].sort();
 
-  actionSelect.innerHTML =
+  $("auditActionFilter").innerHTML =
     '<option value="">All Actions</option>' +
     actions.map(value =>
       `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`
     ).join("");
 
-  countrySelect.innerHTML =
+  $("auditCountryFilter").innerHTML =
     '<option value="">All Countries</option>' +
     countries.map(value =>
       `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`
@@ -298,15 +293,13 @@ function initAuditTrail(data) {
 
     element.dataset.initialized = "true";
 
-    element.addEventListener("input", () => {
+    const refresh = () => {
       auditCurrentPage = 1;
       renderAuditTrail();
-    });
+    };
 
-    element.addEventListener("change", () => {
-      auditCurrentPage = 1;
-      renderAuditTrail();
-    });
+    element.addEventListener("input", refresh);
+    element.addEventListener("change", refresh);
   });
 
   if ($("auditResetFilters").dataset.initialized !== "true") {
@@ -329,47 +322,19 @@ function initAuditTrail(data) {
   renderAuditTrail();
 }
 
-
+/* =========================
+   LOAD ADMIN
+========================= */
 
 export async function loadAdmin(loadActivities) {
 
-  // ADMIN: LOAD USERS AND ACTIVITY TYPES
+  // ADMIN: LOAD USERS, ACTIVITY TYPES AND AUDIT TRAIL
   if (isAdmin()) {
 
-
     const auditData = await api("/api/admin/audit-logs");
-    
-    $("auditTrailMessage").textContent =
-      `${auditData.audit_logs.length} audit records found.`;
-    
-    $("auditTrailTable").innerHTML = table(
-      ["Date / Time", "Actor", "Action", "Target", "Country", "Device"],
-      auditData.audit_logs.map(log => {
-        let details = {};
-    
-        try {
-          details = JSON.parse(log.details_json || "{}");
-        } catch (e) {}
-    
-        const client = details.client || {};
-    
-        return `<tr>
-          <td>${escapeHtml(log.created_at || "—")}</td>
-          <td>${escapeHtml(log.actor_name || log.actor_user_id || "System")}</td>
-          <td>${escapeHtml(log.action)}</td>
-          <td>${escapeHtml(log.target_name || log.target_type || "—")}</td>
-          <td>${escapeHtml(client.country || "—")}</td>
-          <td>${escapeHtml(
-            [client.browser, client.os, client.device]
-              .filter(Boolean)
-              .join(" / ") || "—"
-          )}</td>
-        </tr>`;
-      })
-    );
+    initAuditTrail(auditData);
 
     const d = await api("/api/admin/users");
-
 
     $("usersTable").innerHTML = table(
       ["Name", "Login identifiers", "Role", "Status", "Action"],
@@ -423,7 +388,6 @@ export async function loadAdmin(loadActivities) {
       )
     );
 
-    // EDIT REVIEW BUTTON
     $("submissionsTable")
       .querySelectorAll("[data-edit-review]")
       .forEach(btn => {
@@ -433,15 +397,12 @@ export async function loadAdmin(loadActivities) {
           const currentStatus = btn.dataset.status;
           const currentRemarks = btn.dataset.remarks;
 
-          // ASK FOR NEW STATUS
           const statusInput = prompt(
             "Review Status:\nAPPROVED\nNEEDS_REVISION\nREJECTED\nPENDING",
             currentStatus
           );
 
-          if (statusInput === null) {
-            return;
-          }
+          if (statusInput === null) return;
 
           const reviewStatus = statusInput.trim().toUpperCase();
 
@@ -457,15 +418,12 @@ export async function loadAdmin(loadActivities) {
             return;
           }
 
-          // ASK FOR REMARKS
           const remarksInput = prompt(
             "Reviewer Remarks:",
             currentRemarks
           );
 
-          if (remarksInput === null) {
-            return;
-          }
+          if (remarksInput === null) return;
 
           try {
             await api(
@@ -482,8 +440,6 @@ export async function loadAdmin(loadActivities) {
             alert("Review updated successfully.");
 
             await loadAdmin(loadActivities);
-
-            // REFRESH USER ACTIVITY RECORDS
             await loadActivities();
 
           } catch (e) {
@@ -493,4 +449,3 @@ export async function loadAdmin(loadActivities) {
       });
   }
 }
-
