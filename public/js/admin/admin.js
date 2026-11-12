@@ -153,6 +153,8 @@ export async function loadAdmin(loadActivities) {
       )
     );
 
+    initAdminProfileEditor();
+
     await api("/api/admin/activity-types");
   }
 
