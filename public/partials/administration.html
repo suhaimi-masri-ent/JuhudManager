@@ -1,1 +1,114 @@
 
+<section id="adminPanel" class="view hidden">
+
+  <div class="admin-grid">
+
+    <!-- CREATE USER -->
+
+    <div class="panel">
+
+      <h2>Create User</h2>
+
+      <form id="createUserForm" class="stack">
+
+        <label>
+          Full Name
+          <input type="text" id="newFullName" required>
+        </label>
+
+        <label>
+          Email
+          <input type="email" id="newEmail" required>
+        </label>
+
+        <label>
+          Password
+          <input
+            type="password"
+            id="newPassword"
+            minlength="8"
+            required
+          >
+        </label>
+
+        <div id="createUserMessage" class="message"></div>
+
+        <button type="submit" class="btn btn-primary">
+          Create User
+        </button>
+
+      </form>
+
+    </div>
+
+
+    <!-- CREATE ACTIVITY TYPE -->
+
+    <div class="panel">
+
+      <h2>Create Activity Type</h2>
+
+      <form id="createTypeForm" class="stack">
+
+        <label>
+          Activity Name
+          <input type="text" id="typeName" required>
+        </label>
+
+        <label>
+          Frequency
+          <select id="typeFrequency" required>
+            <option value="">Select frequency</option>
+            <option value="DAILY">Daily</option>
+            <option value="WEEKLY">Weekly</option>
+            <option value="MONTHLY">Monthly</option>
+            <option value="QUARTERLY">Quarterly</option>
+            <option value="YEARLY">Yearly</option>
+          </select>
+        </label>
+
+        <label>
+          Description
+          <textarea id="typeDescription" rows="3"></textarea>
+        </label>
+
+        <div id="createTypeMessage" class="message"></div>
+
+        <button type="submit" class="btn btn-primary">
+          Create Activity Type
+        </button>
+
+      </form>
+
+    </div>
+
+  </div>
+
+
+  <!-- USER MANAGEMENT -->
+
+  <div class="panel" style="margin-top:18px">
+
+    <h2>User Management</h2>
+
+    <div class="table-wrap">
+      <div id="usersTable"></div>
+    </div>
+
+  </div>
+
+
+  <!-- SUBMISSION REVIEW -->
+
+  <div class="panel" style="margin-top:18px">
+
+    <h2>Activity Submissions Review</h2>
+
+    <div class="table-wrap">
+      <div id="submissionsTable"></div>
+    </div>
+
+  </div>
+
+</section>
+
