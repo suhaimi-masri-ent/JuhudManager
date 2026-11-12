@@ -131,6 +131,9 @@ export async function loadAdmin(loadActivities) {
 
   // ADMIN: LOAD USERS AND ACTIVITY TYPES
   if (isAdmin()) {
+
+    const auditTest = await api("/api/admin/audit-logs");
+    console.log("AUDIT TRAIL API:", auditTest);
     const d = await api("/api/admin/users");
 
 
