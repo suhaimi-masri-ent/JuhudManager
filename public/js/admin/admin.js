@@ -135,7 +135,7 @@ export async function loadAdmin(loadActivities) {
 
 
     $("usersTable").innerHTML = table(
-      ["Name", "Login identifiers", "Role", "Status", "ACTION TEST"],
+      ["Name", "Login identifiers", "Role", "Status", "Action"],
       d.users.map(u =>
         `<tr>
           <td>${escapeHtml(u.full_name)}</td>
