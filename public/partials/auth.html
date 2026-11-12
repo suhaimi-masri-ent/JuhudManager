@@ -3,7 +3,7 @@
 
   <div class="hero">
 
-    <p class="eyebrow">JUHUDMANAGER</p>
+    <p class="eyebrow">PEOPLE · ACTIVITIES · PROGRESS</p>
 
     <h1 data-i18n="welcome">
       A clearer way to manage people and activities.
@@ -14,55 +14,61 @@
     </p>
 
     <div class="feature-points">
-      <div>✓ Personal information management</div>
-      <div>✓ Periodic activity updates</div>
-      <div>✓ Administrative review</div>
+      <span>✓ <span data-i18n="feature1">Personal information</span></span>
+      <span>✓ <span data-i18n="feature2">Daily to yearly activities</span></span>
+      <span>✓ <span data-i18n="feature3">Review and reporting workflow</span></span>
     </div>
 
   </div>
 
-  <div class="panel login-panel">
+  <form id="loginForm" class="panel login-panel">
 
-    <h2 data-i18n="login">Login</h2>
+    <h2 data-i18n="signIn">Sign in</h2>
 
-    <p class="muted" data-i18n="loginIntro">
-      Sign in to access your workspace.
+    <label for="loginType" data-i18n="loginWith">
+      Login using
+    </label>
+
+    <select id="loginType">
+      <option value="EMAIL">Email</option>
+    </select>
+
+    <label for="loginIdentifier" data-i18n="identifier">
+      Email Address
+    </label>
+
+    <input
+      id="loginIdentifier"
+      type="email"
+      autocomplete="username"
+      required
+    >
+
+    <label for="password" data-i18n="password">
+      Password
+    </label>
+
+    <input
+      id="password"
+      type="password"
+      autocomplete="current-password"
+      required
+    >
+
+    <button
+      class="btn btn-primary full"
+      type="submit"
+      data-i18n="signIn"
+    >
+      Sign in
+    </button>
+
+    <p id="loginMessage" class="message" role="status"></p>
+
+    <p class="small muted" data-i18n="accountNote">
+      Accounts are created by an administrator.
     </p>
 
-    <form id="loginForm" class="stack">
-
-      <label for="loginIdentifier" data-i18n="email">
-        Email
-        <input
-          type="email"
-          id="loginIdentifier"
-          autocomplete="username"
-          required
-        >
-      </label>
-
-      <label for="password" data-i18n="password">
-        Password
-        <input
-          type="password"
-          id="password"
-          autocomplete="current-password"
-          required
-        >
-      </label>
-
-      <div id="loginMessage" class="message"></div>
-
-      <button
-        type="submit"
-        class="btn btn-primary full"
-        data-i18n="login"
-      >
-        Login
-      </button>
-
-    </form>
-
-  </div>
+  </form>
 
 </section>
