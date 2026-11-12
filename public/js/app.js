@@ -185,7 +185,15 @@ $("profileForm").addEventListener("submit", async e => {
     street_address: $("street").value,
     building_number: $("buildingNo").value,
     building_name: $("buildingName").value,
-    address_line_2: $("address2").value
+    address_line_2: $("address2").value,
+    employment_status: $("employmentStatus").value,
+    employment_type: $("employmentType").value,
+    employment_sector: $("employmentSector").value,
+    occupation: $("occupation").value,
+    employer_company: $("employerCompany").value,
+    department: $("department").value,
+    position_designation: $("positionDesignation").value,
+    work_location: $("workLocation").value
   };
 
   try {
