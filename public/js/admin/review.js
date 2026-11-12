@@ -27,16 +27,23 @@ function createReviewDialog() {
 
   dialog.innerHTML = `
     <div class="dialog-content">
+
       <h2>Edit Review</h2>
 
-      <label for="reviewStatusSelect">Review Status</label>
+      <label for="reviewStatusSelect">
+        Review Status
+      </label>
+
       <select id="reviewStatusSelect">
         ${reviewStatuses.map(status =>
           `<option value="${status}">${status}</option>`
         ).join("")}
       </select>
 
-      <label for="reviewRemarksInput">Reviewer Remarks</label>
+      <label for="reviewRemarksInput">
+        Reviewer Remarks
+      </label>
+
       <textarea
         id="reviewRemarksInput"
         rows="5"
@@ -44,16 +51,27 @@ function createReviewDialog() {
       ></textarea>
 
       <div class="dialog-actions">
-        <button type="button" id="cancelReviewEdit">
+
+        <button
+          type="button"
+          id="cancelReviewEdit"
+          class="btn btn-outline"
+        >
           Cancel
         </button>
 
-        <button type="button" id="saveReviewEdit">
+        <button
+          type="button"
+          id="saveReviewEdit"
+          class="btn btn-primary"
+        >
           Save
         </button>
+
       </div>
 
       <p id="reviewEditMessage"></p>
+
     </div>
   `;
 
@@ -86,9 +104,6 @@ function viewSubmission(recordId) {
     alert("Activity Details dialog not found.");
     return;
   }
-
-  // MOVE DIALOG TO BODY
-  // This allows it to work from the Administration tab.
 
   if (dialog.parentElement !== document.body) {
     document.body.appendChild(dialog);
@@ -152,8 +167,6 @@ function editReview(recordId) {
 
   dialog.showModal();
 
-  // Replace save button to prevent duplicate event listeners.
-
   const oldButton = $("saveReviewEdit");
   const newButton = oldButton.cloneNode(true);
 
@@ -211,9 +224,7 @@ document.addEventListener("click", event => {
   );
 
   if (viewButton) {
-
     viewSubmission(viewButton.dataset.viewSubmission);
-
     return;
   }
 
@@ -222,9 +233,7 @@ document.addEventListener("click", event => {
   );
 
   if (editButton) {
-
     editReview(editButton.dataset.editSubmission);
-
   }
 
 });
@@ -284,5 +293,4 @@ export async function loadReviews(loadActivities) {
       </tr>`
     )
   );
-
 }
