@@ -18,6 +18,12 @@ export async function loginHandler(request, env) {
     return jsonResponse({ error: "Invalid JSON request" }, 400);
   }
 
+  if (!body || typeof body !== "object" || Array.isArray(body)) {
+    return jsonResponse({
+      error: "Invalid request body"
+    }, 400);
+  }
+
   const email = body.email;
   const password = body.password;
 
