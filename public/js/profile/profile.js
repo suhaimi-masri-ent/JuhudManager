@@ -19,5 +19,14 @@ export async function loadProfile() {
   $("buildingNo").value = p.building_number || "";
   $("buildingName").value = p.building_name || "";
   $("address2").value = p.address_line_2 || "";
+    // Employment Information
+  $("employmentStatus").value = p.employment_status || "";
+  $("employmentType").value = p.employment_type || "";
+  $("employmentSector").value = p.employment_sector || "";
+  $("occupation").value = p.occupation || "";
+  $("employerCompany").value = p.employer_company || "";
+  $("department").value = p.department || "";
+  $("positionDesignation").value = p.position_designation || "";
+  $("workLocation").value = p.work_location || "";
 }
 
