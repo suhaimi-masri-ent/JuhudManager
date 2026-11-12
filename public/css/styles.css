@@ -61,3 +61,64 @@
   }
 }
 
+/* =========================
+   REVIEW EDIT POPUP
+========================= */
+
+#reviewEditDialog {
+  width: min(520px, calc(100% - 28px));
+  max-height: 85vh;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 24px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 0 20px 60px rgba(20,35,60,.25);
+}
+
+#reviewEditDialog::backdrop {
+  background: rgba(15,25,40,.55);
+}
+
+#reviewEditDialog h2 {
+  margin: 0 0 22px;
+}
+
+#reviewEditDialog label {
+  display: block;
+  margin: 14px 0 7px;
+  font-size: 13px;
+  font-weight: 650;
+  color: #33445f;
+}
+
+#reviewEditDialog select,
+#reviewEditDialog textarea {
+  width: 100%;
+  font: inherit;
+}
+
+#reviewEditDialog textarea {
+  min-height: 120px;
+}
+
+#reviewEditDialog .dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+#reviewEditDialog #reviewEditMessage {
+  font-size: 13px;
+  color: var(--red);
+  margin-top: 12px;
+}
+
+@media(max-width:520px) {
+  #reviewEditDialog {
+    padding: 18px;
+  }
+}
+
