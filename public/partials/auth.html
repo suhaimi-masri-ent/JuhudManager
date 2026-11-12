@@ -1,55 +1,61 @@
 
 <section id="loginView" class="auth-layout">
 
-  <div class="auth-hero">
+  <div class="hero">
+
     <p class="eyebrow">JUHUDMANAGER</p>
 
     <h1 data-i18n="welcome">
       A clearer way to manage people and activities.
     </h1>
 
-    <p data-i18n="intro">
+    <p class="muted" data-i18n="intro">
       One secure workspace for profiles, periodic updates and administrative review.
     </p>
+
+    <div class="feature-points">
+      <div>✓ Personal information management</div>
+      <div>✓ Periodic activity updates</div>
+      <div>✓ Administrative review</div>
+    </div>
+
   </div>
 
-  <div class="panel auth-panel">
+  <div class="panel login-panel">
 
     <h2 data-i18n="login">Login</h2>
 
-    <p data-i18n="loginIntro">
+    <p class="muted" data-i18n="loginIntro">
       Sign in to access your workspace.
     </p>
 
-    <form id="loginForm">
+    <form id="loginForm" class="stack">
 
       <label for="loginIdentifier" data-i18n="email">
         Email
+        <input
+          type="email"
+          id="loginIdentifier"
+          autocomplete="username"
+          required
+        >
       </label>
-
-      <input
-        type="email"
-        id="loginIdentifier"
-        autocomplete="username"
-        required
-      >
 
       <label for="password" data-i18n="password">
         Password
+        <input
+          type="password"
+          id="password"
+          autocomplete="current-password"
+          required
+        >
       </label>
-
-      <input
-        type="password"
-        id="password"
-        autocomplete="current-password"
-        required
-      >
 
       <div id="loginMessage" class="message"></div>
 
       <button
         type="submit"
-        class="btn btn-primary"
+        class="btn btn-primary full"
         data-i18n="login"
       >
         Login
