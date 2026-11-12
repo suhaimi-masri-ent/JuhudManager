@@ -122,3 +122,20 @@
   }
 }
 
+
+/* =========================
+   APPLICATION LOADING ERROR
+========================= */
+
+.loading-error {
+  max-width: 600px;
+  margin: 80px auto;
+  padding: 24px;
+  text-align: center;
+}
+
+.loading-error-message {
+  color: var(--red);
+  overflow-wrap: anywhere;
+}
+
