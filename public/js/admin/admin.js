@@ -132,12 +132,38 @@ export async function loadAdmin(loadActivities) {
   // ADMIN: LOAD USERS AND ACTIVITY TYPES
   if (isAdmin()) {
 
-    const auditTest = await api("/api/admin/audit-logs");
 
+    const auditData = await api("/api/admin/audit-logs");
+    
     $("auditTrailMessage").textContent =
-      `API OK — ${auditTest.audit_logs.length} audit records found.`;
+      `${auditData.audit_logs.length} audit records found.`;
+    
+    $("auditTrailTable").innerHTML = table(
+      ["Date / Time", "Actor", "Action", "Target", "Country", "Device"],
+      auditData.audit_logs.map(log => {
+        let details = {};
+    
+        try {
+          details = JSON.parse(log.details_json || "{}");
+        } catch (e) {}
+    
+        const client = details.client || {};
+    
+        return `<tr>
+          <td>${escapeHtml(log.created_at || "—")}</td>
+          <td>${escapeHtml(log.actor_name || log.actor_user_id || "System")}</td>
+          <td>${escapeHtml(log.action)}</td>
+          <td>${escapeHtml(log.target_name || log.target_type || "—")}</td>
+          <td>${escapeHtml(client.country || "—")}</td>
+          <td>${escapeHtml(
+            [client.browser, client.os, client.device]
+              .filter(Boolean)
+              .join(" / ") || "—"
+          )}</td>
+        </tr>`;
+      })
+    );
 
-    console.log("AUDIT TRAIL API:", auditTest);
     const d = await api("/api/admin/users");
 
 
