@@ -98,6 +98,185 @@
   </div>
 
 
+  <!-- ADMIN EDIT USER PROFILE -->
+  
+  <dialog id="editUserProfileDialog">
+    <div class="panel">
+      <h2>Edit User Profile</h2>
+
+      <form id="editUserProfileForm" class="stack">
+
+        <h3>Personal Information</h3>
+
+        <div class="form-grid">
+          <label>
+            Full Name
+            <input type="text" id="adminEditFullName" required maxlength="200">
+          </label>
+
+          <label>
+            Date of Birth
+            <input type="date" id="adminEditDob">
+          </label>
+
+          <label>
+            Gender
+            <select id="adminEditGender">
+              <option value="">Select</option>
+              <option value="MALE">Male</option>
+              <option value="FEMALE">Female</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </label>
+
+          <label>
+            Marital Status
+            <select id="adminEditMarital">
+              <option value="">Select</option>
+              <option value="SINGLE">Single</option>
+              <option value="MARRIED">Married</option>
+              <option value="DIVORCED">Divorced</option>
+              <option value="WIDOWED">Widowed</option>
+            </select>
+          </label>
+
+          <label>
+            Nationality
+            <input type="text" id="adminEditNationality">
+          </label>
+        </div>
+
+        <h3>Employment Information</h3>
+
+        <div class="form-grid">
+          <label>
+            Employment Status
+            <select id="adminEditEmploymentStatus">
+              <option value="">Select</option>
+              <option value="EMPLOYED">Employed</option>
+              <option value="SELF_EMPLOYED">Self-employed</option>
+              <option value="UNEMPLOYED">Unemployed</option>
+              <option value="RETIRED">Retired</option>
+              <option value="STUDENT">Student</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </label>
+
+          <label>
+            Employment Type
+            <select id="adminEditEmploymentType">
+              <option value="">Select</option>
+              <option value="PERMANENT">Permanent</option>
+              <option value="CONTRACT">Contract</option>
+              <option value="PART_TIME">Part-time</option>
+              <option value="TEMPORARY">Temporary</option>
+              <option value="FREELANCE">Freelance</option>
+            </select>
+          </label>
+
+          <label>
+            Employment Sector
+            <select id="adminEditEmploymentSector">
+              <option value="">Select</option>
+              <option value="GOVERNMENT">Government</option>
+              <option value="PRIVATE">Private</option>
+              <option value="NGO">NGO</option>
+              <option value="OTHER">Other</option>
+            </select>
+          </label>
+
+          <label>
+            Occupation
+            <input type="text" id="adminEditOccupation">
+          </label>
+
+          <label>
+            Employer / Company
+            <input type="text" id="adminEditEmployer">
+          </label>
+
+          <label>
+            Department
+            <input type="text" id="adminEditDepartment">
+          </label>
+
+          <label>
+            Position / Designation
+            <input type="text" id="adminEditPosition">
+          </label>
+
+          <label>
+            Work Location
+            <input type="text" id="adminEditWorkLocation">
+          </label>
+        </div>
+
+        <h3>Address Information</h3>
+
+        <div class="form-grid">
+          <label>
+            Country
+            <input type="text" id="adminEditCountry">
+          </label>
+
+          <label>
+            State / Province
+            <input type="text" id="adminEditState">
+          </label>
+
+          <label>
+            City / District
+            <input type="text" id="adminEditCity">
+          </label>
+
+          <label>
+            Postcode
+            <input type="text" id="adminEditPostcode">
+          </label>
+
+          <label>
+            Street Address
+            <input type="text" id="adminEditStreet">
+          </label>
+
+          <label>
+            Building Number
+            <input type="text" id="adminEditBuildingNo">
+          </label>
+
+          <label>
+            Building Name
+            <input type="text" id="adminEditBuildingName">
+          </label>
+
+          <label>
+            Address Line 2
+            <input type="text" id="adminEditAddress2">
+          </label>
+        </div>
+
+        <div id="adminEditProfileMessage" class="message"></div>
+
+        <div class="row">
+          <button type="submit" class="btn btn-primary">
+            Save Changes
+          </button>
+
+          <button
+            type="button"
+            class="btn"
+            id="adminEditProfileCancel"
+          >
+            Cancel
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </dialog>
+
+  
+
   <!-- SUBMISSION REVIEW -->
 
   <div class="panel" style="margin-top:18px">
