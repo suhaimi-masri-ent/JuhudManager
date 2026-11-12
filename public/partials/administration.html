@@ -290,6 +290,7 @@
   </div>
 
 
+
   <!-- AUDIT TRAIL -->
 
   <div class="panel" style="margin-top:18px">
@@ -302,9 +303,79 @@
 
     <div id="auditTrailMessage" class="message"></div>
 
-    <div class="table-wrap">
+    <!-- SEARCH -->
+    <div class="stack">
+
+      <label>
+        Search
+        <input
+          type="search"
+          id="auditSearch"
+          placeholder="Search user, action, target or audit ID..."
+        >
+      </label>
+
+      <!-- FILTERS -->
+      <div class="form-grid">
+
+        <label>
+          Action
+          <select id="auditActionFilter">
+            <option value="">All Actions</option>
+          </select>
+        </label>
+
+        <label>
+          Country
+          <select id="auditCountryFilter">
+            <option value="">All Countries</option>
+          </select>
+        </label>
+
+        <label>
+          From Date
+          <input type="date" id="auditDateFrom">
+        </label>
+
+        <label>
+          To Date
+          <input type="date" id="auditDateTo">
+        </label>
+
+        <label>
+          Records Per Page
+          <select id="auditPageSize">
+            <option value="10">10</option>
+            <option value="25" selected>25</option>
+            <option value="50">50</option>
+          </select>
+        </label>
+
+      </div>
+
+      <div class="row">
+        <button
+          type="button"
+          class="btn"
+          id="auditResetFilters"
+        >
+          Reset Filters
+        </button>
+      </div>
+
+    </div>
+
+    <!-- TABLE -->
+    <div class="table-wrap" style="margin-top:16px">
       <div id="auditTrailTable"></div>
     </div>
+
+    <!-- PAGINATION -->
+    <div
+      id="auditPagination"
+      class="row"
+      style="margin-top:14px; justify-content:space-between; align-items:center"
+    ></div>
 
   </div>
 
