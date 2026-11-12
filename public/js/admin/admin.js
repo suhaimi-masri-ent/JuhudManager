@@ -23,14 +23,22 @@ export async function loadAdmin(loadActivities) {
   if (isAdmin()) {
     const d = await api("/api/admin/users");
 
+
     $("usersTable").innerHTML = table(
-      ["Name", "Login identifiers", "Role", "Status"],
+      ["Name", "Login identifiers", "Role", "Status", "Action"],
       d.users.map(u =>
         `<tr>
           <td>${escapeHtml(u.full_name)}</td>
           <td>${escapeHtml(u.identifiers || "—")}</td>
           <td>${escapeHtml(u.roles || "USER")}</td>
           <td>${tag(u.account_status)}</td>
+          <td>
+            <button
+              type="button"
+              class="table-action"
+              data-edit-user="${escapeHtml(u.user_id)}"
+            >Edit Profile</button>
+          </td>
         </tr>`
       )
     );
