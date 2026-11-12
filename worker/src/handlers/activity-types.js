@@ -90,9 +90,23 @@ export async function adminActivityTypesHandler(request, env) {
         ? 1
         : 0;
 
+    const allowedFrequencies = [
+      "DAILY",
+      "WEEKLY",
+      "MONTHLY",
+      "YEARLY",
+      "AD_HOC"
+    ];
+
     if (!activityName || !frequency) {
       return jsonResponse({
         error: "Activity name and frequency are required"
+      }, 400);
+    }
+
+    if (!allowedFrequencies.includes(frequency)) {
+      return jsonResponse({
+        error: "Invalid frequency. Allowed values: DAILY, WEEKLY, MONTHLY, YEARLY, AD_HOC"
       }, 400);
     }
 
