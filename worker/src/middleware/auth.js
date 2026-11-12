@@ -70,6 +70,22 @@ export async function requireAuth(request, env) {
     };
   }
 
+  // CHECK ACCOUNT STATUS
+  const account = await env.DB.prepare(`
+    SELECT account_status
+    FROM user_accounts
+    WHERE user_id = ?
+    LIMIT 1
+  `).bind(session.user_id).first();
+
+  if (!account || account.account_status !== "ACTIVE") {
+    return {
+      error: jsonResponse({
+        error: "Account is inactive"
+      }, 403)
+    };
+  }
+
   // UPDATE LAST SEEN
   await env.DB.prepare(`
     UPDATE user_sessions
