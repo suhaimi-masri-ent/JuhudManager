@@ -43,6 +43,10 @@ import {
   adminAuditLogsHandler
 } from "./handlers/audit-logs.js";
 
+// ADMIN ASSIGNMENT HANDLER
+import {
+  adminAssignmentsHandler
+} from "./handlers/assignments.js";
 
 export default {
   async fetch(request, env) {
