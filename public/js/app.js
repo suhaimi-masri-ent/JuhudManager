@@ -38,7 +38,8 @@ import {
 
 import {
   isAdmin,
-  canReview
+  canReview,
+  loadAdmin
 } from "./admin/admin.js";
 
 import {
@@ -74,7 +75,7 @@ function switchView(name) {
   }
 
   if (name === "admin") {
-    loadAdmin().catch(e => alert(e.message));
+    loadAdmin(loadActivities).catch(e => alert(e.message));
   }
 
   if (name === "activities") {
@@ -82,35 +83,6 @@ function switchView(name) {
   }
 }
 
-
-/* =========================
-   LOAD ADMIN
-========================= */
-
-async function loadAdmin() {
-
-  if (isAdmin()) {
-    const d = await api("/api/admin/users");
-
-    $("usersTable").innerHTML = table(
-      ["Name", "Login identifiers", "Role", "Status"],
-      d.users.map(u =>
-        `<tr>
-          <td>${escapeHtml(u.full_name)}</td>
-          <td>${escapeHtml(u.identifiers || "—")}</td>
-          <td>${escapeHtml(u.roles || "USER")}</td>
-          <td>${tag(u.account_status)}</td>
-        </tr>`
-      )
-    );
-
-    await api("/api/admin/activity-types");
-  }
-
-  if (canReview()) {
-    await loadReviews(loadActivities);
-  }
-}
 
 
 /* =========================
