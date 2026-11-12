@@ -62,12 +62,7 @@ async function loadPartial(containerId, file) {
 function showLoadingError(error) {
 
   const wrapper = document.createElement("div");
-
-  wrapper.style.maxWidth = "600px";
-  wrapper.style.margin = "80px auto";
-  wrapper.style.padding = "24px";
-  wrapper.style.fontFamily = "Arial, sans-serif";
-  wrapper.style.textAlign = "center";
+  wrapper.className = "loading-error";
 
   const title = document.createElement("h2");
   title.textContent = "JuhudManager Loading Error";
@@ -77,12 +72,14 @@ function showLoadingError(error) {
     "The application could not be loaded.";
 
   const errorMessage = document.createElement("p");
-  errorMessage.style.color = "#b42318";
+  errorMessage.className = "loading-error-message";
   errorMessage.textContent =
     error?.message || "An unexpected error occurred.";
 
   const reloadButton = document.createElement("button");
+  reloadButton.className = "btn btn-primary";
   reloadButton.textContent = "Reload Page";
+
   reloadButton.addEventListener("click", () => {
     location.reload();
   });
