@@ -1,3 +1,4 @@
+
 import { getSession } from "../services/sessions.js";
 import { writeAudit } from "../services/audit.js";
 import { getUserRoles } from "../services/users.js";
@@ -5,66 +6,79 @@ import { jsonResponse } from "../core/response.js";
 
 export async function requireAuth(request, env) {
   const authorization = request.headers.get("Authorization") || "";
-  const token = authorization.startsWith("Bearer ")
-    ? authorization.slice(7)
-    : "";
+
+  if (!authorization.startsWith("Bearer ")) {
+    return {
+      error: jsonResponse({ error: "Unauthorized" }, 401)
+    };
+  }
+
+  const token = authorization.slice(7).trim();
 
   if (!token) {
     return {
-      error: jsonResponse(
-        { error: "Unauthorized" },
-        401
-      )
+      error: jsonResponse({ error: "Unauthorized" }, 401)
     };
   }
 
   const session = await getSession(env, token);
 
-  if (!session || session.revoked_at) {
+  if (!session) {
     return {
-      error: jsonResponse(
-        { error: "Invalid session" },
-        401
-      )
+      error: jsonResponse({ error: "Invalid session" }, 401)
     };
   }
 
-  if (new Date(session.expires_at).getTime() <= Date.now()) {
-    // Audit expired session only once.
-    const auditCheck = await env.DB.prepare(`
-      SELECT expired_audit_at
-      FROM user_sessions
-      WHERE session_id = ?
-      LIMIT 1
-    `).bind(session.session_id).first();
+  if (session.revoked_at) {
+    return {
+      error: jsonResponse({ error: "Invalid session" }, 401)
+    };
+  }
 
-    if (!auditCheck?.expired_audit_at) {
+  const now = new Date().toISOString();
+
+  // CHECK EXPIRED SESSION
+  if (session.expires_at <= now) {
+    const expiredSession = await env.DB.prepare(`
+      UPDATE user_sessions
+      SET expired_audit_at = ?
+      WHERE session_id = ?
+        AND expired_audit_at IS NULL
+        AND revoked_at IS NULL
+        AND expires_at <= ?
+      RETURNING session_id
+    `).bind(
+      now,
+      session.session_id,
+      now
+    ).first();
+
+    // WRITE AUDIT ONLY ONCE
+    if (expiredSession) {
       await writeAudit(
         env,
         session.user_id,
         "SESSION_EXPIRED",
-        {
-          session_id: session.session_id
-        },
+        { session_id: session.session_id },
         session.user_id,
         request
       );
-
-      await env.DB.prepare(`
-        UPDATE user_sessions
-        SET expired_audit_at = datetime('now')
-        WHERE session_id = ?
-          AND expired_audit_at IS NULL
-      `).bind(session.session_id).run();
     }
 
     return {
-      error: jsonResponse(
-        { error: "Session expired" },
-        401
-      )
+      error: jsonResponse({ error: "Session expired" }, 401)
     };
   }
+
+  // UPDATE LAST SEEN
+  await env.DB.prepare(`
+    UPDATE user_sessions
+    SET last_seen_at = ?
+    WHERE session_id = ?
+  `).bind(
+    now,
+    session.session_id
+  ).run();
 
   const roles = await getUserRoles(env, session.user_id);
 
