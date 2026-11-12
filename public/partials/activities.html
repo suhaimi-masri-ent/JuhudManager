@@ -1,1 +1,117 @@
 
+<section id="activitiesPanel" class="view hidden">
+
+  <div class="two-col">
+
+    <!-- SUBMIT ACTIVITY -->
+
+    <div class="panel">
+
+      <h2 data-i18n="submitActivity">Submit Activity</h2>
+
+      <form id="activityForm" class="stack">
+
+        <label>
+          Activity Type
+          <select id="activityType" required>
+            <option value="">Select activity</option>
+          </select>
+        </label>
+
+        <label>
+          Activity Date
+          <input type="date" id="activityDate" required>
+        </label>
+
+        <label>
+          Start Time
+          <input type="time" id="startTime">
+        </label>
+
+        <label>
+          End Date
+          <input type="date" id="endDate">
+        </label>
+
+        <label>
+          End Time
+          <input type="time" id="endTime">
+        </label>
+
+        <label>
+          Description
+          <textarea
+            id="activityDescription"
+            rows="4"
+            required
+          ></textarea>
+        </label>
+
+        <label>
+          Progress Status
+          <select id="progress" required>
+            <option value="NOT_STARTED">Not Started</option>
+            <option value="IN_PROGRESS">In Progress</option>
+            <option value="COMPLETED">Completed</option>
+          </select>
+        </label>
+
+        <div id="activityMessage" class="message"></div>
+
+        <button type="submit" class="btn btn-primary">
+          Submit Activity
+        </button>
+
+      </form>
+
+    </div>
+
+
+    <!-- ACTIVITY HISTORY -->
+
+    <div class="panel">
+
+      <div class="panel-heading">
+        <div>
+          <h2 data-i18n="activityHistory">Activity History</h2>
+          <p class="muted small">
+            View your submitted activities and review status.
+          </p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <div id="activityHistory"></div>
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- ACTIVITY DETAILS POPUP -->
+
+  <dialog id="activityDetailsDialog" class="details-dialog">
+
+    <div class="details-header">
+
+      <h2>Activity Details</h2>
+
+      <button
+        type="button"
+        id="closeActivityDetails"
+        class="btn btn-outline"
+      >
+        Close
+      </button>
+
+    </div>
+
+    <div
+      id="activityDetailsContent"
+      class="details-content"
+    ></div>
+
+  </dialog>
+
+</section>
