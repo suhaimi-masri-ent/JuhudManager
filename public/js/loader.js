@@ -76,8 +76,14 @@ async function initializeApplication() {
       "JuhudManager HTML partials loaded successfully."
     );
 
-    await import("./app.js");
-
+   console.log(
+     "Login input check:",
+     document.getElementById("loginIdentifier"),
+     document.getElementById("password")
+   );
+   
+   await import("./app.js");
+     
   } catch (error) {
 
     console.error(
