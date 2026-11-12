@@ -18,7 +18,7 @@ export function canReview() {
 }
 
 
-function initAdminProfileEditor() {
+function initAdminProfileEditor(loadActivities) {
   const dialog = $("editUserProfileDialog");
   const form = $("editUserProfileForm");
 
@@ -107,7 +107,7 @@ function initAdminProfileEditor() {
       $("adminEditProfileMessage").textContent =
         result.message || "Profile updated.";
 
-      await loadAdmin();
+      await loadAdmin(loadActivities);
 
       setTimeout(() => {
         dialog.close();
@@ -153,7 +153,7 @@ export async function loadAdmin(loadActivities) {
       )
     );
 
-    initAdminProfileEditor();
+    initAdminProfileEditor(loadActivities);
 
     await api("/api/admin/activity-types");
   }
