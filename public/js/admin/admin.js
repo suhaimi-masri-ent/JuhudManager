@@ -133,6 +133,10 @@ export async function loadAdmin(loadActivities) {
   if (isAdmin()) {
 
     const auditTest = await api("/api/admin/audit-logs");
+
+    $("auditTrailMessage").textContent =
+      `API OK — ${auditTest.audit_logs.length} audit records found.`;
+
     console.log("AUDIT TRAIL API:", auditTest);
     const d = await api("/api/admin/users");
 
