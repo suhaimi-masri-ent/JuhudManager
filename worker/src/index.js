@@ -178,6 +178,21 @@ export default {
         );
       }
 
+
+      // =========================
+      // ADMIN ASSIGNMENTS
+      // =========================
+      
+      else if (
+        path === "/api/admin/assignments" &&
+        ["GET", "POST"].includes(method)
+      ) {
+        response = await adminAssignmentsHandler(
+          request,
+          env
+        );
+      }        
+        
       // =========================
       // USER ACTIVITIES
       // =========================
