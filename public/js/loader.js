@@ -56,6 +56,49 @@ async function loadPartial(containerId, file) {
 
 
 /* =========================
+   SHOW APPLICATION ERROR
+========================= */
+
+function showLoadingError(error) {
+
+  const wrapper = document.createElement("div");
+
+  wrapper.style.maxWidth = "600px";
+  wrapper.style.margin = "80px auto";
+  wrapper.style.padding = "24px";
+  wrapper.style.fontFamily = "Arial, sans-serif";
+  wrapper.style.textAlign = "center";
+
+  const title = document.createElement("h2");
+  title.textContent = "JuhudManager Loading Error";
+
+  const message = document.createElement("p");
+  message.textContent =
+    "The application could not be loaded.";
+
+  const errorMessage = document.createElement("p");
+  errorMessage.style.color = "#b42318";
+  errorMessage.textContent =
+    error?.message || "An unexpected error occurred.";
+
+  const reloadButton = document.createElement("button");
+  reloadButton.textContent = "Reload Page";
+  reloadButton.addEventListener("click", () => {
+    location.reload();
+  });
+
+  wrapper.append(
+    title,
+    message,
+    errorMessage,
+    reloadButton
+  );
+
+  document.body.replaceChildren(wrapper);
+}
+
+
+/* =========================
    INITIALIZE APPLICATION
 ========================= */
 
@@ -76,14 +119,8 @@ async function initializeApplication() {
       "JuhudManager HTML partials loaded successfully."
     );
 
-   console.log(
-     "Login input check:",
-     document.getElementById("loginIdentifier"),
-     document.getElementById("password")
-   );
-   
-   await import("./app.js");
-     
+    await import("./app.js");
+
   } catch (error) {
 
     console.error(
@@ -91,29 +128,7 @@ async function initializeApplication() {
       error
     );
 
-    document.body.innerHTML = `
-      <div style="
-        max-width:600px;
-        margin:80px auto;
-        padding:24px;
-        font-family:Arial,sans-serif;
-        text-align:center;
-      ">
-        <h2>JuhudManager Loading Error</h2>
-
-        <p>
-          The application could not be loaded.
-        </p>
-
-        <p style="color:#b42318;">
-          ${error.message}
-        </p>
-
-        <button onclick="location.reload()">
-          Reload Page
-        </button>
-      </div>
-    `;
+    showLoadingError(error);
 
   }
 
@@ -125,4 +140,3 @@ async function initializeApplication() {
 ========================= */
 
 initializeApplication();
-
