@@ -1,8 +1,62 @@
 
 <section id="loginView" class="auth-layout">
 
-  <!--
-    PASTE ORIGINAL LOGIN SECTION HERE
-  -->
+  <div class="auth-hero">
+    <p class="eyebrow">JUHUDMANAGER</p>
+
+    <h1 data-i18n="welcome">
+      A clearer way to manage people and activities.
+    </h1>
+
+    <p data-i18n="intro">
+      One secure workspace for profiles, periodic updates and administrative review.
+    </p>
+  </div>
+
+  <div class="panel auth-panel">
+
+    <h2 data-i18n="login">Login</h2>
+
+    <p data-i18n="loginIntro">
+      Sign in to access your workspace.
+    </p>
+
+    <form id="loginForm">
+
+      <label for="loginIdentifier" data-i18n="email">
+        Email
+      </label>
+
+      <input
+        type="email"
+        id="loginIdentifier"
+        autocomplete="username"
+        required
+      >
+
+      <label for="password" data-i18n="password">
+        Password
+      </label>
+
+      <input
+        type="password"
+        id="password"
+        autocomplete="current-password"
+        required
+      >
+
+      <div id="loginMessage" class="message"></div>
+
+      <button
+        type="submit"
+        class="btn btn-primary"
+        data-i18n="login"
+      >
+        Login
+      </button>
+
+    </form>
+
+  </div>
 
 </section>
