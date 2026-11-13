@@ -9,10 +9,7 @@ import { api } from "./core/api.js";
 
 import {
   showMessage,
-  escapeHtml,
-  setActivityStartNow,
-  tag,
-  table
+  setActivityStartNow
 } from "./core/helpers.js";
 
 import {
@@ -50,175 +47,13 @@ import {
   loadReviews
 } from "./admin/review.js";
 
+import {
+  initTakazaManager,
+  loadTakazaManager
+} from "./takazas/takaza-manager.js";
+
+
 const $ = id => document.getElementById(id);
-
-
-/* =========================
-   TAKAZA CATEGORY FORM
-========================= */
-
-let editingTakazaCategoryId = null;
-
-
-// RESET CATEGORY FORM
-function resetTakazaCategoryForm() {
-  editingTakazaCategoryId = null;
-
-  $("takazaCategoryFormElement").reset();
-
-  $("takazaCategoryCode").disabled = false;
-  $("takazaCategoryStatus").disabled = false;
-
-  $("takazaCategoryFormTitle").textContent = "Add Takaza Category";
-
-  $("takazaCategoryForm").hidden = true;
-  $("takazaCategoryForm").classList.add("hidden");
-}
-
-
-// ADD CATEGORY
-$("addTakazaCategoryBtn").addEventListener("click", () => {
-  resetTakazaCategoryForm();
-
-  $("takazaCategoryForm").hidden = false;
-  $("takazaCategoryForm").classList.remove("hidden");
-
-  $("takazaCategoryCode").focus();
-});
-
-
-// CANCEL FORM
-$("cancelTakazaCategoryBtn").addEventListener("click", () => {
-  resetTakazaCategoryForm();
-});
-
-
-// SAVE CATEGORY
-$("takazaCategoryFormElement").addEventListener("submit", async e => {
-  e.preventDefault();
-
-  try {
-    const categoryData = {
-      categoryName: $("takazaCategoryName").value.trim(),
-      description: $("takazaCategoryDescription").value.trim()
-    };
-
-    if (editingTakazaCategoryId) {
-
-      // UPDATE EXISTING CATEGORY
-      await api(
-        `/api/admin/takaza-categories/${encodeURIComponent(editingTakazaCategoryId)}`,
-        {
-          method: "PUT",
-          body: JSON.stringify(categoryData)
-        }
-      );
-
-    } else {
-
-      // CREATE NEW CATEGORY
-      await api("/api/admin/takaza-categories", {
-        method: "POST",
-        body: JSON.stringify({
-          categoryCode: $("takazaCategoryCode").value.trim(),
-          ...categoryData,
-          status: $("takazaCategoryStatus").value
-        })
-      });
-    }
-
-    resetTakazaCategoryForm();
-
-    showMessage(
-      "takazaCategoryMessage",
-      "Takaza category saved successfully."
-    );
-
-    await loadTakazaCategories();
-
-  } catch (e) {
-    showMessage("takazaCategoryMessage", e.message, true);
-  }
-});
-
-
-// LOAD CATEGORY LIST
-async function loadTakazaCategories() {
-  try {
-    const data = await api("/api/admin/takaza-categories");
-
-    const categories = data.categories || [];
-
-    const rows = categories.map(category => `
-      <tr>
-        <td>${escapeHtml(category.category_code)}</td>
-        <td>${escapeHtml(category.category_name)}</td>
-        <td>${escapeHtml(category.description || "—")}</td>
-        <td>${tag(category.status.toLowerCase())}</td>
-        <td>
-          <button
-            type="button"
-            class="btn btn-outline"
-            data-edit-category="${escapeHtml(category.category_id)}"
-          >
-            Edit
-          </button>
-        </td>
-      </tr>
-    `);
-
-    $("takazaCategoriesTable").innerHTML = table(
-      ["Code", "Category Name", "Description", "Status", "Action"],
-      rows
-    );
-
-  } catch (e) {
-    showMessage("takazaCategoryMessage", e.message, true);
-  }
-}
-
-
-// EDIT CATEGORY
-$("takazaCategoriesTable").addEventListener("click", async e => {
-  const button = e.target.closest("[data-edit-category]");
-
-  if (!button) return;
-
-  try {
-    const categoryId = button.dataset.editCategory;
-
-    const data = await api("/api/admin/takaza-categories");
-
-    const category = (data.categories || []).find(
-      item => item.category_id === categoryId
-    );
-
-    if (!category) {
-      throw new Error("Category not found.");
-    }
-
-    editingTakazaCategoryId = categoryId;
-
-    $("takazaCategoryFormTitle").textContent = "Edit Takaza Category";
-
-    $("takazaCategoryCode").value = category.category_code;
-    $("takazaCategoryCode").disabled = true;
-
-    $("takazaCategoryName").value = category.category_name;
-    $("takazaCategoryDescription").value = category.description || "";
-
-    $("takazaCategoryStatus").value = category.status;
-    $("takazaCategoryStatus").disabled = true;
-
-    $("takazaCategoryForm").hidden = false;
-    $("takazaCategoryForm").classList.remove("hidden");
-
-    $("takazaCategoryName").focus();
-
-  } catch (e) {
-    showMessage("takazaCategoryMessage", e.message, true);
-  }
-});
 
 
 /* =========================
@@ -226,6 +61,7 @@ $("takazaCategoriesTable").addEventListener("click", async e => {
 ========================= */
 
 function switchView(name) {
+
   document.querySelectorAll(".view").forEach(v => {
     v.classList.add("hidden");
   });
@@ -236,23 +72,28 @@ function switchView(name) {
     b.classList.toggle("active", b.dataset.view === name);
   });
 
+
   if (name === "profile") {
     loadProfile().catch(e => {
       showMessage("profileMessage", e.message, true);
     });
   }
 
+
   if (name === "admin") {
     loadAdmin(loadActivities).catch(e => alert(e.message));
   }
+
 
   if (name === "activities") {
     loadActivities().catch(e => alert(e.message));
   }
 
+
   if (name === "takaza") {
-    loadTakazaCategories();
+    loadTakazaManager();
   }
+
 }
 
 
@@ -261,6 +102,7 @@ function switchView(name) {
 ========================= */
 
 async function loadMe() {
+
   const data = await api("/api/auth/me");
 
   const user = {
@@ -280,15 +122,19 @@ async function loadMe() {
 
   $("rolePill").textContent = user.roles.join(" · ");
 
+
   document.querySelectorAll(".admin-only").forEach(x => {
     x.classList.toggle("hidden", !isAdmin() && !canReview());
   });
 
+
   switchView("dashboard");
+
 
   loadActivities().catch(e => {
     console.error("Activities:", e);
   });
+
 }
 
 
@@ -297,15 +143,20 @@ async function loadMe() {
 ========================= */
 
 document.querySelectorAll(".tab").forEach(b => {
+
   b.addEventListener("click", () => {
     switchView(b.dataset.view);
   });
+
 });
 
+
 document.querySelectorAll("[data-go]").forEach(b => {
+
   b.addEventListener("click", () => {
     switchView(b.dataset.go);
   });
+
 });
 
 
@@ -314,6 +165,7 @@ document.querySelectorAll("[data-go]").forEach(b => {
 ========================= */
 
 $("profileForm").addEventListener("submit", async e => {
+
   e.preventDefault();
 
   const body = {
@@ -339,7 +191,9 @@ $("profileForm").addEventListener("submit", async e => {
     work_location: $("workLocation").value
   };
 
+
   try {
+
     await api("/api/profile", {
       method: "PUT",
       body: JSON.stringify(body)
@@ -351,8 +205,11 @@ $("profileForm").addEventListener("submit", async e => {
     );
 
   } catch (e) {
+
     showMessage("profileMessage", e.message, true);
+
   }
+
 });
 
 
@@ -372,11 +229,13 @@ $("activityType").addEventListener("change", () => {
 ========================= */
 
 $("activityHistory").addEventListener("click", e => {
+
   const button = e.target.closest("[data-activity-view]");
 
   if (!button) return;
 
   showActivityDetails(button.dataset.activityView);
+
 });
 
 
@@ -386,9 +245,11 @@ $("closeActivityDetails").addEventListener("click", () => {
 
 
 $("activityDetailsDialog").addEventListener("click", e => {
+
   if (e.target === $("activityDetailsDialog")) {
     $("activityDetailsDialog").close();
   }
+
 });
 
 
@@ -397,9 +258,11 @@ $("activityDetailsDialog").addEventListener("click", e => {
 ========================= */
 
 $("activityForm").addEventListener("submit", async e => {
+
   e.preventDefault();
 
   try {
+
     await api("/api/activities", {
       method: "POST",
       body: JSON.stringify({
@@ -413,9 +276,11 @@ $("activityForm").addEventListener("submit", async e => {
       })
     });
 
+
     $("activityDescription").value = "";
     $("endDate").value = "";
     $("endTime").value = "";
+
 
     showMessage(
       "activityMessage",
@@ -424,11 +289,15 @@ $("activityForm").addEventListener("submit", async e => {
         : "Activity submitted for review."
     );
 
+
     await loadActivities();
 
   } catch (e) {
+
     showMessage("activityMessage", e.message, true);
+
   }
+
 });
 
 
@@ -437,6 +306,13 @@ $("activityForm").addEventListener("submit", async e => {
 ========================= */
 
 initAdminUsers(loadAdmin, loadActivities);
+
+
+/* =========================
+   INITIALIZE TAKAZA MANAGER
+========================= */
+
+initTakazaManager();
 
 
 /* =========================
@@ -458,12 +334,19 @@ applyLanguage();
 ========================= */
 
 if (sessionStorage.getItem("juhud_token")) {
+
   loadMe().catch(err => {
+
     console.error("Session restoration failed:", err);
 
     sessionStorage.removeItem("juhud_token");
+
     showLogin();
+
   });
+
 } else {
+
   showLogin();
+
 }
