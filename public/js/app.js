@@ -69,14 +69,36 @@ $("cancelTakazaCategoryBtn").addEventListener("click", () => {
   $("takazaCategoryForm").classList.add("hidden");
 });
 
-$("takazaCategoryFormElement").addEventListener("submit", e => {
+$("takazaCategoryFormElement").addEventListener("submit", async e => {
   e.preventDefault();
 
-  showMessage(
-    "takazaCategoryMessage",
-    "Category saving will be enabled in the next step."
-  );
+  try {
+    await api("/api/admin/takaza-categories", {
+      method: "POST",
+      body: JSON.stringify({
+        categoryCode: $("takazaCategoryCode").value,
+        categoryName: $("takazaCategoryName").value,
+        description: $("takazaCategoryDescription").value,
+        status: $("takazaCategoryStatus").value
+      })
+    });
+
+    $("takazaCategoryFormElement").reset();
+    $("takazaCategoryForm").hidden = true;
+    $("takazaCategoryForm").classList.add("hidden");
+
+    showMessage(
+      "takazaCategoryMessage",
+      "Takaza category created successfully."
+    );
+
+    await loadTakazaCategories();
+
+  } catch (e) {
+    showMessage("takazaCategoryMessage", e.message, true);
+  }
 });
+
 
 async function loadTakazaCategories() {
   try {
