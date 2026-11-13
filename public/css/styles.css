@@ -322,3 +322,14 @@
   padding: 10px 12px;
 }
 
+
+/* TAKAZA TABLE ACTION ICONS */
+
+.btn-icon {
+  padding: 5px 8px;
+  min-width: 34px;
+  min-height: 32px;
+  font-size: 14px;
+  line-height: 1;
+  margin: 0 2px;
+}
