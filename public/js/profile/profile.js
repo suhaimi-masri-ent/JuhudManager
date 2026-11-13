@@ -107,14 +107,7 @@ function initAddressAutocomplete() {
       controller = new AbortController();
 
       try {
-        const url =
-          "https://photon.komoot.io/api/?" +
-          new URLSearchParams({
-            q: query,
-            limit: "5",
-            lang: "en"
-          });
-
+        const url = `${window.JUHUD_CONFIG.API_BASE_URL}/api/address-search?q=${encodeURIComponent(query)}`;
         const response = await fetch(url, {
           signal: controller.signal
         });
