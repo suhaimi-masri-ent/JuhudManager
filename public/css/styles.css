@@ -341,3 +341,80 @@
 }
 
 
+/* TAKAZA SEARCH & FILTER TOGGLE */
+
+.takaza-filter-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.takaza-filter-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.switch-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.switch-slider {
+  position: relative;
+  width: 42px;
+  height: 23px;
+  background: #b8c1cf;
+  border-radius: 20px;
+  transition: background .2s;
+}
+
+.switch-slider::before {
+  content: "";
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  left: 3px;
+  top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: transform .2s;
+}
+
+.switch-input:checked + .switch-slider {
+  background: var(--blue);
+}
+
+.switch-input:checked + .switch-slider::before {
+  transform: translateX(19px);
+}
+
+.switch-input:focus-visible + .switch-slider {
+  outline: 3px solid rgba(36,87,197,.25);
+}
+
+.takaza-filter-panel {
+  margin-top: 12px;
+  margin-bottom: 22px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.takaza-filter-panel[hidden] {
+  display: none !important;
+}
+
+:root[data-theme="dark"] .takaza-filter-panel {
+  background: #111b29;
+}
+
+
+
