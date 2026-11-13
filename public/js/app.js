@@ -78,6 +78,30 @@ $("takazaCategoryFormElement").addEventListener("submit", e => {
   );
 });
 
+async function loadTakazaCategories() {
+  try {
+    const data = await api("/api/admin/takaza-categories");
+
+    const categories = data.categories || [];
+
+    const rows = categories.map(category => `
+      <tr>
+        <td>${escapeHtml(category.category_code)}</td>
+        <td>${escapeHtml(category.category_name)}</td>
+        <td>${escapeHtml(category.description || "—")}</td>
+        <td>${tag(category.status.toLowerCase())}</td>
+      </tr>
+    `);
+
+    $("takazaCategoriesTable").innerHTML = table(
+      ["Code", "Category Name", "Description", "Status"],
+      rows
+    );
+
+  } catch (e) {
+    showMessage("takazaCategoryMessage", e.message, true);
+  }
+}
 
 /* =========================
    NAVIGATION
