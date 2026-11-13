@@ -186,3 +186,119 @@
   margin-top: 4px;
 }
 
+
+/* =========================
+   DARK MODE
+========================= */
+
+:root[data-theme="dark"] {
+  --ink: #e6edf7;
+  --muted: #9aa8bc;
+  --line: #2c3a4e;
+  --paper: #101722;
+  --blue: #7da6ff;
+  --blue2: #9ab9ff;
+  --green: #4bd39a;
+  --red: #ff8178;
+}
+
+:root[data-theme="dark"] body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .topbar,
+:root[data-theme="dark"] .panel,
+:root[data-theme="dark"] .stat-card,
+:root[data-theme="dark"] .details-dialog,
+:root[data-theme="dark"] #reviewEditDialog {
+  background: #172233;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background: #111b29;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] label,
+:root[data-theme="dark"] .login-panel label,
+:root[data-theme="dark"] .stack label,
+:root[data-theme="dark"] .form-grid label,
+:root[data-theme="dark"] #reviewEditDialog label {
+  color: #c4d0e0;
+}
+
+:root[data-theme="dark"] .feature-points,
+:root[data-theme="dark"] td {
+  color: #c4d0e0;
+}
+
+:root[data-theme="dark"] th {
+  background: #1d2a3d;
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .btn-outline {
+  background: #243249;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] .btn-light,
+:root[data-theme="dark"] .table-action {
+  background: #263b60;
+  color: #a9c5ff;
+}
+
+:root[data-theme="dark"] .pill {
+  background: #263b60;
+  color: #a9c5ff;
+}
+
+:root[data-theme="dark"] .tag {
+  background: #29374b;
+  color: #c4d0e0;
+}
+
+:root[data-theme="dark"] .tag.pending {
+  background: #493b20;
+  color: #ffd477;
+}
+
+:root[data-theme="dark"] .tag.approved {
+  background: #193e34;
+  color: #78e0b2;
+}
+
+:root[data-theme="dark"] .tag.rejected {
+  background: #492a2c;
+  color: #ff9c98;
+}
+
+:root[data-theme="dark"] .address-suggestions,
+:root[data-theme="dark"] .address-suggestions button {
+  background: #172233;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] .address-suggestions button:hover {
+  background: #263b60;
+}
+
+:root[data-theme="dark"] .address-suggestions small {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .stat-card strong {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] footer {
+  color: #78879c;
+}
