@@ -100,6 +100,7 @@ $("takazaCategoryFormElement").addEventListener("submit", async e => {
 });
 
 
+
 async function loadTakazaCategories() {
   try {
     const data = await api("/api/admin/takaza-categories");
@@ -112,11 +113,20 @@ async function loadTakazaCategories() {
         <td>${escapeHtml(category.category_name)}</td>
         <td>${escapeHtml(category.description || "—")}</td>
         <td>${tag(category.status.toLowerCase())}</td>
+        <td>
+          <button
+            type="button"
+            class="btn btn-outline"
+            data-edit-category="${escapeHtml(category.category_id)}"
+          >
+            Edit
+          </button>
+        </td>
       </tr>
     `);
 
     $("takazaCategoriesTable").innerHTML = table(
-      ["Code", "Category Name", "Description", "Status"],
+      ["Code", "Category Name", "Description", "Status", "Action"],
       rows
     );
 
