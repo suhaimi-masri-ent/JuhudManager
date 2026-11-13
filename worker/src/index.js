@@ -28,6 +28,11 @@ import {
   adminActivityTypesHandler
 } from "./handlers/activity-types.js";
 
+// TAKAZA CATEGORY HANDLER
+import {
+  adminTakazaCategoriesHandler
+} from "./handlers/takaza-categories.js";
+
 import {
   activitiesHandler
 } from "./handlers/activities.js";
