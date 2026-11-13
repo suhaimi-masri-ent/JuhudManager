@@ -205,6 +205,7 @@ export async function loadProfile() {
   const data = await api("/api/profile");
   const p = data.profile;
   initNationalityAutocomplete();
+  initAddressAutocomplete();
   
   $("dob").value = p.date_of_birth || "";
   $("gender").value = p.gender || "";
