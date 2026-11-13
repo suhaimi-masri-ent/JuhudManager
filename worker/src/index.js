@@ -34,6 +34,10 @@ import {
 } from "./handlers/takaza-categories.js";
 
 import {
+  adminTakazasHandler
+} from "./handlers/takazas.js";
+
+import {
   activitiesHandler
 } from "./handlers/activities.js";
 
@@ -250,7 +254,19 @@ export default {
         );
       }
 
-  
+      // =========================
+      // ADMIN TAKAZAS
+      // =========================
+      
+      else if (
+        path === "/api/admin/takazas" &&
+        ["GET", "POST"].includes(method)
+      ) {
+        response = await adminTakazasHandler(
+          request,
+          env
+        );
+      }  
 
       // =========================
       // ADMIN ASSIGNMENTS
