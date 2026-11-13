@@ -220,6 +220,37 @@ export default {
         );
       }
 
+        
+      // =========================
+      // ADMIN TAKAZA CATEGORIES
+      // =========================
+      
+      else if (
+        path === "/api/admin/takaza-categories" &&
+        ["GET", "POST"].includes(method)
+      ) {
+        response = await adminTakazaCategoriesHandler(
+          request,
+          env
+        );
+      }
+      
+      else if (
+        /^\/api\/admin\/takaza-categories\/[^/]+$/.test(path) &&
+        ["PUT", "PATCH"].includes(method)
+      ) {
+        const categoryId = decodeURIComponent(
+          path.split("/").pop()
+        );
+      
+        response = await adminTakazaCategoriesHandler(
+          request,
+          env,
+          categoryId
+        );
+      }
+
+  
 
       // =========================
       // ADMIN ASSIGNMENTS
