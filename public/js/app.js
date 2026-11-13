@@ -131,6 +131,11 @@ function switchView(name) {
   if (name === "activities") {
     loadActivities().catch(e => alert(e.message));
   }
+
+  if (name === "takaza") {
+    loadTakazaCategories();
+  }
+  
 }
 
 
