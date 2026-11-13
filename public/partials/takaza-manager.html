@@ -21,6 +21,71 @@
 
     <div id="takazaCategoryMessage" class="message"></div>
 
+    <div id="takazaCategoryForm" class="panel hidden" hidden>
+      <h3 id="takazaCategoryFormTitle">Add Takaza Category</h3>
+    
+      <form id="takazaCategoryFormElement">
+    
+        <div class="form-grid">
+    
+          <div>
+            <label for="takazaCategoryCode">Category Code</label>
+            <input
+              type="text"
+              id="takazaCategoryCode"
+              maxlength="20"
+              placeholder="e.g. BBNJ"
+              required
+            >
+          </div>
+    
+          <div>
+            <label for="takazaCategoryName">Category Name</label>
+            <input
+              type="text"
+              id="takazaCategoryName"
+              maxlength="100"
+              placeholder="e.g. Building & Infrastructure"
+              required
+            >
+          </div>
+    
+          <div>
+            <label for="takazaCategoryStatus">Status</label>
+            <select id="takazaCategoryStatus">
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+    
+          <div>
+            <label for="takazaCategoryDescription">Description</label>
+            <textarea
+              id="takazaCategoryDescription"
+              rows="3"
+              placeholder="Describe this category"
+            ></textarea>
+          </div>
+    
+        </div>
+    
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            Save Category
+          </button>
+    
+          <button
+            type="button"
+            class="btn btn-outline"
+            id="cancelTakazaCategoryBtn"
+          >
+            Cancel
+          </button>
+        </div>
+    
+      </form>
+    </div>    
+
     <div class="table-wrap">
       <div id="takazaCategoriesTable"></div>
     </div>
