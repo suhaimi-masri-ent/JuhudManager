@@ -69,27 +69,51 @@ $("cancelTakazaCategoryBtn").addEventListener("click", () => {
   $("takazaCategoryForm").classList.add("hidden");
 });
 
+
 $("takazaCategoryFormElement").addEventListener("submit", async e => {
   e.preventDefault();
 
   try {
-    await api("/api/admin/takaza-categories", {
-      method: "POST",
-      body: JSON.stringify({
-        categoryCode: $("takazaCategoryCode").value,
-        categoryName: $("takazaCategoryName").value,
-        description: $("takazaCategoryDescription").value,
-        status: $("takazaCategoryStatus").value
-      })
-    });
+    const categoryData = {
+      categoryName: $("takazaCategoryName").value.trim(),
+      description: $("takazaCategoryDescription").value.trim()
+    };
+
+    if (editingTakazaCategoryId) {
+      // UPDATE EXISTING CATEGORY
+      await api(
+        `/api/admin/takaza-categories/${encodeURIComponent(editingTakazaCategoryId)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(categoryData)
+        }
+      );
+
+    } else {
+      // CREATE NEW CATEGORY
+      await api("/api/admin/takaza-categories", {
+        method: "POST",
+        body: JSON.stringify({
+          categoryCode: $("takazaCategoryCode").value.trim(),
+          ...categoryData,
+          status: $("takazaCategoryStatus").value
+        })
+      });
+    }
+
+    editingTakazaCategoryId = null;
 
     $("takazaCategoryFormElement").reset();
+    $("takazaCategoryCode").disabled = false;
+
+    $("takazaCategoryFormTitle").textContent = "Add Takaza Category";
+
     $("takazaCategoryForm").hidden = true;
     $("takazaCategoryForm").classList.add("hidden");
 
     showMessage(
       "takazaCategoryMessage",
-      "Takaza category created successfully."
+      "Takaza category saved successfully."
     );
 
     await loadTakazaCategories();
@@ -98,7 +122,6 @@ $("takazaCategoryFormElement").addEventListener("submit", async e => {
     showMessage("takazaCategoryMessage", e.message, true);
   }
 });
-
 
 
 async function loadTakazaCategories() {
