@@ -216,6 +216,15 @@ export function initTakazaRegistration() {
 
   initialized = true;
 
+    // SEARCH & FILTER TOGGLE
+
+  $("takazaFilterToggle").addEventListener("change", () => {
+
+    $("takazaFilterPanel").hidden =
+      !$("takazaFilterToggle").checked;
+
+  });
+
   $("addTakazaBtn").addEventListener("click", async () => {
 
     try {
