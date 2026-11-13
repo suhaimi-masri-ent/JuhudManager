@@ -57,19 +57,43 @@ const $ = id => document.getElementById(id);
    TAKAZA CATEGORY FORM
 ========================= */
 
+let editingTakazaCategoryId = null;
+
+
+// RESET CATEGORY FORM
+function resetTakazaCategoryForm() {
+  editingTakazaCategoryId = null;
+
+  $("takazaCategoryFormElement").reset();
+
+  $("takazaCategoryCode").disabled = false;
+  $("takazaCategoryStatus").disabled = false;
+
+  $("takazaCategoryFormTitle").textContent = "Add Takaza Category";
+
+  $("takazaCategoryForm").hidden = true;
+  $("takazaCategoryForm").classList.add("hidden");
+}
+
+
+// ADD CATEGORY
 $("addTakazaCategoryBtn").addEventListener("click", () => {
+  resetTakazaCategoryForm();
+
   $("takazaCategoryForm").hidden = false;
   $("takazaCategoryForm").classList.remove("hidden");
 
   $("takazaCategoryCode").focus();
 });
 
+
+// CANCEL FORM
 $("cancelTakazaCategoryBtn").addEventListener("click", () => {
-  $("takazaCategoryForm").hidden = true;
-  $("takazaCategoryForm").classList.add("hidden");
+  resetTakazaCategoryForm();
 });
 
 
+// SAVE CATEGORY
 $("takazaCategoryFormElement").addEventListener("submit", async e => {
   e.preventDefault();
 
@@ -80,6 +104,7 @@ $("takazaCategoryFormElement").addEventListener("submit", async e => {
     };
 
     if (editingTakazaCategoryId) {
+
       // UPDATE EXISTING CATEGORY
       await api(
         `/api/admin/takaza-categories/${encodeURIComponent(editingTakazaCategoryId)}`,
@@ -90,6 +115,7 @@ $("takazaCategoryFormElement").addEventListener("submit", async e => {
       );
 
     } else {
+
       // CREATE NEW CATEGORY
       await api("/api/admin/takaza-categories", {
         method: "POST",
@@ -101,15 +127,7 @@ $("takazaCategoryFormElement").addEventListener("submit", async e => {
       });
     }
 
-    editingTakazaCategoryId = null;
-
-    $("takazaCategoryFormElement").reset();
-    $("takazaCategoryCode").disabled = false;
-
-    $("takazaCategoryFormTitle").textContent = "Add Takaza Category";
-
-    $("takazaCategoryForm").hidden = true;
-    $("takazaCategoryForm").classList.add("hidden");
+    resetTakazaCategoryForm();
 
     showMessage(
       "takazaCategoryMessage",
@@ -124,6 +142,7 @@ $("takazaCategoryFormElement").addEventListener("submit", async e => {
 });
 
 
+// LOAD CATEGORY LIST
 async function loadTakazaCategories() {
   try {
     const data = await api("/api/admin/takaza-categories");
@@ -159,29 +178,26 @@ async function loadTakazaCategories() {
 }
 
 
-/* =========================
-   EDIT TAKAZA CATEGORY
-========================= */
-
-let editingTakazaCategoryId = null;
-
+// EDIT CATEGORY
 $("takazaCategoriesTable").addEventListener("click", async e => {
   const button = e.target.closest("[data-edit-category]");
 
   if (!button) return;
 
-  editingTakazaCategoryId = button.dataset.editCategory;
-
   try {
+    const categoryId = button.dataset.editCategory;
+
     const data = await api("/api/admin/takaza-categories");
 
     const category = (data.categories || []).find(
-      item => item.category_id === editingTakazaCategoryId
+      item => item.category_id === categoryId
     );
 
     if (!category) {
       throw new Error("Category not found.");
     }
+
+    editingTakazaCategoryId = categoryId;
 
     $("takazaCategoryFormTitle").textContent = "Edit Takaza Category";
 
@@ -190,7 +206,9 @@ $("takazaCategoriesTable").addEventListener("click", async e => {
 
     $("takazaCategoryName").value = category.category_name;
     $("takazaCategoryDescription").value = category.description || "";
+
     $("takazaCategoryStatus").value = category.status;
+    $("takazaCategoryStatus").disabled = true;
 
     $("takazaCategoryForm").hidden = false;
     $("takazaCategoryForm").classList.remove("hidden");
@@ -201,7 +219,6 @@ $("takazaCategoriesTable").addEventListener("click", async e => {
     showMessage("takazaCategoryMessage", e.message, true);
   }
 });
-
 
 
 /* =========================
@@ -236,9 +253,7 @@ function switchView(name) {
   if (name === "takaza") {
     loadTakazaCategories();
   }
-  
 }
-
 
 
 /* =========================
