@@ -58,7 +58,7 @@ async function loadTakazaOptions() {
       `).join("")}
   `;
 
-    $("takazaFilterCategory").innerHTML = `
+  $("takazaFilterCategory").innerHTML = `
     <option value="">All Categories</option>
     ${categories.map(item => `
       <option value="${escapeHtml(item.category_id)}">
@@ -82,7 +82,6 @@ async function loadTakazaOptions() {
    LOAD TAKAZA LIST
 ========================= */
 
-
 export async function loadTakazas() {
 
   try {
@@ -98,10 +97,13 @@ export async function loadTakazas() {
 
     const filtered = takazas.filter(item => {
 
+      const code = (item.takaza_code || "").toLowerCase();
+      const name = (item.takaza_name || "").toLowerCase();
+
       const matchesSearch =
         !search ||
-        item.takaza_code.toLowerCase().includes(search) ||
-        item.takaza_name.toLowerCase().includes(search);
+        code.includes(search) ||
+        name.includes(search);
 
       const matchesCategory =
         !category || item.category_id === category;
@@ -135,7 +137,7 @@ export async function loadTakazas() {
         <td>${escapeHtml(item.parent_takaza_code || "—")}</td>
         <td>${escapeHtml(item.start_date || "—")}</td>
         <td>${escapeHtml(item.end_date || "—")}</td>
-        <td>${tag(item.status.toLowerCase())}</td>
+        <td>${tag((item.status || "").toLowerCase())}</td>
       </tr>
     `);
 
@@ -192,8 +194,8 @@ async function saveTakaza(event) {
       `Takaza created successfully: ${result.takaza.takaza_code}`
     );
 
-    await loadTakazas();
     await loadTakazaOptions();
+    await loadTakazas();
 
   } catch (error) {
 
@@ -240,8 +242,41 @@ export function initTakazaRegistration() {
     saveTakaza
   );
 
+
+  // SEARCH
+  $("takazaSearch").addEventListener("input", loadTakazas);
+
+
+  // FILTERS
+  [
+    "takazaFilterCategory",
+    "takazaFilterStatus",
+    "takazaFilterStartFrom",
+    "takazaFilterStartTo"
+  ].forEach(id => {
+    $(id).addEventListener("change", loadTakazas);
+  });
+
+
+  // RESET FILTERS
+  $("resetTakazaFiltersBtn").addEventListener("click", () => {
+
+    $("takazaSearch").value = "";
+    $("takazaFilterCategory").value = "";
+    $("takazaFilterStatus").value = "";
+    $("takazaFilterStartFrom").value = "";
+    $("takazaFilterStartTo").value = "";
+
+    loadTakazas();
+
+  });
+
 }
 
+
+/* =========================
+   LOAD TAKAZA REGISTRATION
+========================= */
 
 export async function loadTakazaRegistration() {
 
