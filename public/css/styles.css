@@ -322,10 +322,6 @@
   padding: 10px 12px;
 }
 
-
-/* TAKAZA TABLE ACTION ICONS */
-
-
 /* TAKAZA TABLE ACTION ICONS */
 
 .btn-icon {
@@ -337,3 +333,11 @@
   border-radius: 5px;
   margin: 0 1px;
 }
+
+/* TAKAZA PANEL SPACING */
+
+#takazaPanel > .panel + .panel {
+  margin-top: 18px;
+}
+
+
