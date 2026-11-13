@@ -139,3 +139,7 @@
   overflow-wrap: anywhere;
 }
 
+/* ENSURE HIDDEN ELEMENTS STAY HIDDEN */
+[hidden] {
+  display: none !important;
+}
