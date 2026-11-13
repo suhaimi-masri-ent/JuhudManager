@@ -55,44 +55,49 @@ export async function loadTakazaCategories() {
 
     const categories = data.categories || [];
 
-    const rows = categories.map(category => {
-      const nextStatus =
-        category.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
 
-      const statusAction =
-        category.status === "ACTIVE" ? "Deactivate" : "Activate";
+      const rows = categories.map(category => {
+        const nextStatus =
+          category.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
 
-      return `
-        <tr>
-          <td>${escapeHtml(category.category_code)}</td>
+        const statusAction =
+          category.status === "ACTIVE" ? "Deactivate" : "Activate";
 
-          <td>${escapeHtml(category.category_name)}</td>
+        const statusIcon =
+          category.status === "ACTIVE" ? "⏸️" : "▶️";
 
-          <td>${escapeHtml(category.description || "—")}</td>
+        return `
+          <tr>
+            <td>${escapeHtml(category.category_code)}</td>
+            <td>${escapeHtml(category.category_name)}</td>
+            <td>${escapeHtml(category.description || "—")}</td>
+            <td>${tag(category.status.toLowerCase())}</td>
 
-          <td>${tag(category.status.toLowerCase())}</td>
+            <td>
+              <button
+                type="button"
+                class="btn btn-outline btn-icon"
+                data-edit-category="${escapeHtml(category.category_id)}"
+                title="Edit Category"
+                aria-label="Edit Category"
+              >
+                ✏️
+              </button>
 
-          <td>
-            <button
-              type="button"
-              class="btn btn-outline"
-              data-edit-category="${escapeHtml(category.category_id)}"
-            >
-              Edit
-            </button>
-
-            <button
-              type="button"
-              class="btn btn-outline"
-              data-category-status="${escapeHtml(category.category_id)}"
-              data-next-status="${nextStatus}"
-            >
-              ${statusAction}
-            </button>
-          </td>
-        </tr>
-      `;
-    });
+              <button
+                type="button"
+                class="btn btn-outline btn-icon"
+                data-category-status="${escapeHtml(category.category_id)}"
+                data-next-status="${nextStatus}"
+                title="${statusAction} Category"
+                aria-label="${statusAction} Category"
+              >
+                ${statusIcon}
+              </button>
+            </td>
+          </tr>
+        `;
+      });
 
     $("takazaCategoriesTable").innerHTML = table(
       ["Code", "Category Name", "Description", "Status", "Action"],
