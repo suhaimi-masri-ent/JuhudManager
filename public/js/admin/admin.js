@@ -220,7 +220,7 @@ function renderAuditTrail() {
   const country = $("auditCountryFilter").value;
   const dateFrom = $("auditDateFrom").value;
   const dateTo = $("auditDateTo").value;
-  const pageSize = Number($("auditPageSize").value) || 25;
+  const pageSize = Number($("auditPageSize").value) || 10;
 
   const filtered = auditLogsCache.filter(log => {
     let details = {};
@@ -349,6 +349,24 @@ function initAuditTrail(data) {
   auditLogsCache = data.audit_logs || [];
   initAuditDetailViewer();
 
+  const toggleButton = $("auditToggleFilters");
+  const filterPanel = $("auditFilterPanel");
+  
+  if (toggleButton.dataset.initialized !== "true") {
+    toggleButton.dataset.initialized = "true";
+  
+    toggleButton.addEventListener("click", () => {
+      const isHidden = filterPanel.hidden;
+  
+      filterPanel.hidden = !isHidden;
+      toggleButton.textContent = isHidden
+        ? "Hide Search & Filters"
+        : "Show Search & Filters";
+  
+      toggleButton.setAttribute("aria-expanded", String(isHidden));
+    });
+  }
+
   const actions = [...new Set(
     auditLogsCache.map(log => log.action).filter(Boolean)
   )].sort();
@@ -409,7 +427,7 @@ function initAuditTrail(data) {
       $("auditCountryFilter").value = "";
       $("auditDateFrom").value = "";
       $("auditDateTo").value = "";
-      $("auditPageSize").value = "25";
+      $("auditPageSize").value = "10";
 
       auditCurrentPage = 1;
       renderAuditTrail();
