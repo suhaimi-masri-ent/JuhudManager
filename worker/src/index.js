@@ -128,6 +128,43 @@ export default {
       }
 
       // =========================
+      // ADDRESS SEARCH (PHOTON)
+      // =========================
+
+      else if (
+        path === "/api/address-search" &&
+        method === "GET"
+      ) {
+        const query = url.searchParams.get("q")?.trim();
+
+        if (!query || query.length < 3) {
+          response = jsonResponse({
+            features: []
+          });
+        } else {
+          const photonUrl = new URL(
+            "https://photon.komoot.io/api/"
+          );
+
+          photonUrl.searchParams.set("q", query);
+          photonUrl.searchParams.set("limit", "5");
+          photonUrl.searchParams.set("lang", "en");
+
+          const photonResponse = await fetch(photonUrl);
+
+          if (!photonResponse.ok) {
+            throw new Error(
+              `Photon API error: ${photonResponse.status}`
+            );
+          }
+
+          const data = await photonResponse.json();
+
+          response = jsonResponse(data);
+        }
+      }
+        
+      // =========================
       // ADMIN USER PROFILE
       // =========================
 
