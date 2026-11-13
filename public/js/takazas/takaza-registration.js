@@ -58,6 +58,15 @@ async function loadTakazaOptions() {
       `).join("")}
   `;
 
+    $("takazaFilterCategory").innerHTML = `
+    <option value="">All Categories</option>
+    ${categories.map(item => `
+      <option value="${escapeHtml(item.category_id)}">
+        ${escapeHtml(item.category_code)} - ${escapeHtml(item.category_name)}
+      </option>
+    `).join("")}
+  `;
+
   $("takazaParentId").innerHTML = `
     <option value="">No Parent Takaza</option>
     ${takazas.map(item => `
@@ -73,15 +82,52 @@ async function loadTakazaOptions() {
    LOAD TAKAZA LIST
 ========================= */
 
+
 export async function loadTakazas() {
 
   try {
 
     const data = await api("/api/admin/takazas");
-
     const takazas = data.takazas || [];
 
-    const rows = takazas.map(item => `
+    const search = $("takazaSearch").value.trim().toLowerCase();
+    const category = $("takazaFilterCategory").value;
+    const status = $("takazaFilterStatus").value;
+    const dateFrom = $("takazaFilterStartFrom").value;
+    const dateTo = $("takazaFilterStartTo").value;
+
+    const filtered = takazas.filter(item => {
+
+      const matchesSearch =
+        !search ||
+        item.takaza_code.toLowerCase().includes(search) ||
+        item.takaza_name.toLowerCase().includes(search);
+
+      const matchesCategory =
+        !category || item.category_id === category;
+
+      const matchesStatus =
+        !status || item.status === status;
+
+      const matchesDateFrom =
+        !dateFrom ||
+        (item.start_date && item.start_date >= dateFrom);
+
+      const matchesDateTo =
+        !dateTo ||
+        (item.start_date && item.start_date <= dateTo);
+
+      return (
+        matchesSearch &&
+        matchesCategory &&
+        matchesStatus &&
+        matchesDateFrom &&
+        matchesDateTo
+      );
+
+    });
+
+    const rows = filtered.map(item => `
       <tr>
         <td>${escapeHtml(item.takaza_code)}</td>
         <td>${escapeHtml(item.takaza_name)}</td>
