@@ -1,6 +1,102 @@
 
 <section id="takazaPanel" class="view hidden">
 
+  <!-- TAKAZA REGISTRATION -->
+  <div class="panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Takaza Management</h2>
+        <p class="muted">
+          Register and manage Takaza.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        id="addTakazaBtn"
+      >
+        + Register Takaza
+      </button>
+    </div>
+
+    <div id="takazaMessage" class="message"></div>
+
+    <div id="takazaForm" class="panel hidden" hidden>
+      <h3>Register New Takaza</h3>
+
+      <form id="takazaFormElement">
+        <div class="form-grid">
+
+          <div>
+            <label for="takazaCategoryId">Category</label>
+            <select id="takazaCategoryId" required>
+              <option value="">Select Category</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="takazaName">Takaza Name</label>
+            <input
+              type="text"
+              id="takazaName"
+              maxlength="200"
+              required
+              placeholder="Enter Takaza name"
+            >
+          </div>
+
+          <div>
+            <label for="takazaParentId">Parent Takaza (Optional)</label>
+            <select id="takazaParentId">
+              <option value="">No Parent Takaza</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="takazaStartDate">Start Date</label>
+            <input type="date" id="takazaStartDate">
+          </div>
+
+          <div>
+            <label for="takazaEndDate">End Date</label>
+            <input type="date" id="takazaEndDate">
+          </div>
+
+          <div>
+            <label for="takazaDescription">Description</label>
+            <textarea
+              id="takazaDescription"
+              rows="3"
+              maxlength="5000"
+              placeholder="Describe this Takaza"
+            ></textarea>
+          </div>
+
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            Save Takaza
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline"
+            id="cancelTakazaBtn"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="table-wrap">
+      <div id="takazasTable"></div>
+    </div>
+  </div>
+
+  <!-- TAKAZA CATEGORIES -->
   <div class="panel">
     <div class="panel-heading">
       <div>
@@ -23,11 +119,10 @@
 
     <div id="takazaCategoryForm" class="panel hidden" hidden>
       <h3 id="takazaCategoryFormTitle">Add Takaza Category</h3>
-    
+
       <form id="takazaCategoryFormElement">
-    
         <div class="form-grid">
-    
+
           <div>
             <label for="takazaCategoryCode">Category Code</label>
             <input
@@ -38,7 +133,7 @@
               required
             >
           </div>
-    
+
           <div>
             <label for="takazaCategoryName">Category Name</label>
             <input
@@ -49,7 +144,7 @@
               required
             >
           </div>
-    
+
           <div>
             <label for="takazaCategoryStatus">Status</label>
             <select id="takazaCategoryStatus">
@@ -57,7 +152,7 @@
               <option value="INACTIVE">Inactive</option>
             </select>
           </div>
-    
+
           <div>
             <label for="takazaCategoryDescription">Description</label>
             <textarea
@@ -66,14 +161,14 @@
               placeholder="Describe this category"
             ></textarea>
           </div>
-    
+
         </div>
-    
+
         <div class="form-actions">
           <button type="submit" class="btn btn-primary">
             Save Category
           </button>
-    
+
           <button
             type="button"
             class="btn btn-outline"
@@ -82,9 +177,8 @@
             Cancel
           </button>
         </div>
-    
       </form>
-    </div>    
+    </div>
 
     <div class="table-wrap">
       <div id="takazaCategoriesTable"></div>
@@ -92,4 +186,3 @@
   </div>
 
 </section>
-
