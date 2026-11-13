@@ -4,6 +4,11 @@ import {
   loadTakazaCategories
 } from "./takaza-categories.js";
 
+import {
+  initTakazaRegistration,
+  loadTakazaRegistration
+} from "./takaza-registration.js";
+
 
 let initialized = false;
 
@@ -18,8 +23,8 @@ export function initTakazaManager() {
 
   initialized = true;
 
-  // Initialize Takaza Categories module
   initTakazaCategories();
+  initTakazaRegistration();
 
   console.log("Takaza Manager initialized.");
 }
@@ -31,7 +36,9 @@ export function initTakazaManager() {
 
 export async function loadTakazaManager() {
 
-  await loadTakazaCategories();
+  await Promise.all([
+    loadTakazaCategories(),
+    loadTakazaRegistration()
+  ]);
 
 }
-
