@@ -91,6 +91,61 @@
       </form>
     </div>
 
+
+    <!-- TAKAZA SEARCH & FILTER -->
+    <div class="form-grid takaza-filters">
+
+      <div>
+        <label for="takazaSearch">Search Takaza</label>
+        <input
+          type="search"
+          id="takazaSearch"
+          placeholder="Search code or name..."
+        >
+      </div>
+
+      <div>
+        <label for="takazaFilterCategory">Category</label>
+        <select id="takazaFilterCategory">
+          <option value="">All Categories</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="takazaFilterStatus">Status</label>
+        <select id="takazaFilterStatus">
+          <option value="">All Statuses</option>
+          <option value="DRAFT">Draft</option>
+          <option value="PENDING_ENDORSEMENT">Pending Endorsement</option>
+          <option value="ACTIVE">Active</option>
+          <option value="ON_HOLD">On Hold</option>
+          <option value="COMPLETED">Completed</option>
+          <option value="CANCELLED">Cancelled</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="takazaFilterStartFrom">Start Date From</label>
+        <input type="date" id="takazaFilterStartFrom">
+      </div>
+
+      <div>
+        <label for="takazaFilterStartTo">Start Date To</label>
+        <input type="date" id="takazaFilterStartTo">
+      </div>
+
+      <div class="form-actions">
+        <button
+          type="button"
+          class="btn btn-outline"
+          id="resetTakazaFiltersBtn"
+        >
+          Reset Filters
+        </button>
+      </div>
+
+    </div>
+
     <div class="table-wrap">
       <div id="takazasTable"></div>
     </div>
