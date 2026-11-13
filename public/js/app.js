@@ -54,6 +54,32 @@ const $ = id => document.getElementById(id);
 
 
 /* =========================
+   TAKAZA CATEGORY FORM
+========================= */
+
+$("addTakazaCategoryBtn").addEventListener("click", () => {
+  $("takazaCategoryForm").hidden = false;
+  $("takazaCategoryForm").classList.remove("hidden");
+
+  $("takazaCategoryCode").focus();
+});
+
+$("cancelTakazaCategoryBtn").addEventListener("click", () => {
+  $("takazaCategoryForm").hidden = true;
+  $("takazaCategoryForm").classList.add("hidden");
+});
+
+$("takazaCategoryFormElement").addEventListener("submit", e => {
+  e.preventDefault();
+
+  showMessage(
+    "takazaCategoryMessage",
+    "Category saving will be enabled in the next step."
+  );
+});
+
+
+/* =========================
    NAVIGATION
 ========================= */
 
