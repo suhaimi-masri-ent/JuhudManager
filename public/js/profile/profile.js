@@ -56,6 +56,150 @@ function initNationalityAutocomplete() {
   datalist.dataset.initialized = "true";
 }
 
+function initAddressAutocomplete() {
+  const input = $("street");
+  const suggestions = $("streetSuggestions");
+
+  if (
+    !input ||
+    !suggestions ||
+    input.dataset.initialized === "true"
+  ) return;
+
+  input.dataset.initialized = "true";
+
+  let debounceTimer;
+  let controller;
+  let results = [];
+
+  function clearSuggestions() {
+    suggestions.innerHTML = "";
+    suggestions.hidden = true;
+    results = [];
+  }
+
+  function showMessage(message) {
+    suggestions.innerHTML = "";
+
+    const item = document.createElement("div");
+    item.textContent = message;
+    item.style.padding = "12px";
+    item.style.fontSize = "12px";
+    item.style.color = "var(--muted)";
+
+    suggestions.appendChild(item);
+    suggestions.hidden = false;
+  }
+
+  input.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+
+    if (controller) controller.abort();
+
+    const query = input.value.trim();
+
+    if (query.length < 3) {
+      clearSuggestions();
+      return;
+    }
+
+    debounceTimer = setTimeout(async () => {
+      controller = new AbortController();
+
+      try {
+        const url =
+          "https://photon.komoot.io/api/?" +
+          new URLSearchParams({
+            q: query,
+            limit: "5",
+            lang: "en"
+          });
+
+        const response = await fetch(url, {
+          signal: controller.signal
+        });
+
+        if (!response.ok) {
+          throw new Error("Address search failed");
+        }
+
+        const data = await response.json();
+        results = data.features || [];
+
+        if (!results.length) {
+          showMessage("No address found.");
+          return;
+        }
+
+        suggestions.innerHTML = "";
+
+        results.forEach((feature, index) => {
+          const p = feature.properties || {};
+
+          const address = [
+            p.housenumber,
+            p.street || p.name,
+            p.postcode,
+            p.city || p.town || p.village || p.district,
+            p.state,
+            p.country
+          ].filter(Boolean).join(", ");
+
+          const button = document.createElement("button");
+          button.type = "button";
+          button.textContent = address || "Unnamed location";
+
+          button.addEventListener("click", () => {
+            selectAddress(index);
+          });
+
+          suggestions.appendChild(button);
+        });
+
+        suggestions.hidden = false;
+
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          console.error("Address autocomplete:", error);
+          showMessage("Unable to search addresses.");
+        }
+      }
+    }, 700);
+  });
+
+  function selectAddress(index) {
+    const feature = results[index];
+    if (!feature) return;
+
+    const p = feature.properties || {};
+
+    $("country").value = p.country || "";
+    $("state").value = p.state || "";
+
+    $("city").value =
+      p.city ||
+      p.town ||
+      p.village ||
+      p.municipality ||
+      p.district ||
+      "";
+
+    $("postcode").value = p.postcode || "";
+
+    input.value = p.street || p.name || "";
+
+    clearSuggestions();
+  }
+
+  document.addEventListener("click", event => {
+    if (
+      !input.contains(event.target) &&
+      !suggestions.contains(event.target)
+    ) {
+      clearSuggestions();
+    }
+  });
+}
 
 export async function loadProfile() {
   const data = await api("/api/profile");
