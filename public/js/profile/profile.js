@@ -120,9 +120,9 @@ function initAddressAutocomplete() {
         });
 
         if (!response.ok) {
-          throw new Error("Address search failed");
+          throw new Error(`Address search failed: HTTP ${response.status}`);
         }
-
+        
         const data = await response.json();
         results = data.features || [];
 
@@ -161,7 +161,7 @@ function initAddressAutocomplete() {
       } catch (error) {
         if (error.name !== "AbortError") {
           console.error("Address autocomplete:", error);
-          showMessage("Unable to search addresses.");
+          showMessage(`Unable to search: ${error.message}`);
         }
       }
     }, 700);
