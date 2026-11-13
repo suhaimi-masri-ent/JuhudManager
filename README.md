@@ -1,12 +1,3 @@
-# JuhudManager
-
-Worked for 46s
-
-Boleh. Saya dah semak `README.md` dalam repository `suhaimi-masri-ent/JuhudManager`, branch `develop`. Buat masa ini kandungannya masih ringkas.
-
-Saya akan susun semua perbincangan kita menjadi dokumentasi JuhudManager – Project, Task, Activity & Participant Management Workflow (Draft v1).
-
-Saya kekalkan dokumentasi dalam Bahasa Inggeris supaya konsisten dengan dokumentasi teknikal repository, dan bezakan polisi yang telah dipersetujui daripada perkara yang masih perlu diperhalusi.
 
 # JuhudManager
 ## Project, Task, Activity & Participant Management Workflow
