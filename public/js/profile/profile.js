@@ -157,7 +157,7 @@ function initAddressAutocomplete() {
           showMessage(`Unable to search: ${error.message}`);
         }
       }
-    }, 700);
+    }, 400);
   });
 
   function selectAddress(index) {
