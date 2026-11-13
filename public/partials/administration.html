@@ -302,10 +302,21 @@
     </p>
 
     <div id="auditTrailMessage" class="message"></div>
-
-    <!-- SEARCH -->
-    <div class="stack">
-
+    
+    <div class="row" style="margin-top:12px">
+      <button
+        type="button"
+        class="btn"
+        id="auditToggleFilters"
+        aria-expanded="false"
+        aria-controls="auditFilterPanel"
+      >
+        Show Search &amp; Filters
+      </button>
+    </div>
+    
+    <!-- SEARCH & FILTERS -->
+    <div class="stack" id="auditFilterPanel" hidden>
       <label>
         Search
         <input
