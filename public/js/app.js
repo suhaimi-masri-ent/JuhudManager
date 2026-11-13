@@ -135,6 +135,52 @@ async function loadTakazaCategories() {
   }
 }
 
+
+/* =========================
+   EDIT TAKAZA CATEGORY
+========================= */
+
+let editingTakazaCategoryId = null;
+
+$("takazaCategoriesTable").addEventListener("click", async e => {
+  const button = e.target.closest("[data-edit-category]");
+
+  if (!button) return;
+
+  editingTakazaCategoryId = button.dataset.editCategory;
+
+  try {
+    const data = await api("/api/admin/takaza-categories");
+
+    const category = (data.categories || []).find(
+      item => item.category_id === editingTakazaCategoryId
+    );
+
+    if (!category) {
+      throw new Error("Category not found.");
+    }
+
+    $("takazaCategoryFormTitle").textContent = "Edit Takaza Category";
+
+    $("takazaCategoryCode").value = category.category_code;
+    $("takazaCategoryCode").disabled = true;
+
+    $("takazaCategoryName").value = category.category_name;
+    $("takazaCategoryDescription").value = category.description || "";
+    $("takazaCategoryStatus").value = category.status;
+
+    $("takazaCategoryForm").hidden = false;
+    $("takazaCategoryForm").classList.remove("hidden");
+
+    $("takazaCategoryName").focus();
+
+  } catch (e) {
+    showMessage("takazaCategoryMessage", e.message, true);
+  }
+});
+
+
+
 /* =========================
    NAVIGATION
 ========================= */
