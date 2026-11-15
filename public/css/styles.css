@@ -450,36 +450,57 @@
   cursor: not-allowed;
 }
 
-/* TAKAZA CODE INFORMATION ICON */
+/* TAKAZA CODE INFORMATION ICON & TOOLTIP */
+
+.takaza-info-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+}
 
 .takaza-info-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 15px;
-  height: 15px;
-  margin-left: 5px;
+  width: 16px;
+  height: 16px;
   border: 1px solid var(--blue);
   border-radius: 50%;
   color: var(--blue);
   font-size: 10px;
   font-weight: 800;
+  line-height: 1;
   cursor: help;
   vertical-align: middle;
 }
 
-@media(max-width:520px) {
-  .takaza-pagination {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-
-  .takaza-pagination-controls {
-    width: 100%;
-    justify-content: space-between;
-  }
+.takaza-tooltip {
+  position: absolute;
+  z-index: 1000;
+  bottom: calc(100% + 8px);
+  left: 0;
+  width: 250px;
+  max-width: 80vw;
+  padding: 9px 11px;
+  border-radius: 7px;
+  background: #17243a;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity .15s ease;
 }
 
+.takaza-info-wrap:hover .takaza-tooltip,
+.takaza-info-wrap:focus-within .takaza-tooltip {
+  opacity: 1;
+  visibility: visible;
+}
 
 
 
