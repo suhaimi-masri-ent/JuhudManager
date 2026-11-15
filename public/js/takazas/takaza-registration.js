@@ -166,6 +166,89 @@ function showTakazaDetails(takaza) {
     });
 }
 
+/* =========================
+   TAKAZA TOOLTIP
+========================= */
+
+function initTakazaTooltip() {
+  if ($("takazaTooltip")) return;
+
+  const tooltip = document.createElement("div");
+
+  tooltip.id = "takazaTooltip";
+  tooltip.className = "takaza-tooltip";
+  tooltip.setAttribute("role", "tooltip");
+  tooltip.hidden = true;
+
+  tooltip.textContent =
+    "No Percha is the official Project Code for this Takaza. " +
+    "It remains unchanged when the Takaza is edited or archived.";
+
+  document.body.appendChild(tooltip);
+
+  const tableElement = $("takazasTable");
+
+  function showTooltip(icon) {
+    const rect = icon.getBoundingClientRect();
+
+    tooltip.hidden = false;
+
+    const tooltipWidth = tooltip.offsetWidth;
+    const tooltipHeight = tooltip.offsetHeight;
+
+    const left = Math.max(
+      8,
+      Math.min(
+        rect.left + rect.width / 2 - tooltipWidth / 2,
+        window.innerWidth - tooltipWidth - 8
+      )
+    );
+
+    let top = rect.top - tooltipHeight - 8;
+
+    if (top < 8) {
+      top = rect.bottom + 8;
+    }
+
+    tooltip.style.left = `${left}px`;
+    tooltip.style.top = `${Math.min(
+      top,
+      window.innerHeight - tooltipHeight - 8
+    )}px`;
+  }
+
+  function hideTooltip() {
+    tooltip.hidden = true;
+  }
+
+  tableElement.addEventListener("pointerover", event => {
+    const icon = event.target.closest(".takaza-info-icon");
+
+    if (icon) showTooltip(icon);
+  });
+
+  tableElement.addEventListener("pointerout", event => {
+    const icon = event.target.closest(".takaza-info-icon");
+
+    if (icon) hideTooltip();
+  });
+
+  tableElement.addEventListener("focusin", event => {
+    const icon = event.target.closest(".takaza-info-icon");
+
+    if (icon) showTooltip(icon);
+  });
+
+  tableElement.addEventListener("focusout", event => {
+    const icon = event.target.closest(".takaza-info-icon");
+
+    if (icon) hideTooltip();
+  });
+
+  window.addEventListener("resize", hideTooltip);
+  window.addEventListener("scroll", hideTooltip, true);
+}
+
 
 /* =========================
    EDIT TAKAZA
@@ -411,16 +494,12 @@ export async function loadTakazas() {
         `
           Takaza Code
           <span class="takaza-info-wrap">
-            <span
+            <button
+              type="button"
               class="takaza-info-icon"
-              tabindex="0"
-              role="button"
               aria-label="No Percha information"
-            >i</span>
-            <span class="takaza-tooltip" role="tooltip">
-              No Percha is the official Project Code for this Takaza.
-              It remains unchanged when the Takaza is edited or archived.
-            </span>
+              aria-describedby="takazaTooltip"
+            >i</button>
           </span>
         `,
         "Takaza Name",
