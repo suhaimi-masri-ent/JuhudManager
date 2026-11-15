@@ -330,6 +330,7 @@ export async function loadTakazas() {
       return (
         matchesSearch &&
         matchesCategory &&
+        matchesArchiveView &&
         matchesStatus &&
         matchesDateFrom &&
         matchesDateTo
