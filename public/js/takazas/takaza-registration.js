@@ -639,6 +639,7 @@ export function initTakazaRegistration() {
   if (initialized) return;
 
   initialized = true;
+  initTakazaTooltip();
 
 
   // SEARCH & FILTER TOGGLE
