@@ -547,31 +547,6 @@
   box-shadow: 0 8px 24px rgba(0,0,0,.25);
 }
 
-/* TEMPORARY TOOLTIP DIAGNOSTIC FIX */
-
-.takaza-info-wrap {
-  position: relative;
-  overflow: visible;
-}
-
-.takaza-tooltip {
-  position: fixed;
-  z-index: 999999;
-  bottom: auto;
-  left: auto;
-  transform: none;
-  width: 260px;
-  max-width: 80vw;
-  opacity: 1;
-  visibility: visible;
-  pointer-events: auto;
-}
-
-
-
-
-
-
 
 
 
