@@ -12,6 +12,9 @@ import {
 const $ = id => document.getElementById(id);
 
 let initialized = false;
+let currentPage = 1;
+
+const PAGE_SIZE = 12;
 
 
 /* =========================
@@ -129,7 +132,32 @@ export async function loadTakazas() {
 
     });
 
-    const rows = filtered.map(item => `
+
+    /* PAGINATION */
+
+    const totalRecords = filtered.length;
+
+    const totalPages = Math.max(
+      1,
+      Math.ceil(totalRecords / PAGE_SIZE)
+    );
+
+    currentPage = Math.min(
+      Math.max(currentPage, 1),
+      totalPages
+    );
+
+    const startIndex = (currentPage - 1) * PAGE_SIZE;
+
+    const pageItems = filtered.slice(
+      startIndex,
+      startIndex + PAGE_SIZE
+    );
+
+
+    /* TABLE ROWS */
+
+    const rows = pageItems.map(item => `
       <tr>
         <td>${escapeHtml(item.takaza_code)}</td>
         <td>${escapeHtml(item.takaza_name)}</td>
@@ -141,9 +169,12 @@ export async function loadTakazas() {
       </tr>
     `);
 
+
+    /* RENDER TABLE */
+
     $("takazasTable").innerHTML = table(
       [
-        "Takaza Code",
+        'Takaza Code <span class="takaza-info-icon" title="No Percha" aria-label="No Percha">ⓘ</span>',
         "Takaza Name",
         "Category",
         "Parent",
@@ -153,6 +184,71 @@ export async function loadTakazas() {
       ],
       rows
     );
+
+
+    /* RENDER PAGINATION */
+
+    const firstRecord = totalRecords
+      ? startIndex + 1
+      : 0;
+
+    const lastRecord = Math.min(
+      startIndex + PAGE_SIZE,
+      totalRecords
+    );
+
+    $("takazaPagination").innerHTML = `
+      <div class="takaza-pagination-info">
+        Showing ${firstRecord}–${lastRecord} of ${totalRecords} records
+      </div>
+
+      <div class="takaza-pagination-controls">
+
+        <button
+          type="button"
+          class="btn btn-outline"
+          id="takazaPreviousPage"
+          ${currentPage <= 1 ? "disabled" : ""}
+        >
+          Previous
+        </button>
+
+        <span>
+          Page ${currentPage} of ${totalPages}
+        </span>
+
+        <button
+          type="button"
+          class="btn btn-outline"
+          id="takazaNextPage"
+          ${currentPage >= totalPages ? "disabled" : ""}
+        >
+          Next
+        </button>
+
+      </div>
+    `;
+
+
+    /* PAGINATION EVENTS */
+
+    $("takazaPreviousPage").addEventListener("click", () => {
+
+      if (currentPage > 1) {
+        currentPage--;
+        loadTakazas();
+      }
+
+    });
+
+    $("takazaNextPage").addEventListener("click", () => {
+
+      if (currentPage < totalPages) {
+        currentPage++;
+        loadTakazas();
+      }
+
+    });
 
   } catch (error) {
 
@@ -189,6 +285,8 @@ async function saveTakaza(event) {
 
     resetTakazaForm();
 
+    currentPage = 1;
+
     showMessage(
       "takazaMessage",
       `Takaza created successfully: ${result.takaza.takaza_code}`
@@ -216,7 +314,8 @@ export function initTakazaRegistration() {
 
   initialized = true;
 
-    // SEARCH & FILTER TOGGLE
+
+  // SEARCH & FILTER TOGGLE
 
   $("takazaFilterToggle").addEventListener("change", () => {
 
@@ -224,6 +323,9 @@ export function initTakazaRegistration() {
       !$("takazaFilterToggle").checked;
 
   });
+
+
+  // ADD TAKAZA
 
   $("addTakazaBtn").addEventListener("click", async () => {
 
@@ -241,10 +343,14 @@ export function initTakazaRegistration() {
   });
 
 
+  // CANCEL REGISTRATION
+
   $("cancelTakazaBtn").addEventListener("click", () => {
     resetTakazaForm();
   });
 
+
+  // SAVE REGISTRATION
 
   $("takazaFormElement").addEventListener(
     "submit",
@@ -253,21 +359,36 @@ export function initTakazaRegistration() {
 
 
   // SEARCH
-  $("takazaSearch").addEventListener("input", loadTakazas);
+
+  $("takazaSearch").addEventListener("input", () => {
+
+    currentPage = 1;
+    loadTakazas();
+
+  });
 
 
   // FILTERS
+
   [
     "takazaFilterCategory",
     "takazaFilterStatus",
     "takazaFilterStartFrom",
     "takazaFilterStartTo"
   ].forEach(id => {
-    $(id).addEventListener("change", loadTakazas);
+
+    $(id).addEventListener("change", () => {
+
+      currentPage = 1;
+      loadTakazas();
+
+    });
+
   });
 
 
   // RESET FILTERS
+
   $("resetTakazaFiltersBtn").addEventListener("click", () => {
 
     $("takazaSearch").value = "";
@@ -275,6 +396,8 @@ export function initTakazaRegistration() {
     $("takazaFilterStatus").value = "";
     $("takazaFilterStartFrom").value = "";
     $("takazaFilterStartTo").value = "";
+
+    currentPage = 1;
 
     loadTakazas();
 
