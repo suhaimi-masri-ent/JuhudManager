@@ -13,12 +13,14 @@ const $ = id => document.getElementById(id);
 
 let initialized = false;
 let currentPage = 1;
+let editingTakazaId = null;
+let editingTakazaCode = null;
 
 const PAGE_SIZE = 12;
 
 
 /* =========================
-   SHOW / HIDE FORM
+   FORM MANAGEMENT
 ========================= */
 
 function showTakazaForm() {
@@ -27,12 +29,31 @@ function showTakazaForm() {
   $("takazaCategoryId").focus();
 }
 
-
 function resetTakazaForm() {
   $("takazaFormElement").reset();
 
+  editingTakazaId = null;
+  editingTakazaCode = null;
+
   $("takazaForm").hidden = true;
   $("takazaForm").classList.add("hidden");
+
+  updateFormHeading();
+}
+
+function updateFormHeading() {
+  const heading = $("takazaForm").querySelector("h3");
+  const submitButton = $("takazaFormElement").querySelector(
+    'button[type="submit"]'
+  );
+
+  if (editingTakazaId) {
+    heading.textContent = `Edit Takaza - ${editingTakazaCode}`;
+    submitButton.textContent = "Update Takaza";
+  } else {
+    heading.textContent = "Register New Takaza";
+    submitButton.textContent = "Save Takaza";
+  }
 }
 
 
@@ -41,7 +62,6 @@ function resetTakazaForm() {
 ========================= */
 
 async function loadTakazaOptions() {
-
   const [categoryData, takazaData] = await Promise.all([
     api("/api/admin/takaza-categories"),
     api("/api/admin/takazas")
@@ -52,32 +72,215 @@ async function loadTakazaOptions() {
 
   $("takazaCategoryId").innerHTML = `
     <option value="">Select Category</option>
-    ${categories
-      .filter(item => item.status === "ACTIVE")
-      .map(item => `
-        <option value="${escapeHtml(item.category_id)}">
-          ${escapeHtml(item.category_code)} - ${escapeHtml(item.category_name)}
-        </option>
-      `).join("")}
+    ${categories.map(item => `
+      <option value="${escapeHtml(item.category_id)}">
+        ${escapeHtml(item.category_code)} -
+        ${escapeHtml(item.category_name)}
+        ${item.status !== "ACTIVE" ? "(Inactive)" : ""}
+      </option>
+    `).join("")}
   `;
 
   $("takazaFilterCategory").innerHTML = `
     <option value="">All Categories</option>
     ${categories.map(item => `
       <option value="${escapeHtml(item.category_id)}">
-        ${escapeHtml(item.category_code)} - ${escapeHtml(item.category_name)}
+        ${escapeHtml(item.category_code)} -
+        ${escapeHtml(item.category_name)}
       </option>
     `).join("")}
   `;
 
   $("takazaParentId").innerHTML = `
     <option value="">No Parent Takaza</option>
-    ${takazas.map(item => `
-      <option value="${escapeHtml(item.takaza_id)}">
-        ${escapeHtml(item.takaza_code)} - ${escapeHtml(item.takaza_name)}
-      </option>
-    `).join("")}
+    ${takazas
+      .filter(item => item.takaza_id !== editingTakazaId)
+      .map(item => `
+        <option value="${escapeHtml(item.takaza_id)}">
+          ${escapeHtml(item.takaza_code)} -
+          ${escapeHtml(item.takaza_name)}
+        </option>
+      `).join("")}
   `;
+}
+
+
+/* =========================
+   VIEW TAKAZA DETAILS
+========================= */
+
+function showTakazaDetails(takaza) {
+  let dialog = $("takazaDetailsDialog");
+
+  if (!dialog) {
+    dialog = document.createElement("dialog");
+    dialog.id = "takazaDetailsDialog";
+    dialog.className = "details-dialog";
+
+    document.body.appendChild(dialog);
+  }
+
+  const fields = [
+    ["Takaza Code / No Percha", takaza.takaza_code],
+    ["Takaza Name", takaza.takaza_name],
+    ["Category", takaza.category_name],
+    ["Parent Takaza", takaza.parent_takaza_code || "—"],
+    ["Start Date", takaza.start_date || "—"],
+    ["End Date", takaza.end_date || "—"],
+    ["Status", takaza.status],
+    ["Description", takaza.description || "—"],
+    ["Created At", takaza.created_at || "—"],
+    ["Updated At", takaza.updated_at || "—"]
+  ];
+
+  dialog.innerHTML = `
+    <div class="details-header">
+      <h2>Takaza Details</h2>
+      <button
+        type="button"
+        class="btn btn-outline"
+        data-close-details
+        aria-label="Close"
+      >Close</button>
+    </div>
+
+    <div class="details-content">
+      ${fields.map(([label, value]) => `
+        <div class="detail-row">
+          <strong>${escapeHtml(label)}</strong>
+          <span>${escapeHtml(value)}</span>
+        </div>
+      `).join("")}
+    </div>
+  `;
+
+  if (typeof dialog.showModal === "function") {
+    dialog.showModal();
+  } else {
+    dialog.setAttribute("open", "");
+  }
+
+  dialog.querySelector("[data-close-details]")
+    .addEventListener("click", () => {
+      dialog.close();
+    });
+}
+
+
+/* =========================
+   EDIT TAKAZA
+========================= */
+
+async function editTakaza(takazaId) {
+  try {
+    const data = await api(
+      `/api/admin/takazas/${encodeURIComponent(takazaId)}`
+    );
+
+    const takaza = data.takaza;
+
+    if (!takaza) {
+      throw new Error("Takaza not found");
+    }
+
+    editingTakazaId = takaza.takaza_id;
+    editingTakazaCode = takaza.takaza_code;
+
+    await loadTakazaOptions();
+
+    $("takazaCategoryId").value = takaza.category_id;
+    $("takazaName").value = takaza.takaza_name || "";
+    $("takazaParentId").value = takaza.parent_takaza_id || "";
+    $("takazaStartDate").value = takaza.start_date || "";
+    $("takazaEndDate").value = takaza.end_date || "";
+    $("takazaDescription").value = takaza.description || "";
+
+    updateFormHeading();
+    showTakazaForm();
+
+    $("takazaForm").scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+
+  } catch (error) {
+    showMessage("takazaMessage", error.message, true);
+  }
+}
+
+
+/* =========================
+   ARCHIVE TAKAZA
+========================= */
+
+async function archiveTakaza(takazaId, takazaCode) {
+  const confirmed = window.confirm(
+    `Archive Takaza ${takazaCode}?\n\n` +
+    "The record will be preserved in history. It will not be deleted."
+  );
+
+  if (!confirmed) return;
+
+  try {
+    await api(
+      `/api/admin/takazas/${encodeURIComponent(takazaId)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify({
+          action: "ARCHIVE"
+        })
+      }
+    );
+
+    showMessage(
+      "takazaMessage",
+      `Takaza ${takazaCode} has been archived.`
+    );
+
+    await loadTakazaOptions();
+    await loadTakazas();
+
+  } catch (error) {
+    showMessage("takazaMessage", error.message, true);
+  }
+}
+
+
+/* =========================
+   ACTION BUTTON EVENTS
+========================= */
+
+async function handleTakazaAction(event) {
+  const button = event.target.closest("[data-takaza-action]");
+
+  if (!button) return;
+
+  const action = button.dataset.takazaAction;
+  const takazaId = button.dataset.takazaId;
+  const takazaCode = button.dataset.takazaCode;
+
+  if (!takazaId) return;
+
+  if (action === "view") {
+    try {
+      const data = await api(
+        `/api/admin/takazas/${encodeURIComponent(takazaId)}`
+      );
+
+      showTakazaDetails(data.takaza);
+
+    } catch (error) {
+      showMessage("takazaMessage", error.message, true);
+    }
+  }
+
+  if (action === "edit") {
+    await editTakaza(takazaId);
+  }
+
+  if (action === "archive") {
+    await archiveTakaza(takazaId, takazaCode);
+  }
 }
 
 
@@ -86,9 +289,7 @@ async function loadTakazaOptions() {
 ========================= */
 
 export async function loadTakazas() {
-
   try {
-
     const data = await api("/api/admin/takazas");
     const takazas = data.takazas || [];
 
@@ -99,7 +300,6 @@ export async function loadTakazas() {
     const dateTo = $("takazaFilterStartTo").value;
 
     const filtered = takazas.filter(item => {
-
       const code = (item.takaza_code || "").toLowerCase();
       const name = (item.takaza_name || "").toLowerCase();
 
@@ -129,7 +329,6 @@ export async function loadTakazas() {
         matchesDateFrom &&
         matchesDateTo
       );
-
     });
 
 
@@ -157,30 +356,74 @@ export async function loadTakazas() {
 
     /* TABLE ROWS */
 
-    const rows = pageItems.map(item => `
-      <tr>
-        <td>${escapeHtml(item.takaza_code)}</td>
-        <td>${escapeHtml(item.takaza_name)}</td>
-        <td>${escapeHtml(item.category_name)}</td>
-        <td>${escapeHtml(item.parent_takaza_code || "—")}</td>
-        <td>${escapeHtml(item.start_date || "—")}</td>
-        <td>${escapeHtml(item.end_date || "—")}</td>
-        <td>${tag((item.status || "").toLowerCase())}</td>
-      </tr>
-    `);
+    const rows = pageItems.map(item => {
+      const archived = item.status === "ARCHIVED";
+
+      return `
+        <tr>
+          <td>${escapeHtml(item.takaza_code)}</td>
+          <td>${escapeHtml(item.takaza_name)}</td>
+          <td>${escapeHtml(item.category_name)}</td>
+          <td>${escapeHtml(item.parent_takaza_code || "—")}</td>
+          <td>${escapeHtml(item.start_date || "—")}</td>
+          <td>${escapeHtml(item.end_date || "—")}</td>
+          <td>${tag((item.status || "").toLowerCase())}</td>
+          <td>
+            <button
+              type="button"
+              class="table-action"
+              data-takaza-action="view"
+              data-takaza-id="${escapeHtml(item.takaza_id)}"
+            >View</button>
+
+            ${!archived ? `
+              <button
+                type="button"
+                class="table-action"
+                data-takaza-action="edit"
+                data-takaza-id="${escapeHtml(item.takaza_id)}"
+              >Edit</button>
+
+              <button
+                type="button"
+                class="table-action"
+                data-takaza-action="archive"
+                data-takaza-id="${escapeHtml(item.takaza_id)}"
+                data-takaza-code="${escapeHtml(item.takaza_code)}"
+              >Archive</button>
+            ` : ""}
+          </td>
+        </tr>
+      `;
+    });
 
 
     /* RENDER TABLE */
 
     $("takazasTable").innerHTML = table(
       [
-        'Takaza Code <span class="takaza-info-icon" title="No Percha" aria-label="No Percha">ⓘ</span>',
+        `
+          Takaza Code
+          <span class="takaza-info-wrap">
+            <span
+              class="takaza-info-icon"
+              tabindex="0"
+              role="button"
+              aria-label="No Percha information"
+            >i</span>
+            <span class="takaza-tooltip" role="tooltip">
+              No Percha is the official Project Code for this Takaza.
+              It remains unchanged when the Takaza is edited or archived.
+            </span>
+          </span>
+        `,
         "Takaza Name",
         "Category",
         "Parent",
         "Start Date",
         "End Date",
-        "Status"
+        "Status",
+        "Action"
       ],
       rows
     );
@@ -203,7 +446,6 @@ export async function loadTakazas() {
       </div>
 
       <div class="takaza-pagination-controls">
-
         <button
           type="button"
           class="btn btn-outline"
@@ -225,7 +467,6 @@ export async function loadTakazas() {
         >
           Next
         </button>
-
       </div>
     `;
 
@@ -233,42 +474,33 @@ export async function loadTakazas() {
     /* PAGINATION EVENTS */
 
     $("takazaPreviousPage").addEventListener("click", () => {
-
       if (currentPage > 1) {
         currentPage--;
         loadTakazas();
       }
-
     });
 
     $("takazaNextPage").addEventListener("click", () => {
-
       if (currentPage < totalPages) {
         currentPage++;
         loadTakazas();
       }
-
     });
 
   } catch (error) {
-
     showMessage("takazaMessage", error.message, true);
-
   }
-
 }
 
 
 /* =========================
-   CREATE TAKAZA
+   SAVE / UPDATE TAKAZA
 ========================= */
 
 async function saveTakaza(event) {
-
   event.preventDefault();
 
   try {
-
     const body = {
       categoryId: $("takazaCategoryId").value,
       takazaName: $("takazaName").value.trim(),
@@ -278,29 +510,39 @@ async function saveTakaza(event) {
       description: $("takazaDescription").value.trim()
     };
 
-    const result = await api("/api/admin/takazas", {
-      method: "POST",
-      body: JSON.stringify(body)
-    });
+    let result;
+
+    if (editingTakazaId) {
+      result = await api(
+        `/api/admin/takazas/${encodeURIComponent(editingTakazaId)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(body)
+        }
+      );
+    } else {
+      result = await api("/api/admin/takazas", {
+        method: "POST",
+        body: JSON.stringify(body)
+      });
+    }
+
+    const message = editingTakazaId
+      ? `Takaza updated successfully: ${editingTakazaCode}`
+      : `Takaza created successfully: ${result.takaza.takaza_code}`;
 
     resetTakazaForm();
 
     currentPage = 1;
 
-    showMessage(
-      "takazaMessage",
-      `Takaza created successfully: ${result.takaza.takaza_code}`
-    );
+    showMessage("takazaMessage", message);
 
     await loadTakazaOptions();
     await loadTakazas();
 
   } catch (error) {
-
     showMessage("takazaMessage", error.message, true);
-
   }
-
 }
 
 
@@ -309,7 +551,6 @@ async function saveTakaza(event) {
 ========================= */
 
 export function initTakazaRegistration() {
-
   if (initialized) return;
 
   initialized = true;
@@ -318,28 +559,21 @@ export function initTakazaRegistration() {
   // SEARCH & FILTER TOGGLE
 
   $("takazaFilterToggle").addEventListener("change", () => {
-
     $("takazaFilterPanel").hidden =
       !$("takazaFilterToggle").checked;
-
   });
 
 
   // ADD TAKAZA
 
   $("addTakazaBtn").addEventListener("click", async () => {
-
     try {
-
+      resetTakazaForm();
       await loadTakazaOptions();
       showTakazaForm();
-
     } catch (error) {
-
       showMessage("takazaMessage", error.message, true);
-
     }
-
   });
 
 
@@ -350,7 +584,7 @@ export function initTakazaRegistration() {
   });
 
 
-  // SAVE REGISTRATION
+  // SAVE / UPDATE
 
   $("takazaFormElement").addEventListener(
     "submit",
@@ -358,13 +592,19 @@ export function initTakazaRegistration() {
   );
 
 
+  // TABLE ACTIONS
+
+  $("takazasTable").addEventListener(
+    "click",
+    handleTakazaAction
+  );
+
+
   // SEARCH
 
   $("takazaSearch").addEventListener("input", () => {
-
     currentPage = 1;
     loadTakazas();
-
   });
 
 
@@ -376,21 +616,16 @@ export function initTakazaRegistration() {
     "takazaFilterStartFrom",
     "takazaFilterStartTo"
   ].forEach(id => {
-
     $(id).addEventListener("change", () => {
-
       currentPage = 1;
       loadTakazas();
-
     });
-
   });
 
 
   // RESET FILTERS
 
   $("resetTakazaFiltersBtn").addEventListener("click", () => {
-
     $("takazaSearch").value = "";
     $("takazaFilterCategory").value = "";
     $("takazaFilterStatus").value = "";
@@ -398,11 +633,8 @@ export function initTakazaRegistration() {
     $("takazaFilterStartTo").value = "";
 
     currentPage = 1;
-
     loadTakazas();
-
   });
-
 }
 
 
@@ -411,8 +643,6 @@ export function initTakazaRegistration() {
 ========================= */
 
 export async function loadTakazaRegistration() {
-
   await loadTakazaOptions();
   await loadTakazas();
-
 }
