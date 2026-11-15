@@ -2,6 +2,10 @@
 # JuhudManager
 ## Project, Task, Activity & Participant Management Workflow
 
+## Project Documentation
+
+- [Development Roadmap & Decision Log](DEVELOPMENT_ROADMAP.md) – Current development status, agreed decisions, pending requirements and next development steps.
+
 **Document:** Workflow Requirements – Draft v1
 **Status:** Draft – Requirements Gathering
 **Development Branch:** `develop`
