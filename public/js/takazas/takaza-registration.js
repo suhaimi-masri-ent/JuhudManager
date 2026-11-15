@@ -458,28 +458,59 @@ export async function loadTakazas() {
           <td>${escapeHtml(item.end_date || "—")}</td>
           <td>${tag((item.status || "").toLowerCase())}</td>
           <td>
+
             <button
               type="button"
-              class="table-action"
+              class="table-action btn-icon"
               data-takaza-action="view"
               data-takaza-id="${escapeHtml(item.takaza_id)}"
-            >View</button>
+              title="View Takaza"
+              aria-label="View Takaza ${escapeHtml(item.takaza_code)}"
+            >
+              <svg viewBox="0 0 24 24" width="15" height="15"
+                fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+            </button>
 
             ${!archived ? `
               <button
                 type="button"
-                class="table-action"
+                class="table-action btn-icon"
                 data-takaza-action="edit"
                 data-takaza-id="${escapeHtml(item.takaza_id)}"
-              >Edit</button>
+                title="Edit Takaza"
+                aria-label="Edit Takaza ${escapeHtml(item.takaza_code)}"
+              >
+                <svg viewBox="0 0 24 24" width="15" height="15"
+                  fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"
+                  aria-hidden="true">
+                  <path d="M12 20h9"/>
+                  <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4 11.5-11.5z"/>
+                </svg>
+              </button>
 
               <button
                 type="button"
-                class="table-action"
+                class="table-action btn-icon"
                 data-takaza-action="archive"
                 data-takaza-id="${escapeHtml(item.takaza_id)}"
                 data-takaza-code="${escapeHtml(item.takaza_code)}"
-              >Archive</button>
+                title="Archive Takaza"
+                aria-label="Archive Takaza ${escapeHtml(item.takaza_code)}"
+              >
+                <svg viewBox="0 0 24 24" width="15" height="15"
+                  fill="none" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"
+                  aria-hidden="true">
+                  <rect x="3" y="4" width="18" height="4" rx="1"/>
+                  <path d="M5 8v11h14V8M10 12h4"/>
+                </svg>
+              </button>
             ` : ""}
           </td>
         </tr>
