@@ -1,3 +1,4 @@
+
 import {
   jsonResponse,
   corsHeaders,
@@ -97,7 +98,6 @@ export default {
           database: "connected",
           tables: result.total
         });
-
       }
 
       // =========================
@@ -172,7 +172,7 @@ export default {
           response = jsonResponse(data);
         }
       }
-        
+
       // =========================
       // ADMIN USER PROFILE
       // =========================
@@ -224,11 +224,10 @@ export default {
         );
       }
 
-        
       // =========================
       // ADMIN TAKAZA CATEGORIES
       // =========================
-      
+
       else if (
         path === "/api/admin/takaza-categories" &&
         ["GET", "POST"].includes(method)
@@ -238,7 +237,7 @@ export default {
           env
         );
       }
-      
+
       else if (
         /^\/api\/admin\/takaza-categories\/[^/]+$/.test(path) &&
         ["PUT", "PATCH"].includes(method)
@@ -246,7 +245,7 @@ export default {
         const categoryId = decodeURIComponent(
           path.split("/").pop()
         );
-      
+
         response = await adminTakazaCategoriesHandler(
           request,
           env,
@@ -255,9 +254,9 @@ export default {
       }
 
       // =========================
-      // ADMIN TAKAZAS
+      // ADMIN TAKAZAS - LIST / CREATE
       // =========================
-      
+
       else if (
         path === "/api/admin/takazas" &&
         ["GET", "POST"].includes(method)
@@ -266,12 +265,31 @@ export default {
           request,
           env
         );
-      }  
+      }
+
+      // =========================
+      // ADMIN TAKAZA - VIEW / UPDATE / ARCHIVE
+      // =========================
+
+      else if (
+        /^\/api\/admin\/takazas\/[^/]+$/.test(path) &&
+        ["GET", "PUT", "PATCH"].includes(method)
+      ) {
+        const takazaId = decodeURIComponent(
+          path.split("/").pop()
+        );
+
+        response = await adminTakazasHandler(
+          request,
+          env,
+          takazaId
+        );
+      }
 
       // =========================
       // ADMIN ASSIGNMENTS
       // =========================
-      
+
       else if (
         path === "/api/admin/assignments" &&
         ["GET", "POST"].includes(method)
@@ -280,8 +298,8 @@ export default {
           request,
           env
         );
-      }        
-        
+      }
+
       // =========================
       // USER ACTIVITIES
       // =========================
