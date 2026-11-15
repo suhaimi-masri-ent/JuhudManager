@@ -502,5 +502,33 @@
   visibility: visible;
 }
 
+/* TAKAZA TOOLTIP VISIBILITY FIX */
+
+.takaza-info-wrap {
+  position: relative;
+  display: inline-flex;
+  overflow: visible;
+}
+
+.takaza-tooltip {
+  position: absolute;
+  z-index: 9999;
+  bottom: calc(100% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
+
+  width: 260px;
+  max-width: min(260px, 80vw);
+
+  background: #17243a;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.15);
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+
+  pointer-events: none;
+}
+
+
+
 
 
