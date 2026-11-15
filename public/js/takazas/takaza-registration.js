@@ -311,9 +311,14 @@ export async function loadTakazas() {
       const matchesCategory =
         !category || item.category_id === category;
 
+      const matchesArchiveView =
+        status === "ARCHIVED"
+          ? item.status === "ARCHIVED"
+          : item.status !== "ARCHIVED";
+      
       const matchesStatus =
         !status || item.status === status;
-
+      
       const matchesDateFrom =
         !dateFrom ||
         (item.start_date && item.start_date >= dateFrom);
