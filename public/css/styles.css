@@ -450,10 +450,12 @@
   cursor: not-allowed;
 }
 
-/* TAKAZA CODE INFORMATION ICON & TOOLTIP */
+
+/* =========================
+   TAKAZA INFORMATION TOOLTIP
+========================= */
 
 .takaza-info-wrap {
-  position: relative;
   display: inline-flex;
   align-items: center;
   margin-left: 5px;
@@ -463,90 +465,51 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
   border: 1px solid var(--blue);
   border-radius: 50%;
+  background: transparent;
   color: var(--blue);
-  font-size: 10px;
+  font-family: inherit;
+  font-size: 11px;
   font-weight: 800;
   line-height: 1;
-  cursor: help;
-  vertical-align: middle;
+  cursor: pointer;
+}
+
+.takaza-info-icon:hover {
+  background: var(--blue);
+  color: white;
+}
+
+.takaza-info-icon:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
 }
 
 .takaza-tooltip {
-  position: absolute;
-  z-index: 1000;
-  bottom: calc(100% + 8px);
-  left: 0;
-  width: 250px;
-  max-width: 80vw;
-  padding: 9px 11px;
-  border-radius: 7px;
+  position: fixed;
+  z-index: 99999;
+  width: 260px;
+  max-width: calc(100vw - 16px);
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
   background: #17243a;
-  color: #fff;
+  color: white;
   font-size: 12px;
   font-weight: 400;
   line-height: 1.5;
   text-align: left;
-  opacity: 0;
-  visibility: hidden;
-  pointer-events: none;
-  transition: opacity .15s ease;
-}
-
-.takaza-info-wrap:hover .takaza-tooltip,
-.takaza-info-wrap:focus-within .takaza-tooltip {
-  opacity: 1;
-  visibility: visible;
-}
-
-/* TAKAZA TOOLTIP VISIBILITY FIX */
-
-.takaza-info-wrap {
-  position: relative;
-  display: inline-flex;
-  overflow: visible;
-}
-
-.takaza-tooltip {
-  position: absolute;
-  z-index: 9999;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-
-  width: 260px;
-  max-width: min(260px, 80vw);
-
-  background: #17243a;
-  color: #fff;
-  border: 1px solid rgba(255,255,255,.15);
   box-shadow: 0 8px 24px rgba(0,0,0,.25);
-
   pointer-events: none;
 }
 
-/* TAKAZA TOOLTIP RESPONSIVE FIX */
-
-.takaza-info-wrap {
-  position: relative;
-  overflow: visible;
+.takaza-tooltip[hidden] {
+  display: none !important;
 }
-
-.takaza-tooltip {
-  position: absolute;
-  z-index: 99999;
-  bottom: calc(100% + 8px);
-  left: 50%;
-  transform: translateX(-50%);
-  width: 260px;
-  max-width: 80vw;
-  white-space: normal;
-  box-shadow: 0 8px 24px rgba(0,0,0,.25);
-}
-
 
 
 
