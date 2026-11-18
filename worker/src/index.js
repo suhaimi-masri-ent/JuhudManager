@@ -300,6 +300,7 @@ export default {
         );
       }
 
+
       // =========================
       // USER ACTIVITIES
       // =========================
@@ -318,12 +319,6 @@ export default {
         /^\/api\/activities\/[^/]+$/.test(path) &&
         method === "PATCH"
       ) {
-        response = await activitiesHandler(
-          request,
-          env
-        );
-      }
-        ) {
         response = await activitiesHandler(
           request,
           env
