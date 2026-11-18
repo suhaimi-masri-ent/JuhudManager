@@ -474,7 +474,21 @@ export async function loadAdmin(loadActivities) {
 
     initAdminProfileEditor(loadActivities);
 
-    await api("/api/admin/activity-types");
+
+    const activityTypesData = await api("/api/admin/activity-types");
+
+    $("activityTypesTable").innerHTML = table(
+      ["Activity Name", "Frequency", "Description", "Status"],
+      (activityTypesData.activity_types || []).map(item =>
+        `<tr>
+          <td>${escapeHtml(item.activity_name)}</td>
+          <td>${escapeHtml(item.frequency)}</td>
+          <td>${escapeHtml(item.description || "—")}</td>
+          <td>${tag(item.status)}</td>
+        </tr>`
+      )
+    );
+
   }
 
 }
