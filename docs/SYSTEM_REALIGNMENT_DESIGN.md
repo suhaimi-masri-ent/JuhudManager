@@ -960,7 +960,7 @@ It should support:
 34. Makami participation remains active while the Ahbab account is active.
 35. Deactivating an Ahbab account makes its Makami participation inactive.
 36. Reactivating an Ahbab account reactivates the existing Makami participation without creating a duplicate.
-37. Account status, participation status, activity status and reporting status are separate concepts.
+37. Account status, participation status, activity status and system-generated progress status are separate concepts.
 38. Automatic Makami participation does not imply that the Ahbab has made progress.
 
 ### Rekod Amal and Tafakut
