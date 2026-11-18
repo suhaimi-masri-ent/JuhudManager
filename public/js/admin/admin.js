@@ -5,6 +5,12 @@ import { escapeHtml, tag, table } from "../core/helpers.js";
 
 const $ = id => document.getElementById(id);
 
+let activityTypesCache = [];
+
+/* =========================
+   ADMIN PERMISSIONS
+========================= */
+
 export function isAdmin() {
   return currentUser?.roles?.some(r =>
     ["SUPER_ADMIN", "ADMIN"].includes(r)
@@ -16,6 +22,7 @@ export function canReview() {
     ["SUPER_ADMIN", "ADMIN", "SUPERVISOR"].includes(r)
   );
 }
+
 
 /* =========================
    ADMIN PROFILE EDITOR
@@ -66,6 +73,7 @@ function initAdminProfileEditor(loadActivities) {
       );
 
       const user = result.user;
+
       $("adminEditFullName").value = user.full_name || "";
 
       for (const [field, id] of Object.entries(fields)) {
@@ -121,6 +129,192 @@ function initAdminProfileEditor(loadActivities) {
   });
 
   $("adminEditProfileCancel").addEventListener("click", () => {
+    dialog.close();
+  });
+}
+
+
+/* =========================
+   ACTIVITY TYPE MANAGEMENT
+========================= */
+
+function renderActivityTypes() {
+  $("activityTypesTable").innerHTML = table(
+    ["Activity Name", "Frequency", "Description", "Status", "Actions"],
+
+    activityTypesCache.map(item => `
+      <tr>
+        <td>${escapeHtml(item.activity_name)}</td>
+
+        <td>${escapeHtml(item.frequency)}</td>
+
+        <td>${escapeHtml(item.description || "—")}</td>
+
+        <td>${tag(item.status)}</td>
+
+        <td>
+          <button
+            type="button"
+            class="table-action btn-icon"
+            data-edit-activity-type="${escapeHtml(item.activity_type_id)}"
+            title="Edit Activity Type"
+            aria-label="Edit Activity Type"
+          >&#9998;</button>
+
+          <button
+            type="button"
+            class="table-action btn-icon"
+            data-toggle-activity-type="${escapeHtml(item.activity_type_id)}"
+            title="${item.status === "ACTIVE" ? "Deactivate" : "Activate"}"
+            aria-label="${item.status === "ACTIVE" ? "Deactivate" : "Activate"}"
+          >${item.status === "ACTIVE" ? "&#10006;" : "&#10004;"}</button>
+        </td>
+      </tr>
+    `)
+  );
+}
+
+
+async function loadActivityTypes() {
+  const result = await api("/api/admin/activity-types");
+
+  activityTypesCache = result.activity_types || [];
+
+  renderActivityTypes();
+}
+
+
+function initActivityTypeManagement(loadActivities) {
+  const dialog = $("editActivityTypeDialog");
+  const form = $("editActivityTypeForm");
+
+  if (form.dataset.initialized === "true") return;
+  form.dataset.initialized = "true";
+
+  // EDIT / ACTIVATE / DEACTIVATE BUTTONS
+
+  $("activityTypesTable").addEventListener("click", async e => {
+
+    const editButton = e.target.closest("[data-edit-activity-type]");
+    const toggleButton = e.target.closest("[data-toggle-activity-type]");
+
+    if (editButton) {
+      const item = activityTypesCache.find(x =>
+        String(x.activity_type_id) ===
+        String(editButton.dataset.editActivityType)
+      );
+
+      if (!item) return;
+
+      $("editActivityTypeId").value = item.activity_type_id;
+      $("editActivityTypeName").value = item.activity_name || "";
+      $("editActivityTypeFrequency").value = item.frequency || "DAILY";
+      $("editActivityTypeDescription").value = item.description || "";
+      $("editActivityTypeMessage").textContent = "";
+
+      dialog.showModal();
+      return;
+    }
+
+    if (toggleButton) {
+      const item = activityTypesCache.find(x =>
+        String(x.activity_type_id) ===
+        String(toggleButton.dataset.toggleActivityType)
+      );
+
+      if (!item) return;
+
+      const newStatus =
+        item.status === "ACTIVE" ? "INACTIVE" : "ACTIVE";
+
+      const actionText =
+        newStatus === "ACTIVE" ? "activate" : "deactivate";
+
+      if (!confirm(
+        `Are you sure you want to ${actionText} "${item.activity_name}"?`
+      )) {
+        return;
+      }
+
+      toggleButton.disabled = true;
+
+      try {
+        const result = await api("/api/admin/activity-types", {
+          method: "PATCH",
+          body: JSON.stringify({
+            activityTypeId: item.activity_type_id,
+            status: newStatus
+          })
+        });
+
+        await loadActivityTypes();
+
+        if (typeof loadActivities === "function") {
+          await loadActivities();
+        }
+
+        alert(result.message || "Activity Type status updated.");
+
+      } catch (err) {
+        alert(err.message);
+
+      } finally {
+        toggleButton.disabled = false;
+      }
+    }
+  });
+
+
+  // SAVE EDITED ACTIVITY TYPE
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+
+    const activityTypeId = $("editActivityTypeId").value;
+
+    if (!activityTypeId) return;
+
+    const submitButton = form.querySelector('button[type="submit"]');
+
+    submitButton.disabled = true;
+    $("editActivityTypeMessage").textContent = "Saving...";
+
+    const body = {
+      activityTypeId,
+      activityName: $("editActivityTypeName").value.trim(),
+      frequency: $("editActivityTypeFrequency").value,
+      description: $("editActivityTypeDescription").value.trim()
+    };
+
+    try {
+      const result = await api("/api/admin/activity-types", {
+        method: "PATCH",
+        body: JSON.stringify(body)
+      });
+
+      $("editActivityTypeMessage").textContent =
+        result.message || "Activity Type updated.";
+
+      await loadActivityTypes();
+
+      if (typeof loadActivities === "function") {
+        await loadActivities();
+      }
+
+      setTimeout(() => dialog.close(), 700);
+
+    } catch (err) {
+      $("editActivityTypeMessage").textContent = err.message;
+
+    } finally {
+      submitButton.disabled = false;
+    }
+  });
+
+
+  // CANCEL EDIT
+
+  $("cancelEditActivityType").addEventListener("click", () => {
     dialog.close();
   });
 }
@@ -191,6 +385,7 @@ function showAuditDetails(log) {
 
   $("auditDetailDialog").showModal();
 }
+
 
 function initAuditDetailViewer() {
   const closeButton = $("auditDetailClose");
@@ -268,6 +463,7 @@ function renderAuditTrail() {
 
   $("auditTrailTable").innerHTML = table(
     ["Date / Time", "Actor", "Action", "Target", "Country", "Device"],
+
     pageRecords.map(log => {
       let details = {};
 
@@ -345,24 +541,26 @@ function renderAuditTrail() {
   });
 }
 
+
 function initAuditTrail(data) {
   auditLogsCache = data.audit_logs || [];
   initAuditDetailViewer();
 
   const toggleButton = $("auditToggleFilters");
   const filterPanel = $("auditFilterPanel");
-  
+
   if (toggleButton.dataset.initialized !== "true") {
     toggleButton.dataset.initialized = "true";
-  
+
     toggleButton.addEventListener("click", () => {
       const isHidden = filterPanel.hidden;
-  
+
       filterPanel.hidden = !isHidden;
+
       toggleButton.textContent = isHidden
         ? "Hide Search & Filters"
         : "Show Search & Filters";
-  
+
       toggleButton.setAttribute("aria-expanded", String(isHidden));
     });
   }
@@ -438,57 +636,44 @@ function initAuditTrail(data) {
   renderAuditTrail();
 }
 
+
 /* =========================
    LOAD ADMIN
 ========================= */
 
-
 export async function loadAdmin(loadActivities) {
 
-  // ADMIN: LOAD USERS, ACTIVITY TYPES AND AUDIT TRAIL
-  if (isAdmin()) {
+  if (!isAdmin()) return;
 
-    const auditData = await api("/api/admin/audit-logs");
-    initAuditTrail(auditData);
+  const auditData = await api("/api/admin/audit-logs");
+  initAuditTrail(auditData);
 
-    const d = await api("/api/admin/users");
+  const d = await api("/api/admin/users");
 
-    $("usersTable").innerHTML = table(
-      ["Name", "Login identifiers", "Role", "Status", "Action"],
-      d.users.map(u =>
-        `<tr>
-          <td>${escapeHtml(u.full_name)}</td>
-          <td>${escapeHtml(u.identifiers || "—")}</td>
-          <td>${escapeHtml(u.roles || "USER")}</td>
-          <td>${tag(u.account_status)}</td>
-          <td>
-            <button
-              type="button"
-              class="table-action"
-              data-edit-user="${escapeHtml(u.user_id)}"
-            >Edit Profile</button>
-          </td>
-        </tr>`
-      )
-    );
+  $("usersTable").innerHTML = table(
+    ["Name", "Login identifiers", "Role", "Status", "Action"],
 
-    initAdminProfileEditor(loadActivities);
+    d.users.map(u => `
+      <tr>
+        <td>${escapeHtml(u.full_name)}</td>
+        <td>${escapeHtml(u.identifiers || "—")}</td>
+        <td>${escapeHtml(u.roles || "USER")}</td>
+        <td>${tag(u.account_status)}</td>
+        <td>
+          <button
+            type="button"
+            class="table-action"
+            data-edit-user="${escapeHtml(u.user_id)}"
+          >Edit Profile</button>
+        </td>
+      </tr>
+    `)
+  );
 
+  initAdminProfileEditor(loadActivities);
 
-    const activityTypesData = await api("/api/admin/activity-types");
+  // ACTIVITY TYPE MANAGEMENT
 
-    $("activityTypesTable").innerHTML = table(
-      ["Activity Name", "Frequency", "Description", "Status"],
-      (activityTypesData.activity_types || []).map(item =>
-        `<tr>
-          <td>${escapeHtml(item.activity_name)}</td>
-          <td>${escapeHtml(item.frequency)}</td>
-          <td>${escapeHtml(item.description || "—")}</td>
-          <td>${tag(item.status)}</td>
-        </tr>`
-      )
-    );
-
-  }
-
+  initActivityTypeManagement(loadActivities);
+  await loadActivityTypes();
 }
