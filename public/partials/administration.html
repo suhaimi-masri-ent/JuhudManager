@@ -44,49 +44,50 @@
       </details>
     
     </div>
+
     
-
     <!-- CREATE ACTIVITY TYPE -->
-
+    
     <div class="panel">
-
-      <h2>Create Activity Type</h2>
-
-      <form id="createTypeForm" class="stack">
-
-        <label>
-          Activity Name
-          <input type="text" id="typeName" required>
-        </label>
-
-        <label>
-          Frequency
-          <select id="typeFrequency" required>
-            <option value="">Select frequency</option>
-            <option value="DAILY">Daily</option>
-            <option value="WEEKLY">Weekly</option>
-            <option value="MONTHLY">Monthly</option>
-            <option value="QUARTERLY">Quarterly</option>
-            <option value="YEARLY">Yearly</option>
-          </select>
-        </label>
-
-        <label>
-          Description
-          <textarea id="typeDescription" rows="3"></textarea>
-        </label>
-
-        <div id="createTypeMessage" class="message"></div>
-
-        <button type="submit" class="btn btn-primary">
-          Create Activity Type
-        </button>
-
-      </form>
-
+    
+      <details class="admin-collapse">
+        <summary>
+          <h2>Create Activity Type</h2>
+        </summary>
+    
+        <form id="createTypeForm" class="stack">
+    
+          <label>
+            Activity Name
+            <input type="text" id="typeName" required>
+          </label>
+    
+          <label>
+            Frequency
+            <select id="typeFrequency" required>
+              <option value="">Select frequency</option>
+              <option value="DAILY">Daily</option>
+              <option value="WEEKLY">Weekly</option>
+              <option value="MONTHLY">Monthly</option>
+              <option value="YEARLY">Yearly</option>
+            </select>
+          </label>
+    
+          <label>
+            Description
+            <textarea id="typeDescription" rows="3"></textarea>
+          </label>
+    
+          <div id="createTypeMessage" class="message"></div>
+    
+          <button type="submit" class="btn btn-primary">
+            Create Activity Type
+          </button>
+    
+        </form>
+      </details>
+    
     </div>
-
-  </div>
 
 
   <!-- USER MANAGEMENT -->
