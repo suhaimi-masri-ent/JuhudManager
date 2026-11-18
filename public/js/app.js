@@ -80,8 +80,15 @@ function switchView(name) {
   }
 
 
+
   if (name === "admin") {
-    loadAdmin(loadActivities).catch(e => alert(e.message));
+    (async () => {
+      await loadAdmin(loadActivities);
+  
+      if (canReview()) {
+        await loadReviews(loadActivities);
+      }
+    })().catch(e => alert(e.message));
   }
 
 
