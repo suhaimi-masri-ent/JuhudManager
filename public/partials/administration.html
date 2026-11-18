@@ -403,6 +403,57 @@
 
     <h2>Activity Submissions Review</h2>
 
+    <div class="stack" style="margin:12px 0">
+    
+      <label>
+        Search Submissions
+        <input
+          type="search"
+          id="submissionSearch"
+          placeholder="Search user, activity or description..."
+        >
+      </label>
+    
+      <div class="form-grid">
+    
+        <label>
+          Review Status
+          <select id="submissionStatusFilter">
+            <option value="">All Statuses</option>
+            <option value="PENDING">Pending</option>
+            <option value="APPROVED">Approved</option>
+            <option value="NEEDS_REVISION">Needs Revision</option>
+            <option value="REJECTED">Rejected</option>
+          </select>
+        </label>
+    
+        <label>
+          From Date
+          <input type="date" id="submissionDateFrom">
+        </label>
+    
+        <label>
+          To Date
+          <input type="date" id="submissionDateTo">
+        </label>
+    
+      </div>
+    
+      <div class="row">
+        <button
+          type="button"
+          class="btn"
+          id="submissionResetFilters"
+        >
+          Reset Filters
+        </button>
+      </div>
+    
+      <p id="submissionFilterMessage" class="message"></p>
+    
+    </div>
+
+    
     <div class="table-wrap">
       <div id="submissionsTable"></div>
     </div>
