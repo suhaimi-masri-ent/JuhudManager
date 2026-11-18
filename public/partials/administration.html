@@ -421,14 +421,27 @@
 
   
 
+
   <!-- SUBMISSION REVIEW -->
 
   <div class="panel" style="margin-top:18px">
 
     <h2>Activity Submissions Review</h2>
 
-    <div class="stack" style="margin:12px 0">
-    
+    <div class="row" style="margin-top:12px">
+      <button
+        type="button"
+        class="btn"
+        id="submissionToggleFilters"
+        aria-expanded="false"
+        aria-controls="submissionFilterPanel"
+      >
+        Show Search &amp; Filters
+      </button>
+    </div>
+
+    <div class="stack" id="submissionFilterPanel" hidden>
+
       <label>
         Search Submissions
         <input
@@ -437,9 +450,9 @@
           placeholder="Search user, activity or description..."
         >
       </label>
-    
+
       <div class="form-grid">
-    
+
         <label>
           Review Status
           <select id="submissionStatusFilter">
@@ -450,40 +463,49 @@
             <option value="REJECTED">Rejected</option>
           </select>
         </label>
-    
+
         <label>
           From Date
           <input type="date" id="submissionDateFrom">
         </label>
-    
+
         <label>
           To Date
           <input type="date" id="submissionDateTo">
         </label>
-    
+
+        <label>
+          Records Per Page
+          <select id="submissionPageSize">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </label>
+
       </div>
-    
+
       <div class="row">
-        <button
-          type="button"
-          class="btn"
-          id="submissionResetFilters"
-        >
+        <button type="button" class="btn" id="submissionResetFilters">
           Reset Filters
         </button>
       </div>
-    
-      <p id="submissionFilterMessage" class="message"></p>
-    
+
     </div>
 
-    
+    <p id="submissionFilterMessage" class="message"></p>
+
     <div class="table-wrap">
       <div id="submissionsTable"></div>
     </div>
 
-  </div>
+    <div
+      id="submissionPagination"
+      class="row"
+      style="margin-top:14px; justify-content:space-between; align-items:center"
+    ></div>
 
+  </div>
 
 
   <!-- AUDIT TRAIL -->
