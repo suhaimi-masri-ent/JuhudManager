@@ -5,6 +5,7 @@ import { actionButton } from "./action-icons.js";
 import { initAdminNavigation } from "./admin-navigation.js";
 import { initAdminProfileEditor } from "./admin-profile.js";
 import { initActivityTypeManagement, loadActivityTypes } from "./activity-types.js";
+import { initAssignmentManagement, loadAssignments } from "./assignments.js";
 import { initAuditTrail } from "./audit-trail.js";
 
 const $ = id => document.getElementById(id);
@@ -116,4 +117,6 @@ export async function loadAdmin(loadActivities) {
   initAdminProfileEditor({ loadActivities, reloadUsers: loadAdminUsers });
   initActivityTypeManagement(loadActivities);
   await loadActivityTypes();
+  initAssignmentManagement();
+  await loadAssignments();
 }
