@@ -4,43 +4,47 @@
   <div class="admin-grid">
 
     <!-- CREATE USER -->
-
+    
     <div class="panel">
-
-      <h2>Create User</h2>
-
-      <form id="createUserForm" class="stack">
-
-        <label>
-          Full Name
-          <input type="text" id="newFullName" required>
-        </label>
-
-        <label>
-          Email
-          <input type="email" id="newEmail" required>
-        </label>
-
-        <label>
-          Password
-          <input
-            type="password"
-            id="newPassword"
-            minlength="8"
-            required
-          >
-        </label>
-
-        <div id="createUserMessage" class="message"></div>
-
-        <button type="submit" class="btn btn-primary">
-          Create User
-        </button>
-
-      </form>
-
+    
+      <details class="admin-collapse">
+        <summary>
+          <h2>Create User</h2>
+        </summary>
+    
+        <form id="createUserForm" class="stack">
+    
+          <label>
+            Full Name
+            <input type="text" id="newFullName" required>
+          </label>
+    
+          <label>
+            Email
+            <input type="email" id="newEmail" required>
+          </label>
+    
+          <label>
+            Password
+            <input
+              type="password"
+              id="newPassword"
+              minlength="8"
+              required
+            >
+          </label>
+    
+          <div id="createUserMessage" class="message"></div>
+    
+          <button type="submit" class="btn btn-primary">
+            Create User
+          </button>
+    
+        </form>
+      </details>
+    
     </div>
-
+    
 
     <!-- CREATE ACTIVITY TYPE -->
 
