@@ -22,7 +22,9 @@ export function showActivityDetails(recordId) {
         progress: "Kemajuan",
         review: "Status semakan",
         remarks: "Komen penyemak",
-        submitted: "Tarikh dihantar"
+        submitted: "Tarikh dihantar",
+        reviewer: "Disemak oleh",
+        reviewedAt: "Tarikh semakan"
       }
     : {
         activity: "Activity type",
@@ -34,7 +36,9 @@ export function showActivityDetails(recordId) {
         progress: "Progress",
         review: "Review status",
         remarks: "Reviewer remarks",
-        submitted: "Submitted at"
+        submitted: "Submitted at",
+        reviewer: "Reviewed by",
+        reviewedAt: "Reviewed at"      
       };
 
   const rows = [
