@@ -126,6 +126,194 @@ These are separate dimensions. An activity being IDLE does not automatically mea
 
 The inactivity period and exact automatic detection rules remain subject to detailed workflow design.
 
+
+## 2.5 Takaza Release and Ahbab Commitment
+
+Admin controls the release of a Takaza.
+
+Once released, Ahbab can:
+- View the Takaza information and requirements.
+- Express interest.
+- Commit voluntarily to the Takaza.
+- Monitor their commitment status.
+
+An Ahbab may commit to more than one Takaza.
+
+An Ahbab's original commitment must be preserved as historical information, even if Admin later assigns the Ahbab to another Takaza.
+
+## 2.6 Takaza Group Formation
+
+A Takaza may have multiple groups.
+
+Admin is responsible for preparing and managing Draft Groups before finalising group membership.
+
+Draft Group capabilities include:
+- Adding Ahbab who have committed voluntarily.
+- Assigning Ahbab who have not committed.
+- Removing Ahbab from a Draft Group.
+- Moving Ahbab between Draft Groups.
+- Moving Ahbab to another Takaza.
+- Reviewing Ahbab eligibility and commitment information.
+- Maintaining multiple Draft Group arrangements.
+
+Draft Groups may be reorganised until Admin finalises them.
+
+### Admin Assignment and Kawaif
+
+Admin has the authority to nominate or assign Ahbab to a Takaza Group, even if the Ahbab has not voluntarily committed.
+
+The system must distinguish between:
+
+- `COMMITTED` – Ahbab voluntarily expresses commitment.
+- `ADMIN_ASSIGNED` – Ahbab is nominated or assigned by Admin.
+- `KAWAIF_PASSED` – Ahbab meets the applicable eligibility criteria.
+
+Admin assignment and Kawaif assessment are separate information dimensions.
+
+Being assigned by Admin or passing Kawaif does not automatically activate group membership.
+
+Ahbab must explicitly confirm acceptance before becoming an active group member.
+
+## 2.7 Ahbab Confirmation
+
+After Admin prepares a Draft Group, the system requests confirmation from each selected Ahbab.
+
+Confirmation statuses:
+
+| Status | Meaning |
+|---|---|
+| PENDING | Awaiting Ahbab response |
+| ACCEPTED | Ahbab agrees to join |
+| DECLINED | Ahbab declines the proposed membership |
+
+Ahbab may provide a reason when declining. The reason is optional but should be recorded when provided.
+
+Admin can review the response and reorganise the Draft Group accordingly.
+
+A declined nomination does not constitute misconduct or failure by the Ahbab.
+
+### Confirmation Rules
+
+1. Admin assignment does not imply acceptance.
+2. Kawaif Passed does not imply acceptance.
+3. Only explicit acceptance can qualify an Ahbab for active membership.
+4. Pending and declined Ahbab are not counted as confirmed group members.
+5. Admin may finalise a group while some Ahbab remain Pending, provided the confirmed membership count satisfies the configured group size requirements.
+
+## 2.8 Group Size and Finalisation
+
+Each Draft Group must support configurable minimum and maximum member limits.
+
+Admin may finalise a group when the number of accepted and eligible Ahbab is within the configured range.
+
+Pending and declined Ahbab do not count towards the confirmed membership total.
+
+Finalisation does not require every nominated Ahbab to have responded.
+
+Once finalised, accepted and eligible Ahbab may be activated as group members.
+
+## 2.9 Final Group Amendments
+
+Finalised groups are not permanently locked.
+
+Admin retains authority to:
+- Add Ahbab.
+- Remove Ahbab.
+- Transfer Ahbab between groups.
+- Transfer Ahbab to another Takaza.
+- Reorganise group membership according to operational requirements.
+
+Every amendment must create a historical record.
+
+Group Amendment History should include:
+- Date and time.
+- Admin or actor responsible.
+- Ahbab involved.
+- Original Takaza and Group.
+- New Takaza and Group, where applicable.
+- Amendment action.
+- Reason or remarks.
+- Relevant Ahbab confirmation status.
+
+Historical membership and amendment records must not be silently overwritten or deleted.
+
+## 2.10 Takaza Transfer and Original Commitment
+
+Admin may transfer an Ahbab from one Draft Group or Takaza to another.
+
+The system must preserve:
+- The Ahbab's original voluntary commitment.
+- The original Takaza selected by the Ahbab.
+- The Admin's transfer decision.
+- The reason or remarks for the transfer.
+- The subsequent confirmation by the Ahbab.
+
+A transfer to another Takaza requires the Ahbab's explicit acceptance before the new membership becomes ACTIVE.
+
+The original commitment must never be rewritten to make it appear that the Ahbab initially selected the new Takaza.
+
+## 2.11 Ahbab Withdrawal
+
+Ahbab has the right to withdraw from an active Takaza Group immediately.
+
+Withdrawal does not require Admin approval.
+
+Withdrawal workflow:
+
+1. Ahbab initiates withdrawal.
+2. Ahbab may provide a reason (optional).
+3. The system immediately changes the membership status to `WITHDRAWN`.
+4. Admin is notified.
+5. The system records the withdrawal date, time and reason.
+6. Historical membership and Rekod Amal records are preserved.
+
+Admin cannot prevent or delay an Ahbab's withdrawal.
+
+Withdrawal does not delete the Ahbab's previous commitment or participation history.
+
+## 2.12 Re-nomination After Withdrawal
+
+An Ahbab who has withdrawn from a Takaza cannot directly reactivate the previous membership or make a new commitment to the same Takaza without going through a new nomination process.
+
+Rejoining the same Takaza requires:
+
+1. New Admin nomination.
+2. Eligibility assessment, where applicable.
+3. New Ahbab confirmation.
+4. Activation of a new membership record after acceptance and fulfilment of applicable requirements.
+
+The previous membership remains `WITHDRAWN`.
+
+A new participation must be recorded separately. Historical membership records must not be reactivated or overwritten.
+
+## 2.13 Takaza Group Status and Audit Principles
+
+The system must distinguish between:
+
+- Ahbab account status.
+- Original commitment status.
+- Admin assignment status.
+- Kawaif eligibility status.
+- Group confirmation status.
+- Group membership status.
+
+These are separate dimensions and must not be represented as one combined status.
+
+All important actions must be auditable, including:
+- Takaza release.
+- Ahbab commitment.
+- Admin assignment.
+- Kawaif assessment.
+- Ahbab acceptance or decline.
+- Group creation and finalisation.
+- Group amendments and transfers.
+- Ahbab withdrawal.
+- Re-nomination.
+
+The system must preserve the history of decisions and actions by both Admin and Ahbab.
+
+
+
 ## 3. Rekod Amal Management
 
 The official term for Activity Records is **Rekod Amal**.
