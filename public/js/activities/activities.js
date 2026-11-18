@@ -45,7 +45,7 @@ export async function loadActivities() {
   );
 
   $("activityHistory").innerHTML = table(
-    ["Activity", "Date", "Progress", "Review", "Details"],
+    ["Activity", "Date", "Progress", "Review", "Actions"],
     records.map(r =>
       `<tr>
         <td>${escapeHtml(r.activity_name)}</td>
@@ -54,13 +54,52 @@ export async function loadActivities() {
         <td>${tag(r.review_status)}</td>
         <td>
           <button
-            class="table-action"
+            class="table-action btn-icon"
             type="button"
             data-activity-view="${escapeHtml(r.record_id)}"
-          >${language === "my" ? "Lihat" : "View"}</button>
+            title="View details"
+            aria-label="View details"
+          >&#128065;</button>
+
+          ${r.review_status === "NEEDS_REVISION" ? `
+            <button
+              class="table-action btn-icon"
+              type="button"
+              data-activity-edit="${escapeHtml(r.record_id)}"
+              title="Edit and resubmit"
+              aria-label="Edit and resubmit"
+            >&#9998;</button>
+          ` : ""}
         </td>
       </tr>`
     )
   );
 }
 
+
+/* =========================
+   OPEN ACTIVITY EDIT POPUP
+========================= */
+
+export function openActivityEdit(recordId) {
+
+  const r = records.find(x =>
+    String(x.record_id) === String(recordId)
+  );
+
+  if (!r || r.review_status !== "NEEDS_REVISION") {
+    return;
+  }
+
+  $("editActivityRecordId").value = r.record_id;
+  $("editActivityDate").value = r.activity_date || "";
+  $("editStartTime").value = r.start_time || "";
+  $("editEndDate").value = r.end_date || "";
+  $("editEndTime").value = r.end_time || "";
+  $("editActivityDescription").value = r.description || "";
+  $("editProgress").value = r.progress_status || "NOT_STARTED";
+
+  $("activityEditMessage").textContent = "";
+
+  $("activityEditDialog").showModal();
+}
