@@ -216,7 +216,7 @@ export default {
 
       else if (
         path === "/api/admin/activity-types" &&
-        ["GET", "POST"].includes(method)
+        ["GET", "POST", "PATCH"].includes(method)
       ) {
         response = await adminActivityTypesHandler(
           request,
