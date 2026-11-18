@@ -1,174 +1,48 @@
-
 <!doctype html>
 <html lang="en">
-
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  
-  <meta
-    http-equiv="Content-Security-Policy"
-    content="
-      default-src 'self';
-      script-src 'self';
-      style-src 'self' 'unsafe-inline';
-      img-src 'self' data:;
-      connect-src 'self' https://juhudmanager-api-test.bitsuhami.workers.dev;
-      object-src 'none';
-      base-uri 'self';
-      form-action 'self';
-    "
-  >
-
-  <meta
-    name="description"
-    content="JuhudManager HR Management Portal"
-  >
-
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://juhudmanager-api-test.bitsuhami.workers.dev; object-src 'none'; base-uri 'self'; form-action 'self';">
+  <meta name="description" content="JuhudManager HR Management Portal">
   <title>JuhudManager</title>
-
   <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/admin-layout.css">
   <script src="js/theme.js"></script>
 </head>
-
 <body>
-
-  <!-- HEADER -->
-
   <header class="topbar">
-
-    <div class="brand">
-      <span class="brand-mark">J</span>
-      <span>JuhudManager</span>
-    </div>
-
+    <div class="brand"><span class="brand-mark">J</span><span>JuhudManager</span></div>
     <div class="top-actions">
-
-      <select id="languageSelect" aria-label="Language">
-        <option value="en">🇬🇧 EN</option>
-        <option value="my">🇲🇾 MY</option>
-      </select>
-      <button
-        id="themeToggle"
-        class="btn btn-outline"
-        type="button"
-        aria-label="Switch theme"
-      >
-        🌙 Dark
-      </button>
-
-      <button
-        id="logoutBtn"
-        class="btn btn-outline hidden"
-        data-i18n="logout"
-      >
-        Logout
-      </button>
-
+      <select id="languageSelect" aria-label="Language"><option value="en">🇬🇧 EN</option><option value="my">🇲🇾 MY</option></select>
+      <button id="themeToggle" class="btn btn-outline" type="button" aria-label="Switch theme">🌙 Dark</button>
+      <button id="logoutBtn" class="btn btn-outline hidden" data-i18n="logout">Logout</button>
     </div>
-
   </header>
 
-
-  <!-- MAIN CONTENT -->
-
   <main class="container">
-
     <div id="authContainer"></div>
-
     <section id="appView" class="hidden">
-
-      <!-- WELCOME -->
-
       <div class="welcome-row">
-
-        <div>
-          <p class="eyebrow" data-i18n="workspace">
-            WORKSPACE
-          </p>
-
-          <h1 id="greeting">Dashboard</h1>
-        </div>
-
+        <div><p class="eyebrow" data-i18n="workspace">WORKSPACE</p><h1 id="greeting">Dashboard</h1></div>
         <span id="rolePill" class="pill">USER</span>
-
       </div>
-
-
-      <!-- NAVIGATION -->
-
       <nav class="tabs">
-
-        <button
-          class="tab active"
-          data-view="dashboard"
-          data-i18n="dashboard"
-        >
-          Dashboard
-        </button>
-
-        <button
-          class="tab"
-          data-view="profile"
-          data-i18n="myProfile"
-        >
-          My Profile
-        </button>
-
-        <button
-          class="tab"
-          data-view="activities"
-          data-i18n="activities"
-        >
-          Activities
-        </button>
-
-        <button
-          class="tab admin-only hidden"
-          data-view="admin"
-          data-i18n="administration"
-        >
-          Administration
-        </button>
-
-        <button
-          class="tab admin-only hidden"
-          data-view="takaza"
-        >
-          Takaza Management
-        </button>
-
+        <button class="tab active" data-view="dashboard" data-i18n="dashboard">Dashboard</button>
+        <button class="tab" data-view="profile" data-i18n="myProfile">My Profile</button>
+        <button class="tab" data-view="activities" data-i18n="activities">Activities</button>
+        <button class="tab admin-only hidden" data-view="admin" data-i18n="administration">Administration</button>
+        <button class="tab admin-only hidden" data-view="takaza">Takaza Management</button>
       </nav>
-
-
-      <!-- PAGE CONTENT -->
-
       <div id="dashboardContainer"></div>
-
       <div id="profileContainer"></div>
-
       <div id="activitiesContainer"></div>
-
       <div id="administrationContainer"></div>
-
       <div id="takazaContainer"></div>
-
     </section>
-
-    <footer>
-      JuhudManager ·
-      <span data-i18n="footer">
-        People, activities and progress
-      </span>
-    </footer>
-
+    <footer>JuhudManager · <span data-i18n="footer">People, activities and progress</span></footer>
   </main>
-
-
-  <!-- APPLICATION SCRIPTS -->
-
   <script src="js/config.js"></script>
   <script type="module" src="js/loader.js"></script>
-
 </body>
 </html>
