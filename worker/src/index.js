@@ -1,3 +1,4 @@
+
 import {
   jsonResponse,
   corsHeaders,
@@ -27,6 +28,15 @@ import {
 import {
   adminActivityTypesHandler
 } from "./handlers/activity-types.js";
+
+// TAKAZA CATEGORY HANDLER
+import {
+  adminTakazaCategoriesHandler
+} from "./handlers/takaza-categories.js";
+
+import {
+  adminTakazasHandler
+} from "./handlers/takazas.js";
 
 import {
   activitiesHandler
@@ -88,7 +98,6 @@ export default {
           database: "connected",
           tables: result.total
         });
-
       }
 
       // =========================
@@ -125,6 +134,43 @@ export default {
         ["GET", "PUT"].includes(method)
       ) {
         response = await profileHandler(request, env);
+      }
+
+      // =========================
+      // ADDRESS SEARCH (PHOTON)
+      // =========================
+
+      else if (
+        path === "/api/address-search" &&
+        method === "GET"
+      ) {
+        const query = url.searchParams.get("q")?.trim();
+
+        if (!query || query.length < 3) {
+          response = jsonResponse({
+            features: []
+          });
+        } else {
+          const photonUrl = new URL(
+            "https://photon.komoot.io/api/"
+          );
+
+          photonUrl.searchParams.set("q", query);
+          photonUrl.searchParams.set("limit", "5");
+          photonUrl.searchParams.set("lang", "en");
+
+          const photonResponse = await fetch(photonUrl);
+
+          if (!photonResponse.ok) {
+            throw new Error(
+              `Photon API error: ${photonResponse.status}`
+            );
+          }
+
+          const data = await photonResponse.json();
+
+          response = jsonResponse(data);
+        }
       }
 
       // =========================
@@ -178,11 +224,72 @@ export default {
         );
       }
 
+      // =========================
+      // ADMIN TAKAZA CATEGORIES
+      // =========================
+
+      else if (
+        path === "/api/admin/takaza-categories" &&
+        ["GET", "POST"].includes(method)
+      ) {
+        response = await adminTakazaCategoriesHandler(
+          request,
+          env
+        );
+      }
+
+      else if (
+        /^\/api\/admin\/takaza-categories\/[^/]+$/.test(path) &&
+        ["PUT", "PATCH"].includes(method)
+      ) {
+        const categoryId = decodeURIComponent(
+          path.split("/").pop()
+        );
+
+        response = await adminTakazaCategoriesHandler(
+          request,
+          env,
+          categoryId
+        );
+      }
+
+      // =========================
+      // ADMIN TAKAZAS - LIST / CREATE
+      // =========================
+
+      else if (
+        path === "/api/admin/takazas" &&
+        ["GET", "POST"].includes(method)
+      ) {
+        response = await adminTakazasHandler(
+          request,
+          env
+        );
+      }
+
+      // =========================
+      // ADMIN TAKAZA - VIEW / UPDATE / ARCHIVE
+      // =========================
+
+      else if (
+        /^\/api\/admin\/takazas\/[^/]+$/.test(path) &&
+        ["GET", "PUT", "PATCH"].includes(method)
+      ) {
+        const takazaId = decodeURIComponent(
+          path.split("/").pop()
+        );
+
+        response = await adminTakazasHandler(
+          request,
+          env,
+          takazaId
+        );
+      }
 
       // =========================
       // ADMIN ASSIGNMENTS
       // =========================
-      
+
       else if (
         path === "/api/admin/assignments" &&
         ["GET", "POST"].includes(method)
@@ -191,8 +298,8 @@ export default {
           request,
           env
         );
-      }        
-        
+      }
+
       // =========================
       // USER ACTIVITIES
       // =========================

@@ -23,6 +23,10 @@ const partials = [
   {
     container: "administrationContainer",
     file: "partials/administration.html"
+  },
+  {
+    container: "takazaContainer",
+    file: "partials/takaza-manager.html"
   }
 ];
 

@@ -9,10 +9,7 @@ import { api } from "./core/api.js";
 
 import {
   showMessage,
-  escapeHtml,
-  setActivityStartNow,
-  tag,
-  table
+  setActivityStartNow
 } from "./core/helpers.js";
 
 import {
@@ -50,6 +47,12 @@ import {
   loadReviews
 } from "./admin/review.js";
 
+import {
+  initTakazaManager,
+  loadTakazaManager
+} from "./takazas/takaza-manager.js";
+
+
 const $ = id => document.getElementById(id);
 
 
@@ -58,6 +61,7 @@ const $ = id => document.getElementById(id);
 ========================= */
 
 function switchView(name) {
+
   document.querySelectorAll(".view").forEach(v => {
     v.classList.add("hidden");
   });
@@ -68,21 +72,29 @@ function switchView(name) {
     b.classList.toggle("active", b.dataset.view === name);
   });
 
+
   if (name === "profile") {
     loadProfile().catch(e => {
       showMessage("profileMessage", e.message, true);
     });
   }
 
+
   if (name === "admin") {
     loadAdmin(loadActivities).catch(e => alert(e.message));
   }
 
+
   if (name === "activities") {
     loadActivities().catch(e => alert(e.message));
   }
-}
 
+
+  if (name === "takaza") {
+    loadTakazaManager();
+  }
+
+}
 
 
 /* =========================
@@ -90,6 +102,7 @@ function switchView(name) {
 ========================= */
 
 async function loadMe() {
+
   const data = await api("/api/auth/me");
 
   const user = {
@@ -109,15 +122,19 @@ async function loadMe() {
 
   $("rolePill").textContent = user.roles.join(" · ");
 
+
   document.querySelectorAll(".admin-only").forEach(x => {
     x.classList.toggle("hidden", !isAdmin() && !canReview());
   });
 
+
   switchView("dashboard");
+
 
   loadActivities().catch(e => {
     console.error("Activities:", e);
   });
+
 }
 
 
@@ -126,15 +143,20 @@ async function loadMe() {
 ========================= */
 
 document.querySelectorAll(".tab").forEach(b => {
+
   b.addEventListener("click", () => {
     switchView(b.dataset.view);
   });
+
 });
 
+
 document.querySelectorAll("[data-go]").forEach(b => {
+
   b.addEventListener("click", () => {
     switchView(b.dataset.go);
   });
+
 });
 
 
@@ -143,6 +165,7 @@ document.querySelectorAll("[data-go]").forEach(b => {
 ========================= */
 
 $("profileForm").addEventListener("submit", async e => {
+
   e.preventDefault();
 
   const body = {
@@ -168,7 +191,9 @@ $("profileForm").addEventListener("submit", async e => {
     work_location: $("workLocation").value
   };
 
+
   try {
+
     await api("/api/profile", {
       method: "PUT",
       body: JSON.stringify(body)
@@ -180,8 +205,11 @@ $("profileForm").addEventListener("submit", async e => {
     );
 
   } catch (e) {
+
     showMessage("profileMessage", e.message, true);
+
   }
+
 });
 
 
@@ -201,11 +229,13 @@ $("activityType").addEventListener("change", () => {
 ========================= */
 
 $("activityHistory").addEventListener("click", e => {
+
   const button = e.target.closest("[data-activity-view]");
 
   if (!button) return;
 
   showActivityDetails(button.dataset.activityView);
+
 });
 
 
@@ -215,9 +245,11 @@ $("closeActivityDetails").addEventListener("click", () => {
 
 
 $("activityDetailsDialog").addEventListener("click", e => {
+
   if (e.target === $("activityDetailsDialog")) {
     $("activityDetailsDialog").close();
   }
+
 });
 
 
@@ -226,9 +258,11 @@ $("activityDetailsDialog").addEventListener("click", e => {
 ========================= */
 
 $("activityForm").addEventListener("submit", async e => {
+
   e.preventDefault();
 
   try {
+
     await api("/api/activities", {
       method: "POST",
       body: JSON.stringify({
@@ -242,9 +276,11 @@ $("activityForm").addEventListener("submit", async e => {
       })
     });
 
+
     $("activityDescription").value = "";
     $("endDate").value = "";
     $("endTime").value = "";
+
 
     showMessage(
       "activityMessage",
@@ -253,11 +289,15 @@ $("activityForm").addEventListener("submit", async e => {
         : "Activity submitted for review."
     );
 
+
     await loadActivities();
 
   } catch (e) {
+
     showMessage("activityMessage", e.message, true);
+
   }
+
 });
 
 
@@ -266,6 +306,13 @@ $("activityForm").addEventListener("submit", async e => {
 ========================= */
 
 initAdminUsers(loadAdmin, loadActivities);
+
+
+/* =========================
+   INITIALIZE TAKAZA MANAGER
+========================= */
+
+initTakazaManager();
 
 
 /* =========================
@@ -287,12 +334,19 @@ applyLanguage();
 ========================= */
 
 if (sessionStorage.getItem("juhud_token")) {
+
   loadMe().catch(err => {
+
     console.error("Session restoration failed:", err);
 
     sessionStorage.removeItem("juhud_token");
+
     showLogin();
+
   });
+
 } else {
+
   showLogin();
+
 }

@@ -1,0 +1,264 @@
+
+<section id="takazaPanel" class="view hidden">
+
+  <!-- TAKAZA REGISTRATION -->
+  <div class="panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Takaza Management</h2>
+        <p class="muted">
+          Register and manage Takaza.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        id="addTakazaBtn"
+      >
+        + Register Takaza
+      </button>
+    </div>
+
+    <div id="takazaMessage" class="message"></div>
+
+    <div id="takazaForm" class="panel hidden" hidden>
+      <h3>Register New Takaza</h3>
+
+      <form id="takazaFormElement">
+        <div class="form-grid">
+
+          <div>
+            <label for="takazaCategoryId">Category</label>
+            <select id="takazaCategoryId" required>
+              <option value="">Select Category</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="takazaName">Takaza Name</label>
+            <input
+              type="text"
+              id="takazaName"
+              maxlength="200"
+              required
+              placeholder="Enter Takaza name"
+            >
+          </div>
+
+          <div>
+            <label for="takazaParentId">Parent Takaza (Optional)</label>
+            <select id="takazaParentId">
+              <option value="">No Parent Takaza</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="takazaStartDate">Start Date</label>
+            <input type="date" id="takazaStartDate">
+          </div>
+
+          <div>
+            <label for="takazaEndDate">End Date</label>
+            <input type="date" id="takazaEndDate">
+          </div>
+
+          <div>
+            <label for="takazaDescription">Description</label>
+            <textarea
+              id="takazaDescription"
+              rows="3"
+              maxlength="5000"
+              placeholder="Describe this Takaza"
+            ></textarea>
+          </div>
+
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            Save Takaza
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline"
+            id="cancelTakazaBtn"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- TAKAZA SEARCH & FILTER TOGGLE -->
+    <div class="takaza-filter-toggle">
+      <label for="takazaFilterToggle">
+        <span>Search &amp; Filters</span>
+        <input
+          type="checkbox"
+          id="takazaFilterToggle"
+          class="switch-input"
+        >
+        <span class="switch-slider"></span>
+      </label>
+    </div>
+
+    <div id="takazaFilterPanel" class="takaza-filter-panel" hidden>
+
+      <div class="form-grid takaza-filters">
+
+        <div>
+          <label for="takazaSearch">Search Takaza</label>
+          <input
+            type="search"
+            id="takazaSearch"
+            placeholder="Search code or name..."
+          >
+        </div>
+
+        <div>
+          <label for="takazaFilterCategory">Category</label>
+          <select id="takazaFilterCategory">
+            <option value="">All Categories</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="takazaFilterStatus">Status</label>
+          <select id="takazaFilterStatus">
+            <option value="">All Statuses</option>
+            <option value="DRAFT">Draft</option>
+            <option value="PENDING_ENDORSEMENT">Pending Endorsement</option>
+            <option value="ACTIVE">Active</option>
+            <option value="ON_HOLD">On Hold</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="CANCELLED">Cancelled</option>
+            <option value="ARCHIVED">Archived</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="takazaFilterStartFrom">Start Date From</label>
+          <input type="date" id="takazaFilterStartFrom">
+        </div>
+
+        <div>
+          <label for="takazaFilterStartTo">Start Date To</label>
+          <input type="date" id="takazaFilterStartTo">
+        </div>
+
+        <div class="form-actions">
+          <button
+            type="button"
+            class="btn btn-outline"
+            id="resetTakazaFiltersBtn"
+          >
+            Reset Filters
+          </button>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- TAKAZA TABLE -->
+    <div class="table-wrap">
+      <div id="takazasTable"></div>
+    </div>
+
+    <!-- TAKAZA PAGINATION -->
+    <div id="takazaPagination" class="takaza-pagination"></div>
+
+  </div>
+
+  <!-- TAKAZA CATEGORIES -->
+  <div class="panel">
+    <div class="panel-heading">
+      <div>
+        <h2>Takaza Categories</h2>
+        <p class="muted">
+          Manage categories used to classify Takaza.
+        </p>
+      </div>
+
+      <button
+        type="button"
+        class="btn btn-primary"
+        id="addTakazaCategoryBtn"
+      >
+        + Add Category
+      </button>
+    </div>
+
+    <div id="takazaCategoryMessage" class="message"></div>
+
+    <div id="takazaCategoryForm" class="panel hidden" hidden>
+      <h3 id="takazaCategoryFormTitle">Add Takaza Category</h3>
+
+      <form id="takazaCategoryFormElement">
+        <div class="form-grid">
+
+          <div>
+            <label for="takazaCategoryCode">Category Code</label>
+            <input
+              type="text"
+              id="takazaCategoryCode"
+              maxlength="20"
+              placeholder="e.g. BBNJ"
+              required
+            >
+          </div>
+
+          <div>
+            <label for="takazaCategoryName">Category Name</label>
+            <input
+              type="text"
+              id="takazaCategoryName"
+              maxlength="100"
+              placeholder="e.g. Building & Infrastructure"
+              required
+            >
+          </div>
+
+          <div>
+            <label for="takazaCategoryStatus">Status</label>
+            <select id="takazaCategoryStatus">
+              <option value="ACTIVE">Active</option>
+              <option value="INACTIVE">Inactive</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="takazaCategoryDescription">Description</label>
+            <textarea
+              id="takazaCategoryDescription"
+              rows="3"
+              placeholder="Describe this category"
+            ></textarea>
+          </div>
+
+        </div>
+
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary">
+            Save Category
+          </button>
+
+          <button
+            type="button"
+            class="btn btn-outline"
+            id="cancelTakazaCategoryBtn"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div class="table-wrap">
+      <div id="takazaCategoriesTable"></div>
+    </div>
+  </div>
+
+</section>

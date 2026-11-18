@@ -28,6 +28,7 @@
   <title>JuhudManager</title>
 
   <link rel="stylesheet" href="css/styles.css">
+  <script src="js/theme.js"></script>
 </head>
 
 <body>
@@ -44,9 +45,17 @@
     <div class="top-actions">
 
       <select id="languageSelect" aria-label="Language">
-        <option value="en">English</option>
-        <option value="my">Bahasa Malaysia</option>
+        <option value="en">🇬🇧 EN</option>
+        <option value="my">🇲🇾 MY</option>
       </select>
+      <button
+        id="themeToggle"
+        class="btn btn-outline"
+        type="button"
+        aria-label="Switch theme"
+      >
+        🌙 Dark
+      </button>
 
       <button
         id="logoutBtn"
@@ -122,6 +131,13 @@
           Administration
         </button>
 
+        <button
+          class="tab admin-only hidden"
+          data-view="takaza"
+        >
+          Takaza Management
+        </button>
+
       </nav>
 
 
@@ -134,6 +150,8 @@
       <div id="activitiesContainer"></div>
 
       <div id="administrationContainer"></div>
+
+      <div id="takazaContainer"></div>
 
     </section>
 

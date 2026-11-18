@@ -139,3 +139,380 @@
   overflow-wrap: anywhere;
 }
 
+/* ENSURE HIDDEN ELEMENTS STAY HIDDEN */
+[hidden] {
+  display: none !important;
+}
+
+/* ADDRESS AUTOCOMPLETE */
+
+.address-suggestions {
+  display: grid;
+  gap: 0;
+  margin-top: 5px;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: 0 8px 20px rgba(25,45,80,.10);
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+}
+
+.address-suggestions button {
+  width: 100%;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  background: #fff;
+  padding: 11px 12px;
+  text-align: left;
+  font: inherit;
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.address-suggestions button:last-child {
+  border-bottom: 0;
+}
+
+.address-suggestions button:hover {
+  background: #eef3ff;
+}
+
+.address-suggestions small {
+  display: block;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+
+/* =========================
+   DARK MODE
+========================= */
+
+:root[data-theme="dark"] {
+  --ink: #e6edf7;
+  --muted: #9aa8bc;
+  --line: #2c3a4e;
+  --paper: #101722;
+  --blue: #7da6ff;
+  --blue2: #9ab9ff;
+  --green: #4bd39a;
+  --red: #ff8178;
+}
+
+:root[data-theme="dark"] body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] .topbar,
+:root[data-theme="dark"] .panel,
+:root[data-theme="dark"] .stat-card,
+:root[data-theme="dark"] .details-dialog,
+:root[data-theme="dark"] #reviewEditDialog {
+  background: #172233;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] input,
+:root[data-theme="dark"] select,
+:root[data-theme="dark"] textarea {
+  background: #111b29;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] label,
+:root[data-theme="dark"] .login-panel label,
+:root[data-theme="dark"] .stack label,
+:root[data-theme="dark"] .form-grid label,
+:root[data-theme="dark"] #reviewEditDialog label {
+  color: #c4d0e0;
+}
+
+:root[data-theme="dark"] .feature-points,
+:root[data-theme="dark"] td {
+  color: #c4d0e0;
+}
+
+:root[data-theme="dark"] th {
+  background: #1d2a3d;
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .btn-outline {
+  background: #243249;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] .btn-light,
+:root[data-theme="dark"] .table-action {
+  background: #263b60;
+  color: #a9c5ff;
+}
+
+:root[data-theme="dark"] .pill {
+  background: #263b60;
+  color: #a9c5ff;
+}
+
+:root[data-theme="dark"] .tag {
+  background: #29374b;
+  color: #c4d0e0;
+}
+
+:root[data-theme="dark"] .tag.pending {
+  background: #493b20;
+  color: #ffd477;
+}
+
+:root[data-theme="dark"] .tag.approved {
+  background: #193e34;
+  color: #78e0b2;
+}
+
+:root[data-theme="dark"] .tag.rejected {
+  background: #492a2c;
+  color: #ff9c98;
+}
+
+:root[data-theme="dark"] .address-suggestions,
+:root[data-theme="dark"] .address-suggestions button {
+  background: #172233;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+:root[data-theme="dark"] .address-suggestions button:hover {
+  background: #263b60;
+}
+
+:root[data-theme="dark"] .address-suggestions small {
+  color: var(--muted);
+}
+
+:root[data-theme="dark"] .stat-card strong {
+  color: var(--ink);
+}
+
+:root[data-theme="dark"] footer {
+  color: #78879c;
+}
+/* HEADER LANGUAGE & THEME INLINE */
+
+.top-actions {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.top-actions select {
+  width: auto;
+  min-width: 88px;
+}
+
+.top-actions #themeToggle {
+  white-space: nowrap;
+  padding: 10px 12px;
+}
+
+/* TAKAZA TABLE ACTION ICONS */
+
+.btn-icon {
+  padding: 2px 4px;
+  min-width: 24px;
+  min-height: 24px;
+  font-size: 11px;
+  line-height: 1;
+  border-radius: 5px;
+  margin: 0 1px;
+}
+
+/* TAKAZA PANEL SPACING */
+
+#takazaPanel > .panel + .panel {
+  margin-top: 18px;
+}
+
+
+/* TAKAZA SEARCH & FILTER TOGGLE */
+
+.takaza-filter-toggle {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 12px;
+  margin-bottom: 8px;
+}
+
+.takaza-filter-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.switch-input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+
+.switch-slider {
+  position: relative;
+  width: 42px;
+  height: 23px;
+  background: #b8c1cf;
+  border-radius: 20px;
+  transition: background .2s;
+}
+
+.switch-slider::before {
+  content: "";
+  position: absolute;
+  width: 17px;
+  height: 17px;
+  left: 3px;
+  top: 3px;
+  background: white;
+  border-radius: 50%;
+  transition: transform .2s;
+}
+
+.switch-input:checked + .switch-slider {
+  background: var(--blue);
+}
+
+.switch-input:checked + .switch-slider::before {
+  transform: translateX(19px);
+}
+
+.switch-input:focus-visible + .switch-slider {
+  outline: 3px solid rgba(36,87,197,.25);
+}
+
+.takaza-filter-panel {
+  margin-top: 12px;
+  margin-bottom: 22px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+}
+
+.takaza-filter-panel[hidden] {
+  display: none !important;
+}
+
+:root[data-theme="dark"] .takaza-filter-panel {
+  background: #111b29;
+}
+
+
+/* =========================
+   TAKAZA PAGINATION
+========================= */
+
+.takaza-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.takaza-pagination-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.takaza-pagination-controls button {
+  padding: 7px 12px;
+  font-size: 12px;
+}
+
+.takaza-pagination-controls button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+
+/* =========================
+   TAKAZA INFORMATION TOOLTIP
+========================= */
+
+.takaza-info-wrap {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 5px;
+}
+
+.takaza-info-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 1px solid var(--blue);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--blue);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.takaza-info-icon:hover {
+  background: var(--blue);
+  color: white;
+}
+
+.takaza-info-icon:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+}
+
+.takaza-tooltip {
+  position: fixed;
+  z-index: 99999;
+  width: 260px;
+  max-width: calc(100vw - 16px);
+  padding: 10px 12px;
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 8px;
+  background: #17243a;
+  color: white;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  text-align: left;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  pointer-events: none;
+}
+
+.takaza-tooltip[hidden] {
+  display: none !important;
+}
+
+
+
+
+
+

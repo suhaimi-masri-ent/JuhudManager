@@ -47,9 +47,16 @@
 
         <label>
           Nationality
-          <input type="text" id="nationality">
+          <input
+            type="text"
+            id="nationality"
+            list="nationalityCountries"
+            placeholder="Type your nationality..."
+            autocomplete="off"
+          >
+          <datalist id="nationalityCountries"></datalist>
         </label>
-
+        
       </div>
 
 
@@ -147,9 +154,15 @@
 
         <label class="span-2">
           Street Address
-          <input type="text" id="street">
+          <input
+            type="text"
+            id="street"
+            placeholder="Start typing an address..."
+            autocomplete="off"
+          >
+          <div id="streetSuggestions" class="address-suggestions" hidden></div>
         </label>
-
+        
         <label>
           Building Number
           <input type="text" id="buildingNo">
