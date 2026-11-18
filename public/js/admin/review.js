@@ -120,7 +120,9 @@ function viewSubmission(recordId) {
     ["Progress", s.progress_status],
     ["Review status", s.review_status],
     ["Reviewer remarks", s.reviewer_remarks],
-    ["Submitted at", s.submitted_at]
+    ["Submitted at", s.submitted_at],
+    ["Reviewed by", s.reviewer_name],
+    ["Reviewed at", s.reviewed_at]    
   ];
 
   $("activityDetailsContent").innerHTML = rows.map(([label, value]) =>
