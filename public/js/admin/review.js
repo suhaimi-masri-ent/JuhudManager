@@ -6,6 +6,7 @@ const $ = id => document.getElementById(id);
 
 let submissions = [];
 let loadActivitiesCallback = async () => {};
+let reviewFiltersBound = false;
 
 const reviewStatuses = [
   "PENDING",
@@ -84,6 +85,139 @@ function createReviewDialog() {
 
 
 /* =========================
+   SUBMISSION SEARCH & FILTER
+========================= */
+
+function renderSubmissions() {
+  const search = ($("submissionSearch")?.value || "")
+    .trim()
+    .toLowerCase();
+
+  const statusFilter =
+    $("submissionStatusFilter")?.value || "";
+
+  const dateFrom =
+    $("submissionDateFrom")?.value || "";
+
+  const dateTo =
+    $("submissionDateTo")?.value || "";
+
+  const filtered = submissions.filter(s => {
+    const searchable = [
+      s.full_name,
+      s.activity_name,
+      s.description,
+      s.review_status
+    ].join(" ").toLowerCase();
+
+    const matchesSearch = searchable.includes(search);
+
+    const matchesStatus =
+      !statusFilter || s.review_status === statusFilter;
+
+    const activityDate = s.activity_date || "";
+
+    const matchesFrom =
+      !dateFrom || activityDate >= dateFrom;
+
+    const matchesTo =
+      !dateTo || activityDate <= dateTo;
+
+    return (
+      matchesSearch &&
+      matchesStatus &&
+      matchesFrom &&
+      matchesTo
+    );
+  });
+
+  $("submissionsTable").innerHTML = table(
+    ["User", "Activity", "Date", "Status", "Actions"],
+
+    filtered.map(s =>
+      `<tr>
+
+        <td>${escapeHtml(s.full_name)}</td>
+
+        <td>
+          ${escapeHtml(s.activity_name)}<br>
+          <span class="muted">
+            ${escapeHtml(s.description)}
+          </span>
+        </td>
+
+        <td>${escapeHtml(s.activity_date)}</td>
+
+        <td>${tag(s.review_status)}</td>
+
+        <td>
+
+          <button
+            class="table-action"
+            type="button"
+            data-view-submission="${escapeHtml(s.record_id)}"
+          >
+            View Details
+          </button>
+
+          <button
+            class="table-action"
+            type="button"
+            data-edit-submission="${escapeHtml(s.record_id)}"
+          >
+            Edit Review
+          </button>
+
+        </td>
+
+      </tr>`
+    )
+  );
+
+  $("submissionFilterMessage").textContent =
+    `Showing ${filtered.length} of ${submissions.length} submissions.`;
+}
+
+function setupSubmissionFilters() {
+  if (reviewFiltersBound) return;
+
+  $("submissionSearch").addEventListener(
+    "input",
+    renderSubmissions
+  );
+
+  $("submissionStatusFilter").addEventListener(
+    "change",
+    renderSubmissions
+  );
+
+  $("submissionDateFrom").addEventListener(
+    "change",
+    renderSubmissions
+  );
+
+  $("submissionDateTo").addEventListener(
+    "change",
+    renderSubmissions
+  );
+
+  $("submissionResetFilters").addEventListener(
+    "click",
+    () => {
+      $("submissionSearch").value = "";
+      $("submissionStatusFilter").value = "";
+      $("submissionDateFrom").value = "";
+      $("submissionDateTo").value = "";
+
+      renderSubmissions();
+    }
+  );
+
+  reviewFiltersBound = true;
+}
+
+
+/* =========================
    VIEW SUBMISSION DETAILS
 ========================= */
 
@@ -122,7 +256,7 @@ function viewSubmission(recordId) {
     ["Reviewer remarks", s.reviewer_remarks],
     ["Submitted at", s.submitted_at],
     ["Reviewed by", s.reviewer_name],
-    ["Reviewed at", s.reviewed_at]    
+    ["Reviewed at", s.reviewed_at]
   ];
 
   $("activityDetailsContent").innerHTML = rows.map(([label, value]) =>
@@ -253,46 +387,6 @@ export async function loadReviews(loadActivities) {
 
   submissions = data.submissions || [];
 
-  $("submissionsTable").innerHTML = table(
-    ["User", "Activity", "Date", "Status", "Actions"],
-
-    submissions.map(s =>
-      `<tr>
-
-        <td>${escapeHtml(s.full_name)}</td>
-
-        <td>
-          ${escapeHtml(s.activity_name)}<br>
-          <span class="muted">
-            ${escapeHtml(s.description)}
-          </span>
-        </td>
-
-        <td>${escapeHtml(s.activity_date)}</td>
-
-        <td>${tag(s.review_status)}</td>
-
-        <td>
-
-          <button
-            class="table-action"
-            type="button"
-            data-view-submission="${escapeHtml(s.record_id)}"
-          >
-            View Details
-          </button>
-
-          <button
-            class="table-action"
-            type="button"
-            data-edit-submission="${escapeHtml(s.record_id)}"
-          >
-            Edit Review
-          </button>
-
-        </td>
-
-      </tr>`
-    )
-  );
+  setupSubmissionFilters();
+  renderSubmissions();
 }
