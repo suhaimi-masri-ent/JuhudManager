@@ -10,6 +10,7 @@
       <div class="admin-nav-group" data-admin-requires-admin>
         <div class="admin-nav-group-title"><span class="admin-nav-icon">▦</span>Activity Management</div>
         <button type="button" class="admin-nav-subitem" data-admin-nav="activity-types">Activity Types</button>
+        <button type="button" class="admin-nav-subitem" data-admin-nav="assignments">Activity Assignments</button>
         <button type="button" class="admin-nav-subitem" data-admin-nav="submissions" data-admin-requires-review>Submission Review</button>
       </div>
 
@@ -111,7 +112,69 @@
           <div id="activityTypePagination" class="admin-pagination"></div>
         </div>
       </section>
-
+      
+      <!-- ACTIVITY ASSIGNMENTS -->
+      <section class="admin-page" data-admin-page="assignments" data-admin-requires-admin hidden>
+        <div class="admin-section-header">
+          <div>
+            <p class="eyebrow">ACTIVITY MANAGEMENT</p>
+            <h2>Activity Assignments</h2>
+            <p class="muted small">Assign activities to individual users or all eligible users.</p>
+          </div>
+        </div>
+      
+        <div class="panel admin-form-panel">
+          <details class="admin-collapse">
+            <summary>
+              <span class="summary-icon" aria-hidden="true">＋</span>
+              <strong>Create Assignment</strong>
+            </summary>
+      
+            <form id="createAssignmentForm" class="stack admin-collapsible-content">
+              <label>
+                Activity Type
+                <select id="assignmentActivityType" required>
+                  <option value="">Select Activity Type</option>
+                </select>
+              </label>
+      
+              <label>
+                Assign To
+                <select id="assignmentTarget" required>
+                  <option value="USER">Individual User</option>
+                  <option value="ALL">All Active Users</option>
+                </select>
+              </label>
+      
+              <label id="assignmentUserField">
+                Select User
+                <select id="assignmentUser">
+                  <option value="">Select User</option>
+                </select>
+              </label>
+      
+              <label>
+                Due Date (Optional)
+                <input type="date" id="assignmentDueDate">
+              </label>
+      
+              <div id="createAssignmentMessage" class="message"></div>
+      
+              <button type="submit" class="btn btn-primary">
+                Create Assignment
+              </button>
+            </form>
+          </details>
+        </div>
+      
+        <div class="panel admin-data-panel">
+          <div id="assignmentsMessage" class="message"></div>
+          <div class="table-wrap">
+            <div id="assignmentsTable"></div>
+          </div>
+        </div>
+      </section>
+      
       <!-- SUBMISSION REVIEW -->
       <section class="admin-page" data-admin-page="submissions" data-admin-requires-review hidden>
         <div class="admin-section-header">
