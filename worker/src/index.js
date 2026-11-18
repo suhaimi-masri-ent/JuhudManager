@@ -314,6 +314,22 @@ export default {
         );
       }
 
+      else if (
+        /^\/api\/activities\/[^/]+$/.test(path) &&
+        method === "PATCH"
+      ) {
+        response = await activitiesHandler(
+          request,
+          env
+        );
+      }
+        ) {
+        response = await activitiesHandler(
+          request,
+          env
+        );
+      }
+
       // =========================
       // ADMIN SUBMISSIONS
       // =========================
