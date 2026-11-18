@@ -1,4 +1,3 @@
-
 # JuhudManager – System Realignment Design
 
 **Document:** System Realignment Design  
@@ -126,12 +125,12 @@ These are separate dimensions. An activity being IDLE does not automatically mea
 
 The inactivity period and exact automatic detection rules remain subject to detailed workflow design.
 
-
-## 2.5 Takaza Release and Ahbab Commitment
+### 2.5 Takaza Release and Ahbab Commitment
 
 Admin controls the release of a Takaza.
 
 Once released, Ahbab can:
+
 - View the Takaza information and requirements.
 - Express interest.
 - Commit voluntarily to the Takaza.
@@ -141,13 +140,14 @@ An Ahbab may commit to more than one Takaza.
 
 An Ahbab's original commitment must be preserved as historical information, even if Admin later assigns the Ahbab to another Takaza.
 
-## 2.6 Takaza Group Formation
+### 2.6 Takaza Group Formation
 
 A Takaza may have multiple groups.
 
 Admin is responsible for preparing and managing Draft Groups before finalising group membership.
 
 Draft Group capabilities include:
+
 - Adding Ahbab who have committed voluntarily.
 - Assigning Ahbab who have not committed.
 - Removing Ahbab from a Draft Group.
@@ -158,7 +158,7 @@ Draft Group capabilities include:
 
 Draft Groups may be reorganised until Admin finalises them.
 
-### Admin Assignment and Kawaif
+#### Admin Assignment and Kawaif
 
 Admin has the authority to nominate or assign Ahbab to a Takaza Group, even if the Ahbab has not voluntarily committed.
 
@@ -174,7 +174,7 @@ Being assigned by Admin or passing Kawaif does not automatically activate group 
 
 Ahbab must explicitly confirm acceptance before becoming an active group member.
 
-## 2.7 Ahbab Confirmation
+### 2.7 Ahbab Confirmation
 
 After Admin prepares a Draft Group, the system requests confirmation from each selected Ahbab.
 
@@ -192,7 +192,7 @@ Admin can review the response and reorganise the Draft Group accordingly.
 
 A declined nomination does not constitute misconduct or failure by the Ahbab.
 
-### Confirmation Rules
+#### Confirmation Rules
 
 1. Admin assignment does not imply acceptance.
 2. Kawaif Passed does not imply acceptance.
@@ -200,7 +200,7 @@ A declined nomination does not constitute misconduct or failure by the Ahbab.
 4. Pending and declined Ahbab are not counted as confirmed group members.
 5. Admin may finalise a group while some Ahbab remain Pending, provided the confirmed membership count satisfies the configured group size requirements.
 
-## 2.8 Group Size and Finalisation
+### 2.8 Group Size and Finalisation
 
 Each Draft Group must support configurable minimum and maximum member limits.
 
@@ -212,11 +212,12 @@ Finalisation does not require every nominated Ahbab to have responded.
 
 Once finalised, accepted and eligible Ahbab may be activated as group members.
 
-## 2.9 Final Group Amendments
+### 2.9 Final Group Amendments
 
 Finalised groups are not permanently locked.
 
 Admin retains authority to:
+
 - Add Ahbab.
 - Remove Ahbab.
 - Transfer Ahbab between groups.
@@ -226,6 +227,7 @@ Admin retains authority to:
 Every amendment must create a historical record.
 
 Group Amendment History should include:
+
 - Date and time.
 - Admin or actor responsible.
 - Ahbab involved.
@@ -237,11 +239,12 @@ Group Amendment History should include:
 
 Historical membership and amendment records must not be silently overwritten or deleted.
 
-## 2.10 Takaza Transfer and Original Commitment
+### 2.10 Takaza Transfer and Original Commitment
 
 Admin may transfer an Ahbab from one Draft Group or Takaza to another.
 
 The system must preserve:
+
 - The Ahbab's original voluntary commitment.
 - The original Takaza selected by the Ahbab.
 - The Admin's transfer decision.
@@ -252,7 +255,7 @@ A transfer to another Takaza requires the Ahbab's explicit acceptance before the
 
 The original commitment must never be rewritten to make it appear that the Ahbab initially selected the new Takaza.
 
-## 2.11 Ahbab Withdrawal
+### 2.11 Ahbab Withdrawal
 
 Ahbab has the right to withdraw from an active Takaza Group immediately.
 
@@ -271,7 +274,7 @@ Admin cannot prevent or delay an Ahbab's withdrawal.
 
 Withdrawal does not delete the Ahbab's previous commitment or participation history.
 
-## 2.12 Re-nomination After Withdrawal
+### 2.12 Re-nomination After Withdrawal
 
 An Ahbab who has withdrawn from a Takaza cannot directly reactivate the previous membership or make a new commitment to the same Takaza without going through a new nomination process.
 
@@ -286,7 +289,7 @@ The previous membership remains `WITHDRAWN`.
 
 A new participation must be recorded separately. Historical membership records must not be reactivated or overwritten.
 
-## 2.13 Takaza Group Status and Audit Principles
+### 2.13 Takaza Group Status and Audit Principles
 
 The system must distinguish between:
 
@@ -300,6 +303,7 @@ The system must distinguish between:
 These are separate dimensions and must not be represented as one combined status.
 
 All important actions must be auditable, including:
+
 - Takaza release.
 - Ahbab commitment.
 - Admin assignment.
@@ -311,8 +315,6 @@ All important actions must be auditable, including:
 - Re-nomination.
 
 The system must preserve the history of decisions and actions by both Admin and Ahbab.
-
-
 
 ## 3. Rekod Amal Management
 
@@ -558,28 +560,39 @@ JUHUDMANAGER
 |
 +-- TAKAZA MANAGEMENT
 |   |
-|   +-- Takaza Makami
-|   +-- Takaza Biruni
-|   +-- Takaza Khidmat
-|   +-- Usaha Masturat
-|   +-- Pelajar Diini
-|   +-- Pelajar Asri
-|   +-- Ulama
-|   +-- OKU
-|   +-- OBB
-|   +-- Other Takaza
+|   +-- Takaza Registration
+|   +-- Takaza Release
+|   +-- Takaza Categories
+|   |
+|   +-- AHBAB COMMITMENT
+|   |   +-- Voluntary Commitment
+|   |   +-- Commitment History
+|   |
+|   +-- GROUP MANAGEMENT
+|       +-- Draft Selection
+|       +-- Draft Groups
+|       +-- Admin Assignment / Nomination
+|       +-- Kawaif Assessment
+|       +-- Ahbab Confirmation
+|       +-- Group Finalisation
+|       +-- Final Group Management
+|       +-- Group Amendment History
+|       +-- Ahbab Withdrawal
+|       +-- Re-nomination
 |
 +-- AHBAB MANAGEMENT
 |   |
 |   +-- Ahbab Profile
+|   +-- Account Status
 |   +-- Takaza Participation
 |   +-- Automatic Makami Participation
 |
 +-- REKOD AMAL MANAGEMENT
 |   |
-|   +-- Activity Classification
+|   +-- Amal Classification
 |   +-- Rekod Amal Submission
 |   +-- Activity Status Monitoring
+|   +-- Progress Reporting
 |   +-- Rekod Amal History
 |
 +-- TAFAKUT MANAGEMENT
@@ -587,7 +600,7 @@ JUHUDMANAGER
 |   +-- Takaza-specific Tafakut
 |   +-- Multiple Tafakut Types
 |   +-- Criteria Management
-|   +-- Tafakut History
+|   +-- Criteria Version History
 |
 +-- GENERATED REPORTS
 |   |
@@ -609,31 +622,205 @@ This is a logical module structure. The final navigation layout may be adjusted 
 
 This section describes conceptual data relationships only. It is not a final database schema.
 
+The final schema must support historical records, multiple Takaza participation, flexible group formation and traceability of Admin and Ahbab decisions.
+
 ### 9.1 Takaza
 
 Individual Takaza registrations should retain their own identity, name, category, description, dates and lifecycle status.
 
 Internal Takaza code and Project Code / Percha No. must remain separate.
 
-### 9.2 Takaza–Ahbab Participation
+Takaza should also support its release information, including:
 
-A relationship record is required to connect Ahbab with Takaza.
+- Release status.
+- Release date and time.
+- Released by.
+- Relevant release information or remarks.
+
+The release process must not be confused with group finalisation.
+
+### 9.2 Takaza Commitment
+
+A separate record is required to preserve each Ahbab's voluntary commitment.
 
 Conceptual fields:
 
-- Participation ID
+- Commitment ID
 - Takaza ID
 - Ahbab User ID
-- Assigned By
-- Assigned Date
-- Participation Status
-- Start Date
-- End Date, where applicable
-- Remarks
+- Commitment date and time
+- Commitment status
+- Remarks, where applicable
+- Created and updated information
 
-Makami participation must be automatically created or reactivated according to Ahbab account status.
+The original commitment must remain unchanged when Admin later assigns or transfers the Ahbab to another Takaza.
 
-### 9.3 Rekod Amal
+A new commitment or nomination must be recorded as a separate event or record where applicable.
+
+### 9.3 Admin Nomination and Assignment
+
+The system must support Admin nominating an Ahbab who has not voluntarily committed to a Takaza.
+
+Conceptual fields:
+
+- Nomination ID
+- Takaza ID
+- Ahbab User ID
+- Assigned by Admin
+- Assignment date and time
+- Nomination status
+- Remarks or reason
+- Related Draft Group, where applicable
+
+Admin nomination and voluntary commitment must remain distinguishable.
+
+`ADMIN_ASSIGNED` represents the assignment source or method. It is not an eligibility result or membership status.
+
+### 9.4 Kawaif Assessment
+
+The system must retain the eligibility assessment applied to an Ahbab for a particular Takaza or nomination.
+
+Conceptual fields:
+
+- Kawaif Assessment ID
+- Takaza ID
+- Ahbab User ID
+- Related nomination or selection
+- Assessment result
+- Criteria reference
+- Assessment date and time
+- Assessed by
+- Remarks and supporting information
+
+`KAWAIF_PASSED` represents an eligibility outcome.
+
+It must remain separate from Admin assignment, Ahbab confirmation and active membership.
+
+The detailed Kawaif criteria and evaluation rules remain subject to further design.
+
+### 9.5 Draft Groups and Final Groups
+
+A Takaza may contain multiple groups.
+
+The system must support group creation, draft composition, finalisation and subsequent amendments.
+
+Conceptual entities may include:
+
+**Takaza Groups**
+- Group ID
+- Takaza ID
+- Group name or reference
+- Minimum members
+- Maximum members
+- Group status
+- Created by
+- Created and updated information
+
+**Group Membership / Selection**
+- Membership or selection ID
+- Group ID
+- Ahbab User ID
+- Related commitment or nomination
+- Selection source
+- Selection status
+- Confirmation status
+- Membership status
+- Start date
+- End date, where applicable
+
+The design must distinguish between:
+
+- Draft selection.
+- Ahbab confirmation.
+- Eligibility result.
+- Active group membership.
+- Withdrawn membership.
+
+A person being listed in a Draft Group does not automatically become an active member.
+
+### 9.6 Ahbab Confirmation
+
+Ahbab confirmation must be recorded separately from the Admin selection or nomination.
+
+Conceptual fields:
+
+- Confirmation ID
+- Related membership or selection ID
+- Ahbab User ID
+- Confirmation response
+- Response date and time
+- Decline reason, where provided
+- Confirmation history
+
+Confirmation responses:
+
+- `PENDING`
+- `ACCEPTED`
+- `DECLINED`
+
+A new Takaza transfer requires new confirmation from the Ahbab before the new membership becomes active.
+
+### 9.7 Group Finalisation and Membership Lifecycle
+
+The system must retain the finalisation event and the membership state of each Ahbab.
+
+Conceptual information:
+
+- Group finalisation date and time.
+- Finalised by.
+- Group size limits at finalisation.
+- Confirmed and eligible membership count.
+- Finalisation status.
+- Membership activation date.
+
+Only accepted and eligible Ahbab count towards the confirmed membership total.
+
+Pending and declined Ahbab must not count towards the minimum or maximum confirmed membership count.
+
+### 9.8 Group Amendment History
+
+A separate historical record is required for changes made after group formation or finalisation.
+
+Conceptual fields:
+
+- Amendment ID
+- Group or membership reference
+- Ahbab User ID
+- Previous Takaza ID
+- New Takaza ID
+- Previous Group ID
+- New Group ID
+- Amendment action
+- Reason or remarks
+- Changed by
+- Date and time
+- Relevant Ahbab confirmation reference
+
+The system must preserve every amendment.
+
+Previous membership and transfer information must not be silently overwritten.
+
+### 9.9 Ahbab Withdrawal and Re-nomination
+
+Withdrawal must be recorded as a separate membership lifecycle event.
+
+Conceptual fields:
+
+- Withdrawal ID
+- Membership ID
+- Ahbab User ID
+- Withdrawal date and time
+- Reason, if provided
+- Notification status
+- Recorded status
+
+Withdrawal must immediately change the relevant membership to `WITHDRAWN`, without requiring Admin approval.
+
+A later return to the same Takaza requires a new nomination process and a new membership record after the applicable eligibility and confirmation requirements are met.
+
+The previous withdrawn membership must remain historical and must not be reactivated.
+
+### 9.10 Rekod Amal
 
 Rekod Amal must preserve the original submitted information and its history.
 
@@ -641,7 +828,7 @@ The final schema must support traceability between Rekod Amal and the relevant A
 
 It must also support the selection of a Rekod Amal record by multiple Tafakut where applicable.
 
-### 9.4 Tafakut
+### 9.11 Tafakut
 
 A Takaza may have multiple Tafakut definitions.
 
@@ -657,7 +844,7 @@ Each Tafakut must be associated with the relevant Takaza.
 
 Criteria history must be retained so historical reports can be reproduced using the criteria that were applied at the time.
 
-### 9.5 Generated Reports
+### 9.12 Generated Reports
 
 The report data model should preserve:
 
@@ -675,7 +862,7 @@ The report data model should preserve:
 
 The implementation should retain sufficient source references to reproduce or inspect historical reports.
 
-### 9.6 Assessment
+### 9.13 Assessment
 
 Assessment should use generated reports and other relevant evidence.
 
@@ -689,30 +876,84 @@ It should support:
 
 ## 10. Important Data and Workflow Rules
 
-1. Every active Ahbab is automatically registered as a participant of Takaza Makami.
-2. Makami participation remains active while the Ahbab account is active.
-3. Deactivating an Ahbab account makes its Makami participation inactive.
-4. Reactivating an Ahbab account reactivates the existing Makami participation without creating a duplicate.
-5. Account status, participation status, activity status and reporting status are separate concepts.
-6. No update must not be interpreted automatically as no progress.
-7. The system may detect idle activities based on update history.
-8. Admin may manually change activity status.
-9. Ahbab updates Rekod Amal but does not manage activity status.
-10. Rekod Amal is the source record for Tafakut and generated reports.
-11. A Takaza may have multiple Tafakut types.
-12. Each Takaza manages its own Tafakut configuration independently.
-13. Tafakut criteria can be changed and regenerated at any time.
-14. Tafakut history must be preserved.
-15. One Ahbab may be assessed through multiple Tafakut within the same Takaza.
-16. One Rekod Amal may be selected by multiple Tafakut when relevant.
-17. Reports are generated individually for one Ahbab at a time.
-18. Reports may be generated using historical or current Tafakut criteria.
-19. Ahbab may view only their own generated reports, with read-only access.
-20. Ahbab cannot edit or comment on generated reports.
-21. Project Code / Percha No. is currently required only for Takaza Biruni.
-22. Internal Takaza codes and Project Code / Percha No. must remain separate.
-23. Assessment recommendations must not automatically become final human decisions.
-24. Historical Rekod Amal, Tafakut, reports and audit information must be preserved.
+### Takaza and Commitment
+
+1. Admin controls the release of Takaza.
+2. Ahbab may voluntarily commit to any released Takaza.
+3. An Ahbab may commit to multiple Takaza.
+4. Original voluntary commitments must be preserved as historical records.
+5. Admin may nominate Ahbab who have not voluntarily committed.
+6. Admin assignment must not be treated as voluntary commitment.
+7. Admin may reorganise Draft Groups and transfer Ahbab between groups or Takaza.
+8. A transfer must not overwrite the Ahbab's original commitment.
+9. A transfer to another Takaza requires the Ahbab's explicit acceptance before new membership activation.
+
+### Kawaif and Ahbab Confirmation
+
+10. Kawaif assessment is separate from Admin assignment and Ahbab confirmation.
+11. Passing Kawaif does not automatically activate membership.
+12. Admin assignment does not automatically activate membership.
+13. Ahbab must explicitly accept before becoming an active member.
+14. Confirmation responses are `PENDING`, `ACCEPTED` or `DECLINED`.
+15. Decline reason is optional but should be retained when provided.
+16. Declining a nomination is not misconduct or failure.
+17. Pending and declined Ahbab are not counted as confirmed group members.
+
+### Group Formation and Management
+
+18. A Takaza may have multiple groups.
+19. Each group has configurable minimum and maximum member limits.
+20. Admin may finalise a group when the accepted and eligible membership count satisfies the configured range.
+21. Admin does not need to wait for every selected Ahbab to respond if the confirmed membership count already satisfies the group requirements.
+22. Finalised groups may still be amended by Admin.
+23. Every post-finalisation change must create a Group Amendment History record.
+24. Historical group membership, transfer and amendment records must be preserved.
+
+### Withdrawal and Re-nomination
+
+25. Ahbab may withdraw from an active group immediately without Admin approval.
+26. Withdrawal immediately changes the relevant membership status to `WITHDRAWN`.
+27. Admin must be notified of the withdrawal.
+28. Withdrawal reason is optional.
+29. Withdrawal must not delete previous commitments, participation or Rekod Amal history.
+30. Rejoining the same Takaza after withdrawal requires a new Admin nomination process.
+31. Re-nomination requires a new membership record and new Ahbab confirmation.
+32. Previous withdrawn membership must never be reactivated or overwritten.
+
+### Ahbab and Makami
+
+33. Every active Ahbab is automatically registered as a participant of Takaza Makami.
+34. Makami participation remains active while the Ahbab account is active.
+35. Deactivating an Ahbab account makes its Makami participation inactive.
+36. Reactivating an Ahbab account reactivates the existing Makami participation without creating a duplicate.
+37. Account status, participation status, activity status and reporting status are separate concepts.
+38. Automatic Makami participation does not imply that the Ahbab has made progress.
+
+### Rekod Amal and Tafakut
+
+39. No update must not be interpreted automatically as no progress.
+40. The system may detect idle activities based on update history.
+41. Admin may manually change activity status.
+42. Ahbab updates Rekod Amal but does not manage activity status.
+43. Rekod Amal is the source record for Tafakut and generated reports.
+44. A Takaza may have multiple Tafakut types.
+45. Each Takaza manages its own Tafakut configuration independently.
+46. Tafakut criteria can be changed and regenerated at any time.
+47. Tafakut history must be preserved.
+48. One Ahbab may be assessed through multiple Tafakut within the same Takaza.
+49. One Rekod Amal may be selected by multiple Tafakut when relevant.
+50. Reports are generated individually for one Ahbab at a time.
+51. Reports may be generated using historical or current Tafakut criteria.
+52. Ahbab may view only their own generated reports, with read-only access.
+53. Ahbab cannot edit or comment on generated reports.
+
+### Assessment and Data Preservation
+
+54. Assessment recommendations must not automatically become final human decisions.
+55. System recommendations and final human decisions must remain separate.
+56. Historical Rekod Amal, Tafakut, reports, commitments, nominations, memberships and audit information must be preserved.
+57. Project Code / Percha No. is currently required only for Takaza Biruni.
+58. Internal Takaza codes and Project Code / Percha No. must remain separate.
 
 ## 11. Migration and Compatibility Principles
 
@@ -734,16 +975,26 @@ The `worker/schema-baseline/0001_baseline.sql` file is a schema snapshot for a n
 
 | Step | Work item | Objective |
 |---|---|---|
-| 1 | Confirm system realignment design | Agree on the target operational relationships |
+| 1 | Confirm system realignment design | Agree on the target operational relationships and workflows |
 | 2 | Finalise Takaza classification | Establish Takaza structure and configuration |
-| 3 | Design Ahbab participation | Implement automatic Makami participation and other Takaza participation |
-| 4 | Design Rekod Amal model | Establish the activity record structure and history |
-| 5 | Design Tafakut model | Support multiple Tafakut types and dynamic criteria |
-| 6 | Design report generation | Support individual and historical report generation |
-| 7 | Prepare database migration plan | Preserve existing data and IDs |
-| 8 | Implement workflows incrementally | Build and test each module |
-| 9 | Implement assessment | Support evidence, recommendation and human decision |
-| 10 | End-to-end testing | Validate operational workflows |
+| 3 | Takaza release workflow | Allow Admin to release Takaza for Ahbab participation |
+| 4 | Ahbab commitment workflow | Support voluntary commitment and preserve commitment history |
+| 5 | Draft Group management | Allow Admin to create and reorganise Draft Groups |
+| 6 | Admin nomination and Kawaif | Support Admin assignment and eligibility assessment |
+| 7 | Ahbab confirmation | Record acceptance, decline and pending responses |
+| 8 | Group finalisation | Enforce minimum and maximum confirmed member requirements |
+| 9 | Final Group management | Support amendments, transfers and amendment history |
+| 10 | Withdrawal and re-nomination | Support immediate withdrawal and new nomination after withdrawal |
+| 11 | Ahbab participation | Implement automatic Makami participation and other Takaza participation |
+| 12 | Rekod Amal model | Establish the activity record structure and history |
+| 13 | Tafakut model | Support multiple Tafakut types and dynamic criteria |
+| 14 | Report generation | Support individual and historical report generation |
+| 15 | Database migration plan | Preserve existing data and IDs |
+| 16 | Incremental implementation | Build and test each module |
+| 17 | Assessment | Support evidence, recommendation and human decision |
+| 18 | End-to-end testing | Validate complete operational workflows |
+
+The sequence is a logical development order. Some modules may be refined iteratively as implementation and operational testing reveal additional requirements.
 
 ## 13. Remaining Design Decisions
 
