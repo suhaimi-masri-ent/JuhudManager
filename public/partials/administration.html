@@ -109,6 +109,59 @@
   </div>
 
 
+
+  <!-- EDIT ACTIVITY TYPE DIALOG -->
+
+  <dialog id="editActivityTypeDialog">
+    <div class="panel">
+      <h2>Edit Activity Type</h2>
+
+      <form id="editActivityTypeForm" class="stack">
+
+        <input type="hidden" id="editActivityTypeId">
+
+        <label>
+          Activity Name
+          <input type="text" id="editActivityTypeName" required>
+        </label>
+
+        <label>
+          Frequency
+          <select id="editActivityTypeFrequency" required>
+            <option value="DAILY">Daily</option>
+            <option value="WEEKLY">Weekly</option>
+            <option value="MONTHLY">Monthly</option>
+            <option value="YEARLY">Yearly</option>
+            <option value="AD_HOC">Ad Hoc</option>
+          </select>
+        </label>
+
+        <label>
+          Description
+          <textarea id="editActivityTypeDescription" rows="3"></textarea>
+        </label>
+
+        <div id="editActivityTypeMessage" class="message"></div>
+
+        <div class="row">
+          <button type="submit" class="btn btn-primary">
+            Save Changes
+          </button>
+
+          <button
+            type="button"
+            class="btn"
+            id="cancelEditActivityType"
+          >
+            Cancel
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </dialog>
+
+  
   <!-- USER MANAGEMENT -->
 
   <div class="panel" style="margin-top:18px">
