@@ -114,4 +114,74 @@
 
   </dialog>
 
+
+  <!-- USER ACTIVITY EDIT POPUP -->
+
+  <dialog id="activityEditDialog" class="details-dialog">
+
+    <div class="details-header">
+      <h2>Edit & Resubmit Activity</h2>
+
+      <button
+        type="button"
+        id="closeActivityEdit"
+        class="btn btn-outline"
+      >
+        Cancel
+      </button>
+    </div>
+
+    <form id="activityEditForm" class="stack">
+
+      <input type="hidden" id="editActivityRecordId">
+
+      <label>
+        Activity Date
+        <input type="date" id="editActivityDate" required>
+      </label>
+
+      <label>
+        Start Time
+        <input type="time" id="editStartTime" required>
+      </label>
+
+      <label>
+        End Date
+        <input type="date" id="editEndDate">
+      </label>
+
+      <label>
+        End Time
+        <input type="time" id="editEndTime">
+      </label>
+
+      <label>
+        Description
+        <textarea
+          id="editActivityDescription"
+          rows="4"
+          required
+        ></textarea>
+      </label>
+
+      <label>
+        Progress Status
+        <select id="editProgress" required>
+          <option value="NOT_STARTED">Not Started</option>
+          <option value="IN_PROGRESS">In Progress</option>
+          <option value="COMPLETED">Completed</option>
+        </select>
+      </label>
+
+      <p id="activityEditMessage" class="message"></p>
+
+      <button type="submit" class="btn btn-primary">
+        Resubmit Activity
+      </button>
+
+    </form>
+
+  </dialog>
+  
+
 </section>
