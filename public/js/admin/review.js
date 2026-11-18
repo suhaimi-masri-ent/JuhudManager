@@ -7,6 +7,7 @@ const $ = id => document.getElementById(id);
 let submissions = [];
 let loadActivitiesCallback = async () => {};
 let reviewFiltersBound = false;
+let reviewCurrentPage = 1;
 
 const reviewStatuses = [
   "PENDING",
@@ -102,6 +103,9 @@ function renderSubmissions() {
   const dateTo =
     $("submissionDateTo")?.value || "";
 
+  const pageSize =
+    Number($("submissionPageSize")?.value) || 10;
+
   const filtered = submissions.filter(s => {
     const searchable = [
       s.full_name,
@@ -131,10 +135,27 @@ function renderSubmissions() {
     );
   });
 
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filtered.length / pageSize)
+  );
+
+  reviewCurrentPage = Math.min(
+    reviewCurrentPage,
+    totalPages
+  );
+
+  const start = (reviewCurrentPage - 1) * pageSize;
+
+  const pageRecords = filtered.slice(
+    start,
+    start + pageSize
+  );
+
   $("submissionsTable").innerHTML = table(
     ["User", "Activity", "Date", "Status", "Actions"],
 
-    filtered.map(s =>
+    pageRecords.map(s =>
       `<tr>
 
         <td>${escapeHtml(s.full_name)}</td>
@@ -176,29 +197,77 @@ function renderSubmissions() {
 
   $("submissionFilterMessage").textContent =
     `Showing ${filtered.length} of ${submissions.length} submissions.`;
+
+  $("submissionPagination").innerHTML = `
+    <span>
+      Page ${reviewCurrentPage} of ${totalPages}
+      (${filtered.length} submissions)
+    </span>
+
+    <div class="row">
+      <button
+        type="button"
+        class="btn"
+        id="submissionPrevious"
+        ${reviewCurrentPage <= 1 ? "disabled" : ""}
+      >Previous</button>
+
+      <button
+        type="button"
+        class="btn"
+        id="submissionNext"
+        ${reviewCurrentPage >= totalPages ? "disabled" : ""}
+      >Next</button>
+    </div>
+  `;
+
+  $("submissionPrevious").addEventListener("click", () => {
+    if (reviewCurrentPage > 1) {
+      reviewCurrentPage--;
+      renderSubmissions();
+    }
+  });
+
+  $("submissionNext").addEventListener("click", () => {
+    if (reviewCurrentPage < totalPages) {
+      reviewCurrentPage++;
+      renderSubmissions();
+    }
+  });
 }
+
 
 function setupSubmissionFilters() {
   if (reviewFiltersBound) return;
 
+  const refresh = () => {
+    reviewCurrentPage = 1;
+    renderSubmissions();
+  };
+
   $("submissionSearch").addEventListener(
     "input",
-    renderSubmissions
+    refresh
   );
 
   $("submissionStatusFilter").addEventListener(
     "change",
-    renderSubmissions
+    refresh
   );
 
   $("submissionDateFrom").addEventListener(
     "change",
-    renderSubmissions
+    refresh
   );
 
   $("submissionDateTo").addEventListener(
     "change",
-    renderSubmissions
+    refresh
+  );
+
+  $("submissionPageSize").addEventListener(
+    "change",
+    refresh
   );
 
   $("submissionResetFilters").addEventListener(
@@ -208,10 +277,30 @@ function setupSubmissionFilters() {
       $("submissionStatusFilter").value = "";
       $("submissionDateFrom").value = "";
       $("submissionDateTo").value = "";
+      $("submissionPageSize").value = "10";
 
+      reviewCurrentPage = 1;
       renderSubmissions();
     }
   );
+
+  const toggleButton = $("submissionToggleFilters");
+  const filterPanel = $("submissionFilterPanel");
+
+  toggleButton.addEventListener("click", () => {
+    const isHidden = filterPanel.hidden;
+
+    filterPanel.hidden = !isHidden;
+
+    toggleButton.textContent = isHidden
+      ? "Hide Search & Filters"
+      : "Show Search & Filters";
+
+    toggleButton.setAttribute(
+      "aria-expanded",
+      String(isHidden)
+    );
+  });
 
   reviewFiltersBound = true;
 }
@@ -388,5 +477,7 @@ export async function loadReviews(loadActivities) {
   submissions = data.submissions || [];
 
   setupSubmissionFilters();
+
+  reviewCurrentPage = 1;
   renderSubmissions();
 }
