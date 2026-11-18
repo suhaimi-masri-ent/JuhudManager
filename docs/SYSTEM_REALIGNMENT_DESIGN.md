@@ -93,9 +93,10 @@ Every Ahbab is automatically registered as a participant of Takaza Makami.
 
 Automatic participation does not mean that the Ahbab is automatically making progress.
 
-### 2.4 Activity Status and Reporting Status
 
-The system must distinguish between the status of an activity and the reporting/progress status.
+### 2.4 Activity Status and System-Generated Progress Status
+
+The system must distinguish between the status of an activity and the progress status generated from Rekod Amal.
 
 **Activity status:**
 
@@ -105,25 +106,33 @@ The system must distinguish between the status of an activity and the reporting/
 | IDLE | Activity has not been updated or carried out for a period |
 | INACTIVE | Activity is no longer active |
 
-**Reporting/progress status:**
+**System-generated progress status:**
 
 | Status | Meaning |
 |---|---|
-| NOT_SUBMITTED | No report or update has been submitted |
-| IN_PROGRESS | Progress has been reported |
-| LIMITED_PROGRESS | Limited progress has been reported |
-| NO_PROGRESS | Ahbab explicitly reports no progress |
+| IN_PROGRESS | Available records indicate progress |
+| LIMITED_PROGRESS | Available records indicate limited progress |
+| NO_PROGRESS | Available records explicitly indicate no progress |
+| NO_RECORD | No relevant record or update is available for the assessment period |
 
-These are separate dimensions. An activity being IDLE does not automatically mean that the Ahbab has reported NO_PROGRESS.
+**Progress status rules:**
+
+1. Progress status is determined automatically by the system.
+2. Ahbab does not manually select or set their progress status.
+3. Ahbab is responsible for updating Rekod Amal based on daily activities and Takaza activities they participate in or have committed to.
+4. The system analyses Rekod Amal history against the relevant Tafakut criteria and assessment date or period.
+5. `NO_RECORD` must not be interpreted as `NO_PROGRESS`.
+6. The system must retain the source records and criteria used to determine each generated status.
 
 **Who manages activity status:**
 
 - The system monitors updates and may automatically detect activities that have become idle.
 - Admin can manually change activity status when necessary.
-- Ahbab does not need to manage ACTIVE, IDLE or INACTIVE status.
-- Ahbab is responsible for updating Rekod Amal and progress information.
+- Ahbab does not manage ACTIVE, IDLE or INACTIVE status.
+- Ahbab only updates Rekod Amal.
 
 The inactivity period and exact automatic detection rules remain subject to detailed workflow design.
+
 
 ### 2.5 Takaza Release and Ahbab Commitment
 
