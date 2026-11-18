@@ -162,14 +162,27 @@
   </dialog>
 
   
+
   <!-- USER MANAGEMENT -->
 
   <div class="panel" style="margin-top:18px">
 
     <h2>User Management</h2>
 
-    <div class="stack" style="margin:12px 0">
-    
+    <div class="row" style="margin-top:12px">
+      <button
+        type="button"
+        class="btn"
+        id="userToggleFilters"
+        aria-expanded="false"
+        aria-controls="userFilterPanel"
+      >
+        Show Search &amp; Filters
+      </button>
+    </div>
+
+    <div class="stack" id="userFilterPanel" hidden>
+
       <label>
         Search Users
         <input
@@ -178,42 +191,53 @@
           placeholder="Search name or login identifier..."
         >
       </label>
-    
+
       <div class="form-grid">
-    
+
         <label>
           Role
           <select id="userRoleFilter">
             <option value="">All Roles</option>
           </select>
         </label>
-    
+
         <label>
           Account Status
           <select id="userStatusFilter">
             <option value="">All Statuses</option>
           </select>
         </label>
-    
+
+        <label>
+          Records Per Page
+          <select id="userPageSize">
+            <option value="10" selected>10</option>
+            <option value="25">25</option>
+            <option value="50">50</option>
+          </select>
+        </label>
+
       </div>
-    
+
       <div class="row">
-        <button
-          type="button"
-          class="btn"
-          id="userResetFilters"
-        >
+        <button type="button" class="btn" id="userResetFilters">
           Reset Filters
         </button>
       </div>
-    
-      <p id="userFilterMessage" class="message"></p>
-    
-    </div>    
+
+    </div>
+
+    <p id="userFilterMessage" class="message"></p>
 
     <div class="table-wrap">
       <div id="usersTable"></div>
     </div>
+
+    <div
+      id="userPagination"
+      class="row"
+      style="margin-top:14px; justify-content:space-between; align-items:center"
+    ></div>
 
   </div>
 
