@@ -51,7 +51,9 @@ export function showActivityDetails(recordId) {
     [labels.progress, r.progress_status],
     [labels.review, r.review_status],
     [labels.remarks, r.reviewer_remarks],
-    [labels.submitted, r.submitted_at]
+    [labels.submitted, r.submitted_at],
+    [labels.reviewer, r.reviewer_name],
+    [labels.reviewedAt, r.reviewed_at]
   ];
 
   $("activityDetailsContent").innerHTML = rows.map(([label, value]) =>
