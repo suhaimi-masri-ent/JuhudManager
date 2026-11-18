@@ -47,12 +47,16 @@ export async function adminSubmissionsHandler(request, env) {
       ar.progress_status,
       ar.review_status,
       ar.reviewer_remarks,
-      ar.submitted_at
-    FROM activity_records ar
+      ar.submitted_at,
+      ar.reviewed_at,
+      reviewer.full_name AS reviewer_name
+      FROM activity_records ar
     LEFT JOIN user_accounts ua
       ON ua.user_id = ar.user_id
     LEFT JOIN activity_types at
       ON at.activity_type_id = ar.activity_type_id
+    LEFT JOIN user_accounts reviewer
+      ON reviewer.user_id = ar.reviewed_by
     ORDER BY ar.submitted_at DESC
   `).all();
 
