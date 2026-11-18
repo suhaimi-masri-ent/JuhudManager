@@ -1,635 +1,240 @@
-
 <section id="adminPanel" class="view hidden">
+  <div class="admin-shell">
+    <aside class="admin-sidebar" aria-label="Administration menu">
+      <div class="admin-sidebar-heading">Administration</div>
 
-  <div class="admin-grid">
+      <button type="button" class="admin-nav-item" data-admin-nav="users" data-admin-requires-admin>
+        <span class="admin-nav-icon">♙</span><span>User Management</span>
+      </button>
 
-    <!-- CREATE USER -->
-    
-    <div class="panel">
-    
-      <details class="admin-collapse">
-        <summary>
-          <h2>Create User</h2>
-        </summary>
-    
-        <form id="createUserForm" class="stack">
-    
-          <label>
-            Full Name
-            <input type="text" id="newFullName" required>
-          </label>
-    
-          <label>
-            Email
-            <input type="email" id="newEmail" required>
-          </label>
-    
-          <label>
-            Password
-            <input
-              type="password"
-              id="newPassword"
-              minlength="8"
-              required
-            >
-          </label>
-    
-          <div id="createUserMessage" class="message"></div>
-    
-          <button type="submit" class="btn btn-primary">
-            Create User
+      <div class="admin-nav-group" data-admin-requires-admin>
+        <div class="admin-nav-group-title"><span class="admin-nav-icon">▦</span>Activity Management</div>
+        <button type="button" class="admin-nav-subitem" data-admin-nav="activity-types">Activity Types</button>
+        <button type="button" class="admin-nav-subitem" data-admin-nav="submissions" data-admin-requires-review>Submission Review</button>
+      </div>
+
+      <button type="button" class="admin-nav-item" data-admin-nav="submissions" data-admin-requires-review data-admin-review-standalone>
+        <span class="admin-nav-icon">☷</span><span>Submission Review</span>
+      </button>
+
+      <button type="button" class="admin-nav-item" data-admin-nav="audit" data-admin-requires-admin>
+        <span class="admin-nav-icon">◷</span><span>Audit &amp; Logs</span>
+      </button>
+    </aside>
+
+    <div class="admin-workspace">
+      <!-- USER MANAGEMENT -->
+      <section class="admin-page" data-admin-page="users" data-admin-requires-admin>
+        <div class="admin-section-header">
+          <div>
+            <p class="eyebrow">ADMINISTRATION</p>
+            <h2>User Management</h2>
+            <p class="muted small">Create user accounts and manage user profiles.</p>
+          </div>
+          <button type="button" class="btn btn-outline admin-filter-toggle" id="userToggleFilters" aria-expanded="false" aria-controls="userFilterPanel">
+            <span aria-hidden="true">☷</span> Show Search &amp; Filters
           </button>
-    
-        </form>
-      </details>
-    
-    </div>
+        </div>
 
-    
-    <!-- CREATE ACTIVITY TYPE -->
-    
-    <div class="panel">
-    
-      <details class="admin-collapse">
-        <summary>
-          <h2>Create Activity Type</h2>
-        </summary>
-    
-        <form id="createTypeForm" class="stack">
-    
-          <label>
-            Activity Name
-            <input type="text" id="typeName" required>
-          </label>
-    
-          <label>
-            Frequency
-            <select id="typeFrequency" required>
-              <option value="">Select frequency</option>
-              <option value="DAILY">Daily</option>
-              <option value="WEEKLY">Weekly</option>
-              <option value="MONTHLY">Monthly</option>
-              <option value="YEARLY">Yearly</option>
-            </select>
-          </label>
-    
-          <label>
-            Description
-            <textarea id="typeDescription" rows="3"></textarea>
-          </label>
-    
-          <div id="createTypeMessage" class="message"></div>
-    
-          <button type="submit" class="btn btn-primary">
-            Create Activity Type
+        <div class="panel admin-form-panel">
+          <details class="admin-collapse">
+            <summary><span class="summary-icon" aria-hidden="true">＋</span><strong>Create User</strong></summary>
+            <form id="createUserForm" class="stack admin-collapsible-content">
+              <label>Full Name<input type="text" id="newFullName" required></label>
+              <label>Email<input type="email" id="newEmail" required></label>
+              <label>Password<input type="password" id="newPassword" minlength="8" required></label>
+              <div id="createUserMessage" class="message"></div>
+              <button type="submit" class="btn btn-primary">Create User</button>
+            </form>
+          </details>
+        </div>
+
+        <div class="panel admin-data-panel">
+          <div class="admin-filter-panel" id="userFilterPanel" hidden>
+            <div class="admin-filter-grid">
+              <label>Search Users<input type="search" id="userSearch" placeholder="Name or login identifier..."></label>
+              <label>Role<select id="userRoleFilter"><option value="">All Roles</option></select></label>
+              <label>Account Status<select id="userStatusFilter"><option value="">All Statuses</option></select></label>
+              <label>Records Per Page<select id="userPageSize"><option value="10" selected>10</option><option value="25">25</option><option value="50">50</option></select></label>
+            </div>
+            <div class="admin-filter-actions"><button type="button" class="btn btn-outline" id="userResetFilters">Reset Filters</button></div>
+          </div>
+          <p id="userFilterMessage" class="message"></p>
+          <div class="table-wrap"><div id="usersTable"></div></div>
+          <div id="userPagination" class="admin-pagination"></div>
+        </div>
+      </section>
+
+      <!-- ACTIVITY TYPES -->
+      <section class="admin-page" data-admin-page="activity-types" data-admin-requires-admin hidden>
+        <div class="admin-section-header">
+          <div>
+            <p class="eyebrow">ACTIVITY MANAGEMENT</p>
+            <h2>Activity Types</h2>
+            <p class="muted small">Create, edit and activate or deactivate activity types.</p>
+          </div>
+          <button type="button" class="btn btn-outline admin-filter-toggle" id="activityTypeToggleFilters" aria-expanded="false" aria-controls="activityTypeFilterPanel">
+            <span aria-hidden="true">☷</span> Show Search &amp; Filters
           </button>
-    
-        </form>
-      </details>
-    
-     </div>
-    
-  </div>
+        </div>
 
+        <div class="panel admin-form-panel">
+          <details class="admin-collapse">
+            <summary><span class="summary-icon" aria-hidden="true">＋</span><strong>Create Activity Type</strong></summary>
+            <form id="createTypeForm" class="stack admin-collapsible-content">
+              <label>Activity Name<input type="text" id="typeName" required></label>
+              <label>Frequency<select id="typeFrequency" required>
+                <option value="">Select frequency</option>
+                <option value="DAILY">Daily</option><option value="WEEKLY">Weekly</option>
+                <option value="MONTHLY">Monthly</option><option value="YEARLY">Yearly</option>
+                <option value="AD_HOC">Ad Hoc</option>
+              </select></label>
+              <label>Description<textarea id="typeDescription" rows="3"></textarea></label>
+              <div id="createTypeMessage" class="message"></div>
+              <button type="submit" class="btn btn-primary">Create Activity Type</button>
+            </form>
+          </details>
+        </div>
 
-  <!-- ACTIVITY TYPE MANAGEMENT -->
+        <div class="panel admin-data-panel">
+          <div class="admin-filter-panel" id="activityTypeFilterPanel" hidden>
+            <div class="admin-filter-grid">
+              <label>Search Activity Types<input type="search" id="activityTypeSearch" placeholder="Search activity name or description..."></label>
+              <label>Frequency<select id="activityTypeFrequencyFilter"><option value="">All Frequencies</option></select></label>
+              <label>Status<select id="activityTypeStatusFilter"><option value="">All Statuses</option><option value="ACTIVE">Active</option><option value="INACTIVE">Inactive</option></select></label>
+              <label>Records Per Page<select id="activityTypePageSize"><option value="10" selected>10</option><option value="25">25</option><option value="50">50</option></select></label>
+            </div>
+            <div class="admin-filter-actions"><button type="button" class="btn btn-outline" id="activityTypeResetFilters">Reset Filters</button></div>
+          </div>
+          <p id="activityTypeFilterMessage" class="message"></p>
+          <div class="table-wrap"><div id="activityTypesTable"></div></div>
+          <div id="activityTypePagination" class="admin-pagination"></div>
+        </div>
+      </section>
 
-  <div class="panel" style="margin-top:18px">
+      <!-- SUBMISSION REVIEW -->
+      <section class="admin-page" data-admin-page="submissions" data-admin-requires-review hidden>
+        <div class="admin-section-header">
+          <div>
+            <p class="eyebrow">ACTIVITY MANAGEMENT</p>
+            <h2>Activity Submissions Review</h2>
+            <p class="muted small">Review submitted activities and update their review status.</p>
+          </div>
+          <button type="button" class="btn btn-outline admin-filter-toggle" id="submissionToggleFilters" aria-expanded="false" aria-controls="submissionFilterPanel">
+            <span aria-hidden="true">☷</span> Show Search &amp; Filters
+          </button>
+        </div>
+        <div class="panel admin-data-panel">
+          <div class="admin-filter-panel" id="submissionFilterPanel" hidden>
+            <div class="admin-filter-grid">
+              <label>Search Submissions<input type="search" id="submissionSearch" placeholder="User, activity or description..."></label>
+              <label>Review Status<select id="submissionStatusFilter">
+                <option value="">All Statuses</option><option value="PENDING">Pending</option>
+                <option value="APPROVED">Approved</option><option value="NEEDS_REVISION">Needs Revision</option>
+                <option value="REJECTED">Rejected</option>
+              </select></label>
+              <label>From Date<input type="date" id="submissionDateFrom"></label>
+              <label>To Date<input type="date" id="submissionDateTo"></label>
+              <label>Records Per Page<select id="submissionPageSize"><option value="10" selected>10</option><option value="25">25</option><option value="50">50</option></select></label>
+            </div>
+            <div class="admin-filter-actions"><button type="button" class="btn btn-outline" id="submissionResetFilters">Reset Filters</button></div>
+          </div>
+          <p id="submissionFilterMessage" class="message"></p>
+          <div class="table-wrap"><div id="submissionsTable"></div></div>
+          <div id="submissionPagination" class="admin-pagination"></div>
+        </div>
+      </section>
 
-    <h2>Activity Type Management</h2>
-
-    <p>
-      Manage registered activity types.
-    </p>
-
-    <div class="table-wrap">
-      <div id="activityTypesTable"></div>
+      <!-- AUDIT TRAIL -->
+      <section class="admin-page" data-admin-page="audit" data-admin-requires-admin hidden>
+        <div class="admin-section-header">
+          <div>
+            <p class="eyebrow">SYSTEM OVERSIGHT</p>
+            <h2>Audit &amp; Logs</h2>
+            <p class="muted small">System activity, security and administrative audit records.</p>
+          </div>
+          <button type="button" class="btn btn-outline admin-filter-toggle" id="auditToggleFilters" aria-expanded="false" aria-controls="auditFilterPanel">
+            <span aria-hidden="true">☷</span> Show Search &amp; Filters
+          </button>
+        </div>
+        <div class="panel admin-data-panel">
+          <div id="auditTrailMessage" class="message"></div>
+          <div class="admin-filter-panel" id="auditFilterPanel" hidden>
+            <div class="admin-filter-grid">
+              <label>Search<input type="search" id="auditSearch" placeholder="User, action, target or audit ID..."></label>
+              <label>Action<select id="auditActionFilter"><option value="">All Actions</option></select></label>
+              <label>Country<select id="auditCountryFilter"><option value="">All Countries</option></select></label>
+              <label>From Date<input type="date" id="auditDateFrom"></label>
+              <label>To Date<input type="date" id="auditDateTo"></label>
+              <label>Records Per Page<select id="auditPageSize"><option value="10" selected>10</option><option value="25">25</option><option value="50">50</option></select></label>
+            </div>
+            <div class="admin-filter-actions"><button type="button" class="btn btn-outline" id="auditResetFilters">Reset Filters</button></div>
+          </div>
+          <div class="table-wrap"><div id="auditTrailTable"></div></div>
+          <div id="auditPagination" class="admin-pagination"></div>
+        </div>
+      </section>
     </div>
-
   </div>
-
-
 
   <!-- EDIT ACTIVITY TYPE DIALOG -->
-
-  <dialog id="editActivityTypeDialog">
-    <div class="panel">
-      <h2>Edit Activity Type</h2>
-
-      <form id="editActivityTypeForm" class="stack">
-
-        <input type="hidden" id="editActivityTypeId">
-
-        <label>
-          Activity Name
-          <input type="text" id="editActivityTypeName" required>
-        </label>
-
-        <label>
-          Frequency
-          <select id="editActivityTypeFrequency" required>
-            <option value="DAILY">Daily</option>
-            <option value="WEEKLY">Weekly</option>
-            <option value="MONTHLY">Monthly</option>
-            <option value="YEARLY">Yearly</option>
-            <option value="AD_HOC">Ad Hoc</option>
-          </select>
-        </label>
-
-        <label>
-          Description
-          <textarea id="editActivityTypeDescription" rows="3"></textarea>
-        </label>
-
-        <div id="editActivityTypeMessage" class="message"></div>
-
-        <div class="row">
-          <button type="submit" class="btn btn-primary">
-            Save Changes
-          </button>
-
-          <button
-            type="button"
-            class="btn"
-            id="cancelEditActivityType"
-          >
-            Cancel
-          </button>
-        </div>
-
-      </form>
-    </div>
+  <dialog id="editActivityTypeDialog" class="details-dialog">
+    <div class="details-header"><h2>Edit Activity Type</h2><button type="button" class="btn btn-outline" id="cancelEditActivityType">Close</button></div>
+    <form id="editActivityTypeForm" class="stack">
+      <input type="hidden" id="editActivityTypeId">
+      <label>Activity Name<input type="text" id="editActivityTypeName" required></label>
+      <label>Frequency<select id="editActivityTypeFrequency" required>
+        <option value="DAILY">Daily</option><option value="WEEKLY">Weekly</option><option value="MONTHLY">Monthly</option>
+        <option value="YEARLY">Yearly</option><option value="AD_HOC">Ad Hoc</option>
+      </select></label>
+      <label>Description<textarea id="editActivityTypeDescription" rows="3"></textarea></label>
+      <div id="editActivityTypeMessage" class="message"></div>
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
   </dialog>
 
-  
-
-  <!-- USER MANAGEMENT -->
-
-  <div class="panel" style="margin-top:18px">
-
-    <h2>User Management</h2>
-
-    <div class="row" style="margin-top:12px">
-      <button
-        type="button"
-        class="btn"
-        id="userToggleFilters"
-        aria-expanded="false"
-        aria-controls="userFilterPanel"
-      >
-        Show Search &amp; Filters
-      </button>
-    </div>
-
-    <div class="stack" id="userFilterPanel" hidden>
-
-      <label>
-        Search Users
-        <input
-          type="search"
-          id="userSearch"
-          placeholder="Search name or login identifier..."
-        >
-      </label>
-
+  <!-- EDIT USER PROFILE DIALOG -->
+  <dialog id="editUserProfileDialog" class="details-dialog admin-profile-dialog">
+    <div class="details-header"><h2>Edit User Profile</h2><button type="button" class="btn btn-outline" id="adminEditProfileCancel">Close</button></div>
+    <form id="editUserProfileForm" class="stack">
+      <h3>Personal Information</h3>
       <div class="form-grid">
-
-        <label>
-          Role
-          <select id="userRoleFilter">
-            <option value="">All Roles</option>
-          </select>
-        </label>
-
-        <label>
-          Account Status
-          <select id="userStatusFilter">
-            <option value="">All Statuses</option>
-          </select>
-        </label>
-
-        <label>
-          Records Per Page
-          <select id="userPageSize">
-            <option value="10" selected>10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-          </select>
-        </label>
-
+        <label>Full Name<input type="text" id="adminEditFullName" required maxlength="200"></label>
+        <label>Date of Birth<input type="date" id="adminEditDob"></label>
+        <label>Gender<select id="adminEditGender"><option value="">Select</option><option value="MALE">Male</option><option value="FEMALE">Female</option><option value="OTHER">Other</option></select></label>
+        <label>Marital Status<select id="adminEditMarital"><option value="">Select</option><option value="SINGLE">Single</option><option value="MARRIED">Married</option><option value="DIVORCED">Divorced</option><option value="WIDOWED">Widowed</option></select></label>
+        <label>Nationality<input type="text" id="adminEditNationality"></label>
       </div>
-
-      <div class="row">
-        <button type="button" class="btn" id="userResetFilters">
-          Reset Filters
-        </button>
+      <h3>Employment Information</h3>
+      <div class="form-grid">
+        <label>Employment Status<select id="adminEditEmploymentStatus"><option value="">Select</option><option value="EMPLOYED">Employed</option><option value="SELF_EMPLOYED">Self-employed</option><option value="UNEMPLOYED">Unemployed</option><option value="RETIRED">Retired</option><option value="STUDENT">Student</option><option value="OTHER">Other</option></select></label>
+        <label>Employment Type<select id="adminEditEmploymentType"><option value="">Select</option><option value="PERMANENT">Permanent</option><option value="CONTRACT">Contract</option><option value="PART_TIME">Part-time</option><option value="TEMPORARY">Temporary</option><option value="FREELANCE">Freelance</option></select></label>
+        <label>Employment Sector<select id="adminEditEmploymentSector"><option value="">Select</option><option value="GOVERNMENT">Government</option><option value="PRIVATE">Private</option><option value="NGO">NGO</option><option value="OTHER">Other</option></select></label>
+        <label>Occupation<input type="text" id="adminEditOccupation"></label>
+        <label>Employer / Company<input type="text" id="adminEditEmployer"></label>
+        <label>Department<input type="text" id="adminEditDepartment"></label>
+        <label>Position / Designation<input type="text" id="adminEditPosition"></label>
+        <label>Work Location<input type="text" id="adminEditWorkLocation"></label>
       </div>
-
-    </div>
-
-    <p id="userFilterMessage" class="message"></p>
-
-    <div class="table-wrap">
-      <div id="usersTable"></div>
-    </div>
-
-    <div
-      id="userPagination"
-      class="row"
-      style="margin-top:14px; justify-content:space-between; align-items:center"
-    ></div>
-
-  </div>
-
-
-  <!-- ADMIN EDIT USER PROFILE -->
-  
-  <dialog id="editUserProfileDialog">
-    <div class="panel">
-      <h2>Edit User Profile</h2>
-
-      <form id="editUserProfileForm" class="stack">
-
-        <h3>Personal Information</h3>
-
-        <div class="form-grid">
-          <label>
-            Full Name
-            <input type="text" id="adminEditFullName" required maxlength="200">
-          </label>
-
-          <label>
-            Date of Birth
-            <input type="date" id="adminEditDob">
-          </label>
-
-          <label>
-            Gender
-            <select id="adminEditGender">
-              <option value="">Select</option>
-              <option value="MALE">Male</option>
-              <option value="FEMALE">Female</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </label>
-
-          <label>
-            Marital Status
-            <select id="adminEditMarital">
-              <option value="">Select</option>
-              <option value="SINGLE">Single</option>
-              <option value="MARRIED">Married</option>
-              <option value="DIVORCED">Divorced</option>
-              <option value="WIDOWED">Widowed</option>
-            </select>
-          </label>
-
-          <label>
-            Nationality
-            <input type="text" id="adminEditNationality">
-          </label>
-        </div>
-
-        <h3>Employment Information</h3>
-
-        <div class="form-grid">
-          <label>
-            Employment Status
-            <select id="adminEditEmploymentStatus">
-              <option value="">Select</option>
-              <option value="EMPLOYED">Employed</option>
-              <option value="SELF_EMPLOYED">Self-employed</option>
-              <option value="UNEMPLOYED">Unemployed</option>
-              <option value="RETIRED">Retired</option>
-              <option value="STUDENT">Student</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </label>
-
-          <label>
-            Employment Type
-            <select id="adminEditEmploymentType">
-              <option value="">Select</option>
-              <option value="PERMANENT">Permanent</option>
-              <option value="CONTRACT">Contract</option>
-              <option value="PART_TIME">Part-time</option>
-              <option value="TEMPORARY">Temporary</option>
-              <option value="FREELANCE">Freelance</option>
-            </select>
-          </label>
-
-          <label>
-            Employment Sector
-            <select id="adminEditEmploymentSector">
-              <option value="">Select</option>
-              <option value="GOVERNMENT">Government</option>
-              <option value="PRIVATE">Private</option>
-              <option value="NGO">NGO</option>
-              <option value="OTHER">Other</option>
-            </select>
-          </label>
-
-          <label>
-            Occupation
-            <input type="text" id="adminEditOccupation">
-          </label>
-
-          <label>
-            Employer / Company
-            <input type="text" id="adminEditEmployer">
-          </label>
-
-          <label>
-            Department
-            <input type="text" id="adminEditDepartment">
-          </label>
-
-          <label>
-            Position / Designation
-            <input type="text" id="adminEditPosition">
-          </label>
-
-          <label>
-            Work Location
-            <input type="text" id="adminEditWorkLocation">
-          </label>
-        </div>
-
-        <h3>Address Information</h3>
-
-        <div class="form-grid">
-          <label>
-            Country
-            <input type="text" id="adminEditCountry">
-          </label>
-
-          <label>
-            State / Province
-            <input type="text" id="adminEditState">
-          </label>
-
-          <label>
-            City / District
-            <input type="text" id="adminEditCity">
-          </label>
-
-          <label>
-            Postcode
-            <input type="text" id="adminEditPostcode">
-          </label>
-
-          <label>
-            Street Address
-            <input type="text" id="adminEditStreet">
-          </label>
-
-          <label>
-            Building Number
-            <input type="text" id="adminEditBuildingNo">
-          </label>
-
-          <label>
-            Building Name
-            <input type="text" id="adminEditBuildingName">
-          </label>
-
-          <label>
-            Address Line 2
-            <input type="text" id="adminEditAddress2">
-          </label>
-        </div>
-
-        <div id="adminEditProfileMessage" class="message"></div>
-
-        <div class="row">
-          <button type="submit" class="btn btn-primary">
-            Save Changes
-          </button>
-
-          <button
-            type="button"
-            class="btn"
-            id="adminEditProfileCancel"
-          >
-            Cancel
-          </button>
-        </div>
-
-      </form>
-    </div>
+      <h3>Address Information</h3>
+      <div class="form-grid">
+        <label>Country<input type="text" id="adminEditCountry"></label>
+        <label>State / Province<input type="text" id="adminEditState"></label>
+        <label>City / District<input type="text" id="adminEditCity"></label>
+        <label>Postcode<input type="text" id="adminEditPostcode"></label>
+        <label>Street Address<input type="text" id="adminEditStreet"></label>
+        <label>Building Number<input type="text" id="adminEditBuildingNo"></label>
+        <label>Building Name<input type="text" id="adminEditBuildingName"></label>
+        <label>Address Line 2<input type="text" id="adminEditAddress2"></label>
+      </div>
+      <div id="adminEditProfileMessage" class="message"></div>
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+    </form>
   </dialog>
 
-  
-
-
-  <!-- SUBMISSION REVIEW -->
-
-  <div class="panel" style="margin-top:18px">
-
-    <h2>Activity Submissions Review</h2>
-
-    <div class="row" style="margin-top:12px">
-      <button
-        type="button"
-        class="btn"
-        id="submissionToggleFilters"
-        aria-expanded="false"
-        aria-controls="submissionFilterPanel"
-      >
-        Show Search &amp; Filters
-      </button>
-    </div>
-
-    <div class="stack" id="submissionFilterPanel" hidden>
-
-      <label>
-        Search Submissions
-        <input
-          type="search"
-          id="submissionSearch"
-          placeholder="Search user, activity or description..."
-        >
-      </label>
-
-      <div class="form-grid">
-
-        <label>
-          Review Status
-          <select id="submissionStatusFilter">
-            <option value="">All Statuses</option>
-            <option value="PENDING">Pending</option>
-            <option value="APPROVED">Approved</option>
-            <option value="NEEDS_REVISION">Needs Revision</option>
-            <option value="REJECTED">Rejected</option>
-          </select>
-        </label>
-
-        <label>
-          From Date
-          <input type="date" id="submissionDateFrom">
-        </label>
-
-        <label>
-          To Date
-          <input type="date" id="submissionDateTo">
-        </label>
-
-        <label>
-          Records Per Page
-          <select id="submissionPageSize">
-            <option value="10" selected>10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-          </select>
-        </label>
-
-      </div>
-
-      <div class="row">
-        <button type="button" class="btn" id="submissionResetFilters">
-          Reset Filters
-        </button>
-      </div>
-
-    </div>
-
-    <p id="submissionFilterMessage" class="message"></p>
-
-    <div class="table-wrap">
-      <div id="submissionsTable"></div>
-    </div>
-
-    <div
-      id="submissionPagination"
-      class="row"
-      style="margin-top:14px; justify-content:space-between; align-items:center"
-    ></div>
-
-  </div>
-
-
-  <!-- AUDIT TRAIL -->
-
-  <div class="panel" style="margin-top:18px">
-
-    <h2>Audit Trail</h2>
-
-    <p>
-      System activity and security audit records.
-    </p>
-
-    <div id="auditTrailMessage" class="message"></div>
-    
-    <div class="row" style="margin-top:12px">
-      <button
-        type="button"
-        class="btn"
-        id="auditToggleFilters"
-        aria-expanded="false"
-        aria-controls="auditFilterPanel"
-      >
-        Show Search &amp; Filters
-      </button>
-    </div>
-    
-    <!-- SEARCH & FILTERS -->
-    <div class="stack" id="auditFilterPanel" hidden>
-      <label>
-        Search
-        <input
-          type="search"
-          id="auditSearch"
-          placeholder="Search user, action, target or audit ID..."
-        >
-      </label>
-
-      <!-- FILTERS -->
-      <div class="form-grid">
-
-        <label>
-          Action
-          <select id="auditActionFilter">
-            <option value="">All Actions</option>
-          </select>
-        </label>
-
-        <label>
-          Country
-          <select id="auditCountryFilter">
-            <option value="">All Countries</option>
-          </select>
-        </label>
-
-        <label>
-          From Date
-          <input type="date" id="auditDateFrom">
-        </label>
-
-        <label>
-          To Date
-          <input type="date" id="auditDateTo">
-        </label>
-
-        <label>
-          Records Per Page
-          <select id="auditPageSize">
-            <option value="10" selected>10</option>
-            <option value="25">25</option>
-            <option value="50">50</option>
-          </select>
-        </label>
-
-      </div>
-
-      <div class="row">
-        <button
-          type="button"
-          class="btn"
-          id="auditResetFilters"
-        >
-          Reset Filters
-        </button>
-      </div>
-
-    </div>
-
-    <!-- TABLE -->
-    <div class="table-wrap" style="margin-top:16px">
-      <div id="auditTrailTable"></div>
-    </div>
-
-    <!-- PAGINATION -->
-    <div
-      id="auditPagination"
-      class="row"
-      style="margin-top:14px; justify-content:space-between; align-items:center"
-    ></div>
-
-  </div>
-
-
-  <!-- AUDIT DETAIL DIALOG -->
-
-  <dialog id="auditDetailDialog">
-    <div class="panel">
-
-      <h2>Audit Log Details</h2>
-
-      <div id="auditDetailContent" class="stack"></div>
-
-      <div class="row" style="margin-top:16px">
-        <button
-          type="button"
-          class="btn"
-          id="auditDetailClose"
-        >
-          Close
-        </button>
-      </div>
-
-    </div>
+  <!-- AUDIT DETAILS DIALOG -->
+  <dialog id="auditDetailDialog" class="details-dialog">
+    <div class="details-header"><h2>Audit Log Details</h2><button type="button" class="btn btn-outline" id="auditDetailClose">Close</button></div>
+    <div id="auditDetailContent" class="stack"></div>
   </dialog>
-  
-
 </section>
-
