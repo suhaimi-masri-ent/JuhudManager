@@ -39,7 +39,16 @@ export async function adminActivityTypesHandler(request, env) {
         end_date,
         status
       FROM activity_types
-      ORDER BY activity_name COLLATE NOCASE
+      ORDER BY
+        CASE frequency
+          WHEN 'DAILY' THEN 1
+          WHEN 'WEEKLY' THEN 2
+          WHEN 'MONTHLY' THEN 3
+          WHEN 'YEARLY' THEN 4
+          WHEN 'AD_HOC' THEN 5
+          ELSE 6
+        END,
+        activity_name COLLATE NOCASE
     `).all();
 
     return jsonResponse({
