@@ -168,6 +168,49 @@
 
     <h2>User Management</h2>
 
+    <div class="stack" style="margin:12px 0">
+    
+      <label>
+        Search Users
+        <input
+          type="search"
+          id="userSearch"
+          placeholder="Search name or login identifier..."
+        >
+      </label>
+    
+      <div class="form-grid">
+    
+        <label>
+          Role
+          <select id="userRoleFilter">
+            <option value="">All Roles</option>
+          </select>
+        </label>
+    
+        <label>
+          Account Status
+          <select id="userStatusFilter">
+            <option value="">All Statuses</option>
+          </select>
+        </label>
+    
+      </div>
+    
+      <div class="row">
+        <button
+          type="button"
+          class="btn"
+          id="userResetFilters"
+        >
+          Reset Filters
+        </button>
+      </div>
+    
+      <p id="userFilterMessage" class="message"></p>
+    
+    </div>    
+
     <div class="table-wrap">
       <div id="usersTable"></div>
     </div>
