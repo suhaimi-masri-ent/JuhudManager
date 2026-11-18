@@ -26,7 +26,8 @@ import {
 } from "./profile/profile.js";
 
 import {
-  loadActivities
+  loadActivities,
+  openActivityEdit
 } from "./activities/activities.js";
 
 import {
@@ -237,14 +238,19 @@ $("activityType").addEventListener("change", () => {
 
 $("activityHistory").addEventListener("click", e => {
 
-  const button = e.target.closest("[data-activity-view]");
+  const viewButton = e.target.closest("[data-activity-view]");
+  const editButton = e.target.closest("[data-activity-edit]");
 
-  if (!button) return;
+  if (viewButton) {
+    showActivityDetails(viewButton.dataset.activityView);
+    return;
+  }
 
-  showActivityDetails(button.dataset.activityView);
+  if (editButton) {
+    openActivityEdit(editButton.dataset.activityEdit);
+  }
 
 });
-
 
 $("closeActivityDetails").addEventListener("click", () => {
   $("activityDetailsDialog").close();
@@ -255,6 +261,69 @@ $("activityDetailsDialog").addEventListener("click", e => {
 
   if (e.target === $("activityDetailsDialog")) {
     $("activityDetailsDialog").close();
+  }
+
+});
+
+/* =========================
+   EDIT & RESUBMIT ACTIVITY
+========================= */
+
+$("closeActivityEdit").addEventListener("click", () => {
+  $("activityEditDialog").close();
+});
+
+
+$("activityEditForm").addEventListener("submit", async e => {
+
+  e.preventDefault();
+
+  const recordId = $("editActivityRecordId").value;
+
+  const body = {
+    activityDate: $("editActivityDate").value,
+    startTime: $("editStartTime").value,
+    endDate: $("editEndDate").value,
+    endTime: $("editEndTime").value,
+    description: $("editActivityDescription").value,
+    progressStatus: $("editProgress").value
+  };
+
+  const button = $("activityEditForm").querySelector(
+    'button[type="submit"]'
+  );
+
+  button.disabled = true;
+  $("activityEditMessage").textContent = "";
+
+  try {
+
+    await api(
+      `/api/activities/${encodeURIComponent(recordId)}`,
+      {
+        method: "PATCH",
+        body: JSON.stringify(body)
+      }
+    );
+
+    $("activityEditDialog").close();
+
+    await loadActivities();
+
+    alert(
+      language === "my"
+        ? "Aktiviti berjaya dihantar semula untuk semakan."
+        : "Activity successfully resubmitted for review."
+    );
+
+  } catch (error) {
+
+    $("activityEditMessage").textContent = error.message;
+
+  } finally {
+
+    button.disabled = false;
+
   }
 
 });
