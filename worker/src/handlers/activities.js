@@ -47,7 +47,7 @@ export async function activitiesHandler(request, env) {
         ON at.activity_type_id = ar.activity_type_id
       LEFT JOIN user_accounts reviewer
         ON reviewer.user_id = ar.reviewed_by
-        WHERE ar.user_id = ?
+      WHERE ar.user_id = ?
       ORDER BY ar.activity_date DESC, ar.submitted_at DESC
     `).bind(auth.user.user_id).all();
 
