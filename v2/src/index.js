@@ -1,4 +1,5 @@
 import { json } from "./lib/http.js";
+import { handleAuthRequest } from "./routes/auth.js";
 
 export default {
   async fetch(request, env) {
@@ -28,8 +29,10 @@ export default {
         }, 503);
       }
     } else {
-      response = json({ error: "Not found" }, 404);
+      response = await handleAuthRequest(request, env, url);
+      if (!response) response = json({ error: "Not found" }, 404);
     }
+
     return withCors(response, env);
   }
 };
