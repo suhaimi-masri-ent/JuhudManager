@@ -1,0 +1,5 @@
+{
+  "name": "juhudmanager-v2-argon2-smoke",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01"
+}
