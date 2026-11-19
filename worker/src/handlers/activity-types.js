@@ -1,3 +1,4 @@
+
 import { getRequestMetadata } from "../services/request-metadata.js";
 import { requireAuth } from "../middleware/auth.js";
 import { jsonResponse } from "../core/response.js";
@@ -38,7 +39,16 @@ export async function adminActivityTypesHandler(request, env) {
         end_date,
         status
       FROM activity_types
-      ORDER BY activity_name COLLATE NOCASE
+      ORDER BY
+        CASE frequency
+          WHEN 'DAILY' THEN 1
+          WHEN 'WEEKLY' THEN 2
+          WHEN 'MONTHLY' THEN 3
+          WHEN 'YEARLY' THEN 4
+          WHEN 'AD_HOC' THEN 5
+          ELSE 6
+        END,
+        activity_name COLLATE NOCASE
     `).all();
 
     return jsonResponse({
@@ -175,6 +185,159 @@ export async function adminActivityTypesHandler(request, env) {
       message: "Activity Type created successfully",
       activity_type_id: activityTypeId
     }, 201);
+  }
+
+  // PATCH: UPDATE ACTIVITY TYPE
+  if (request.method === "PATCH") {
+    let body;
+
+    try {
+      body = await request.json();
+    } catch {
+      return jsonResponse({
+        error: "Invalid JSON"
+      }, 400);
+    }
+
+    if (!body || typeof body !== "object" || Array.isArray(body)) {
+      return jsonResponse({
+        error: "Invalid request body"
+      }, 400);
+    }
+
+    const activityTypeId = String(
+      body.activityTypeId || body.activity_type_id || ""
+    ).trim();
+
+    if (!activityTypeId) {
+      return jsonResponse({
+        error: "Activity Type ID is required"
+      }, 400);
+    }
+
+    const existing = await env.DB.prepare(`
+      SELECT
+        activity_type_id,
+        activity_name,
+        description,
+        frequency,
+        status
+      FROM activity_types
+      WHERE activity_type_id = ?
+    `).bind(activityTypeId).first();
+
+    if (!existing) {
+      return jsonResponse({
+        error: "Activity Type not found"
+      }, 404);
+    }
+
+    const activityName =
+      body.activityName !== undefined ||
+      body.activity_name !== undefined
+        ? String(body.activityName ?? body.activity_name ?? "").trim()
+        : existing.activity_name;
+
+    const description = body.description !== undefined
+      ? String(body.description ?? "").trim()
+      : existing.description;
+
+    const frequency = body.frequency !== undefined
+      ? String(body.frequency).trim()
+      : existing.frequency;
+
+    const status = body.status !== undefined
+      ? String(body.status).trim().toUpperCase()
+      : existing.status;
+
+    const allowedFrequencies = [
+      "DAILY",
+      "WEEKLY",
+      "MONTHLY",
+      "YEARLY",
+      "AD_HOC"
+    ];
+
+    if (!activityName) {
+      return jsonResponse({
+        error: "Activity name is required"
+      }, 400);
+    }
+
+    if (!allowedFrequencies.includes(frequency)) {
+      return jsonResponse({
+        error: "Invalid frequency"
+      }, 400);
+    }
+
+    if (!["ACTIVE", "INACTIVE"].includes(status)) {
+      return jsonResponse({
+        error: "Invalid status"
+      }, 400);
+    }
+
+    const duplicate = await env.DB.prepare(`
+      SELECT activity_type_id
+      FROM activity_types
+      WHERE LOWER(activity_name) = LOWER(?)
+        AND activity_type_id != ?
+      LIMIT 1
+    `).bind(
+      activityName,
+      activityTypeId
+    ).first();
+
+    if (duplicate) {
+      return jsonResponse({
+        error: "Activity type name already exists"
+      }, 409);
+    }
+
+    await env.DB.prepare(`
+      UPDATE activity_types
+      SET
+        activity_name = ?,
+        description = ?,
+        frequency = ?,
+        status = ?
+      WHERE activity_type_id = ?
+    `).bind(
+      activityName,
+      description || null,
+      frequency,
+      status,
+      activityTypeId
+    ).run();
+
+    // AUDIT: ACTIVITY TYPE UPDATED
+    await env.DB.prepare(`
+      INSERT INTO audit_logs (
+        audit_id,
+        actor_user_id,
+        action,
+        target_type,
+        target_id,
+        details_json
+      )
+      VALUES (?, ?, ?, ?, ?, ?)
+    `).bind(
+      crypto.randomUUID(),
+      auth.user.user_id,
+      "ACTIVITY_TYPE_UPDATED",
+      "ACTIVITY_TYPE",
+      activityTypeId,
+      JSON.stringify({
+        activity_name: activityName,
+        frequency,
+        status,
+        client: await getRequestMetadata(request)
+      })
+    ).run();
+
+    return jsonResponse({
+      success: true,
+      message: "Activity Type updated successfully"
+    });
   }
 
   return jsonResponse({

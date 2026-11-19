@@ -300,6 +300,7 @@ export default {
         );
       }
 
+
       // =========================
       // USER ACTIVITIES
       // =========================
@@ -307,6 +308,16 @@ export default {
       else if (
         path === "/api/activities" &&
         ["GET", "POST"].includes(method)
+      ) {
+        response = await activitiesHandler(
+          request,
+          env
+        );
+      }
+
+      else if (
+        /^\/api\/activities\/[^/]+$/.test(path) &&
+        method === "PATCH"
       ) {
         response = await activitiesHandler(
           request,

@@ -1,567 +1,122 @@
-
 import { currentUser } from "../core/state.js";
 import { api } from "../core/api.js";
 import { escapeHtml, tag, table } from "../core/helpers.js";
+import { actionButton } from "./action-icons.js";
+import { initAdminNavigation } from "./admin-navigation.js";
+import { initAdminProfileEditor } from "./admin-profile.js";
+import { initActivityTypeManagement, loadActivityTypes } from "./activity-types.js";
+import { initAssignmentManagement, loadAssignments } from "./assignments.js";
+import { initAuditTrail } from "./audit-trail.js";
 
 const $ = id => document.getElementById(id);
+let adminUsers = [];
+let userCurrentPage = 1;
+let userFiltersInitialized = false;
 
 export function isAdmin() {
-  return currentUser?.roles?.some(r =>
-    ["SUPER_ADMIN", "ADMIN"].includes(r)
-  );
+  return currentUser?.roles?.some(role => ["SUPER_ADMIN", "ADMIN"].includes(role));
 }
 
 export function canReview() {
-  return currentUser?.roles?.some(r =>
-    ["SUPER_ADMIN", "ADMIN", "SUPERVISOR"].includes(r)
-  );
+  return currentUser?.roles?.some(role => ["SUPER_ADMIN", "ADMIN", "SUPERVISOR"].includes(role));
 }
 
-/* =========================
-   ADMIN PROFILE EDITOR
-========================= */
+export { initAdminNavigation };
 
-function initAdminProfileEditor(loadActivities) {
-  const dialog = $("editUserProfileDialog");
-  const form = $("editUserProfileForm");
+function renderAdminUsers() {
+  const search = ($("userSearch")?.value || "").trim().toLowerCase();
+  const roleFilter = $("userRoleFilter")?.value || "";
+  const statusFilter = $("userStatusFilter")?.value || "";
+  const pageSize = Number($("userPageSize")?.value) || 10;
 
-  if (form.dataset.initialized === "true") return;
-  form.dataset.initialized = "true";
-
-  const fields = {
-    date_of_birth: "adminEditDob",
-    gender: "adminEditGender",
-    marital_status: "adminEditMarital",
-    nationality: "adminEditNationality",
-    employment_status: "adminEditEmploymentStatus",
-    employment_type: "adminEditEmploymentType",
-    employment_sector: "adminEditEmploymentSector",
-    occupation: "adminEditOccupation",
-    employer_company: "adminEditEmployer",
-    department: "adminEditDepartment",
-    position_designation: "adminEditPosition",
-    work_location: "adminEditWorkLocation",
-    country: "adminEditCountry",
-    state_province: "adminEditState",
-    city_district: "adminEditCity",
-    postcode: "adminEditPostcode",
-    street_address: "adminEditStreet",
-    building_number: "adminEditBuildingNo",
-    building_name: "adminEditBuildingName",
-    address_line_2: "adminEditAddress2"
-  };
-
-  let selectedUserId = null;
-
-  $("usersTable").addEventListener("click", async e => {
-    const button = e.target.closest("[data-edit-user]");
-    if (!button) return;
-
-    selectedUserId = button.dataset.editUser;
-    $("adminEditProfileMessage").textContent = "Loading profile...";
-
-    try {
-      const result = await api(
-        `/api/admin/users/${encodeURIComponent(selectedUserId)}/profile`
-      );
-
-      const user = result.user;
-      $("adminEditFullName").value = user.full_name || "";
-
-      for (const [field, id] of Object.entries(fields)) {
-        $(id).value = user[field] || "";
-      }
-
-      $("adminEditProfileMessage").textContent = "";
-      dialog.showModal();
-
-    } catch (err) {
-      alert(err.message);
-    }
+  const filtered = adminUsers.filter(user => {
+    const searchable = [user.full_name, user.identifiers, user.roles].join(" ").toLowerCase();
+    const roles = (user.roles || "USER").split(",").map(role => role.trim());
+    return searchable.includes(search) && (!roleFilter || roles.includes(roleFilter)) &&
+      (!statusFilter || user.account_status === statusFilter);
   });
 
-  form.addEventListener("submit", async e => {
-    e.preventDefault();
+  const pages = Math.max(1, Math.ceil(filtered.length / pageSize));
+  userCurrentPage = Math.min(userCurrentPage, pages);
+  const pageUsers = filtered.slice((userCurrentPage - 1) * pageSize, userCurrentPage * pageSize);
 
-    if (!selectedUserId) return;
-
-    const submitButton = form.querySelector('button[type="submit"]');
-    submitButton.disabled = true;
-
-    const body = {
-      full_name: $("adminEditFullName").value.trim()
-    };
-
-    for (const [field, id] of Object.entries(fields)) {
-      body[field] = $(id).value.trim();
-    }
-
-    try {
-      const result = await api(
-        `/api/admin/users/${encodeURIComponent(selectedUserId)}/profile`,
-        {
-          method: "PUT",
-          body: JSON.stringify(body)
-        }
-      );
-
-      $("adminEditProfileMessage").textContent =
-        result.message || "Profile updated.";
-
-      await loadAdmin(loadActivities);
-
-      setTimeout(() => dialog.close(), 700);
-
-    } catch (err) {
-      $("adminEditProfileMessage").textContent = err.message;
-
-    } finally {
-      submitButton.disabled = false;
-    }
-  });
-
-  $("adminEditProfileCancel").addEventListener("click", () => {
-    dialog.close();
-  });
-}
-
-
-/* =========================
-   AUDIT DETAIL VIEWER
-========================= */
-
-function showAuditDetails(log) {
-  let details = {};
-
-  try {
-    details = JSON.parse(log.details_json || "{}");
-  } catch (e) {
-    details = {};
-  }
-
-  const client = details.client || {};
-
-  const rows = {
-    "Audit ID": log.audit_id,
-    "Date / Time": log.created_at,
-    "Actor": log.actor_name || log.actor_user_id || "System",
-    "Actor User ID": log.actor_user_id,
-    "Action": log.action,
-    "Target Type": log.target_type,
-    "Target": log.target_name || log.target_id,
-    "Target ID": log.target_id,
-    "IP Hash": client.ip_hash,
-    "Browser": client.browser,
-    "Operating System": client.os,
-    "Device": client.device,
-    "Country": client.country,
-    "Cloudflare Ray ID": client.ray_id
-  };
-
-  const information = Object.entries(rows)
-    .map(([label, value]) => `
-      <div>
-        <strong>${escapeHtml(label)}</strong>
-        <div>${escapeHtml(String(value || "—"))}</div>
-      </div>
-    `)
-    .join("");
-
-  const additionalDetails = Object.entries(details)
-    .filter(([key]) => key !== "client")
-    .map(([key, value]) => `
-      <div>
-        <strong>${escapeHtml(key)}</strong>
-        <div>${escapeHtml(
-          typeof value === "object"
-            ? JSON.stringify(value, null, 2)
-            : String(value ?? "—")
-        )}</div>
-      </div>
-    `)
-    .join("");
-
-  $("auditDetailContent").innerHTML = `
-    <h3>Audit Information</h3>
-    ${information}
-
-    <h3>Additional Details</h3>
-    ${additionalDetails || "<p>No additional details.</p>"}
-  `;
-
-  $("auditDetailDialog").showModal();
-}
-
-function initAuditDetailViewer() {
-  const closeButton = $("auditDetailClose");
-
-  if (!closeButton) return;
-  if (closeButton.dataset.initialized === "true") return;
-
-  closeButton.dataset.initialized = "true";
-
-  closeButton.addEventListener("click", () => {
-    $("auditDetailDialog").close();
-  });
-}
-
-
-/* =========================
-   AUDIT TRAIL CONTROLS
-========================= */
-
-let auditLogsCache = [];
-let auditCurrentPage = 1;
-
-
-function renderAuditTrail() {
-  const search = $("auditSearch").value.trim().toLowerCase();
-  const action = $("auditActionFilter").value;
-  const country = $("auditCountryFilter").value;
-  const dateFrom = $("auditDateFrom").value;
-  const dateTo = $("auditDateTo").value;
-  const pageSize = Number($("auditPageSize").value) || 10;
-
-  const filtered = auditLogsCache.filter(log => {
-    let details = {};
-
-    try {
-      details = JSON.parse(log.details_json || "{}");
-    } catch (e) {}
-
-    const client = details.client || {};
-
-    const searchable = [
-      log.audit_id,
-      log.actor_name,
-      log.actor_user_id,
-      log.action,
-      log.target_name,
-      log.target_id,
-      log.target_type,
-      JSON.stringify(details)
-    ].join(" ").toLowerCase();
-
-    const date = (log.created_at || "").slice(0, 10);
-
-    return (
-      (!search || searchable.includes(search)) &&
-      (!action || log.action === action) &&
-      (!country || client.country === country) &&
-      (!dateFrom || date >= dateFrom) &&
-      (!dateTo || date <= dateTo)
-    );
-  });
-
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filtered.length / pageSize)
+  $("usersTable").innerHTML = table(
+    ["Name", "Login identifiers", "Role", "Status", "Actions"],
+    pageUsers.map(user => `<tr>
+      <td>${escapeHtml(user.full_name)}</td>
+      <td>${escapeHtml(user.identifiers || "—")}</td>
+      <td>${escapeHtml(user.roles || "USER")}</td>
+      <td>${tag(user.account_status)}</td>
+      <td class="action-cell">${actionButton("edit", "Edit user profile", "data-edit-user", user.user_id)}</td>
+    </tr>`)
   );
 
-  auditCurrentPage = Math.min(auditCurrentPage, totalPages);
+  $("userFilterMessage").textContent = `${filtered.length} of ${adminUsers.length} users`;
+  $("userPagination").innerHTML = `<span>Page ${userCurrentPage} of ${pages} · ${filtered.length} users</span>
+    <div class="admin-pagination-controls">
+      <button type="button" class="btn btn-outline" id="userPrevious" ${userCurrentPage <= 1 ? "disabled" : ""}>Previous</button>
+      <button type="button" class="btn btn-outline" id="userNext" ${userCurrentPage >= pages ? "disabled" : ""}>Next</button>
+    </div>`;
 
-  const start = (auditCurrentPage - 1) * pageSize;
-  const pageRecords = filtered.slice(start, start + pageSize);
-
-  $("auditTrailMessage").textContent =
-    `${filtered.length} records found (${auditLogsCache.length} total loaded).`;
-
-  $("auditTrailTable").innerHTML = table(
-    ["Date / Time", "Actor", "Action", "Target", "Country", "Device"],
-    pageRecords.map(log => {
-      let details = {};
-
-      try {
-        details = JSON.parse(log.details_json || "{}");
-      } catch (e) {}
-
-      const client = details.client || {};
-
-      return `<tr
-        data-audit-id="${escapeHtml(log.audit_id)}"
-        style="cursor:pointer"
-        title="Click to view audit details"
-      >
-        <td>${escapeHtml(log.created_at || "—")}</td>
-        <td>${escapeHtml(log.actor_name || log.actor_user_id || "System")}</td>
-        <td>${escapeHtml(log.action || "—")}</td>
-        <td>${escapeHtml(log.target_name || log.target_type || "—")}</td>
-        <td>${escapeHtml(client.country || "—")}</td>
-        <td>${escapeHtml(
-          [client.browser, client.os, client.device]
-            .filter(Boolean)
-            .join(" / ") || "—"
-        )}</td>
-      </tr>`;
-    })
-  );
-
-  $("auditTrailTable").querySelectorAll("[data-audit-id]")
-    .forEach(row => {
-      row.addEventListener("click", () => {
-        const log = auditLogsCache.find(
-          item => item.audit_id === row.dataset.auditId
-        );
-
-        if (log) showAuditDetails(log);
-      });
-    });
-
-  $("auditPagination").innerHTML = `
-    <span>
-      Page ${auditCurrentPage} of ${totalPages}
-      (${filtered.length} records)
-    </span>
-
-    <div class="row">
-      <button
-        type="button"
-        class="btn"
-        id="auditPrevious"
-        ${auditCurrentPage <= 1 ? "disabled" : ""}
-      >Previous</button>
-
-      <button
-        type="button"
-        class="btn"
-        id="auditNext"
-        ${auditCurrentPage >= totalPages ? "disabled" : ""}
-      >Next</button>
-    </div>
-  `;
-
-  $("auditPrevious").addEventListener("click", () => {
-    if (auditCurrentPage > 1) {
-      auditCurrentPage--;
-      renderAuditTrail();
-    }
-  });
-
-  $("auditNext").addEventListener("click", () => {
-    if (auditCurrentPage < totalPages) {
-      auditCurrentPage++;
-      renderAuditTrail();
-    }
-  });
+  $("userPrevious").addEventListener("click", () => { if (userCurrentPage > 1) { userCurrentPage--; renderAdminUsers(); } });
+  $("userNext").addEventListener("click", () => { if (userCurrentPage < pages) { userCurrentPage++; renderAdminUsers(); } });
 }
 
-function initAuditTrail(data) {
-  auditLogsCache = data.audit_logs || [];
-  initAuditDetailViewer();
+function setupUserFilters() {
+  const roleSelect = $("userRoleFilter");
+  const statusSelect = $("userStatusFilter");
+  const previousRole = roleSelect.value;
+  const previousStatus = statusSelect.value;
+  const roles = new Set();
+  const statuses = new Set();
 
-  const toggleButton = $("auditToggleFilters");
-  const filterPanel = $("auditFilterPanel");
-  
-  if (toggleButton.dataset.initialized !== "true") {
-    toggleButton.dataset.initialized = "true";
-  
-    toggleButton.addEventListener("click", () => {
-      const isHidden = filterPanel.hidden;
-  
-      filterPanel.hidden = !isHidden;
-      toggleButton.textContent = isHidden
-        ? "Hide Search & Filters"
-        : "Show Search & Filters";
-  
-      toggleButton.setAttribute("aria-expanded", String(isHidden));
-    });
-  }
-
-  const actions = [...new Set(
-    auditLogsCache.map(log => log.action).filter(Boolean)
-  )].sort();
-
-  const countries = [...new Set(
-    auditLogsCache.map(log => {
-      try {
-        return JSON.parse(log.details_json || "{}").client?.country;
-      } catch (e) {
-        return null;
-      }
-    }).filter(Boolean)
-  )].sort();
-
-  $("auditActionFilter").innerHTML =
-    '<option value="">All Actions</option>' +
-    actions.map(value =>
-      `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`
-    ).join("");
-
-  $("auditCountryFilter").innerHTML =
-    '<option value="">All Countries</option>' +
-    countries.map(value =>
-      `<option value="${escapeHtml(value)}">${escapeHtml(value)}</option>`
-    ).join("");
-
-  const controls = [
-    "auditSearch",
-    "auditActionFilter",
-    "auditCountryFilter",
-    "auditDateFrom",
-    "auditDateTo",
-    "auditPageSize"
-  ];
-
-  controls.forEach(id => {
-    const element = $(id);
-
-    if (element.dataset.initialized === "true") return;
-
-    element.dataset.initialized = "true";
-
-    const refresh = () => {
-      auditCurrentPage = 1;
-      renderAuditTrail();
-    };
-
-    element.addEventListener("input", refresh);
-    element.addEventListener("change", refresh);
+  adminUsers.forEach(user => {
+    (user.roles || "USER").split(",").map(role => role.trim()).filter(Boolean).forEach(role => roles.add(role));
+    if (user.account_status) statuses.add(user.account_status);
   });
 
-  if ($("auditResetFilters").dataset.initialized !== "true") {
-    $("auditResetFilters").dataset.initialized = "true";
+  roleSelect.innerHTML = '<option value="">All Roles</option>' + [...roles].sort().map(role => `<option value="${escapeHtml(role)}">${escapeHtml(role)}</option>`).join("");
+  statusSelect.innerHTML = '<option value="">All Statuses</option>' + [...statuses].sort().map(status => `<option value="${escapeHtml(status)}">${escapeHtml(status)}</option>`).join("");
+  roleSelect.value = previousRole;
+  statusSelect.value = previousStatus;
+  if (userFiltersInitialized) return;
 
-    $("auditResetFilters").addEventListener("click", () => {
-      $("auditSearch").value = "";
-      $("auditActionFilter").value = "";
-      $("auditCountryFilter").value = "";
-      $("auditDateFrom").value = "";
-      $("auditDateTo").value = "";
-      $("auditPageSize").value = "10";
-
-      auditCurrentPage = 1;
-      renderAuditTrail();
-    });
-  }
-
-  auditCurrentPage = 1;
-  renderAuditTrail();
+  const refresh = () => { userCurrentPage = 1; renderAdminUsers(); };
+  $("userSearch").addEventListener("input", refresh);
+  roleSelect.addEventListener("change", refresh);
+  statusSelect.addEventListener("change", refresh);
+  $("userPageSize").addEventListener("change", refresh);
+  $("userResetFilters").addEventListener("click", () => {
+    $("userSearch").value = ""; roleSelect.value = ""; statusSelect.value = ""; $("userPageSize").value = "10"; refresh();
+  });
+  const toggle = $("userToggleFilters");
+  const panel = $("userFilterPanel");
+  toggle.addEventListener("click", () => {
+    panel.hidden = !panel.hidden;
+    toggle.setAttribute("aria-expanded", String(!panel.hidden));
+    toggle.innerHTML = `<span aria-hidden="true">☷</span> ${panel.hidden ? "Show" : "Hide"} Search &amp; Filters`;
+  });
+  userFiltersInitialized = true;
 }
 
-/* =========================
-   LOAD ADMIN
-========================= */
+async function loadAdminUsers() {
+  const data = await api("/api/admin/users");
+  adminUsers = data.users || [];
+  setupUserFilters();
+  userCurrentPage = 1;
+  renderAdminUsers();
+}
 
 export async function loadAdmin(loadActivities) {
+  initAdminNavigation({ isAdmin: isAdmin(), canReview: canReview() });
+  if (!isAdmin()) return;
 
-  // ADMIN: LOAD USERS, ACTIVITY TYPES AND AUDIT TRAIL
-  if (isAdmin()) {
-
-    const auditData = await api("/api/admin/audit-logs");
-    initAuditTrail(auditData);
-
-    const d = await api("/api/admin/users");
-
-    $("usersTable").innerHTML = table(
-      ["Name", "Login identifiers", "Role", "Status", "Action"],
-      d.users.map(u =>
-        `<tr>
-          <td>${escapeHtml(u.full_name)}</td>
-          <td>${escapeHtml(u.identifiers || "—")}</td>
-          <td>${escapeHtml(u.roles || "USER")}</td>
-          <td>${tag(u.account_status)}</td>
-          <td>
-            <button
-              type="button"
-              class="table-action"
-              data-edit-user="${escapeHtml(u.user_id)}"
-            >Edit Profile</button>
-          </td>
-        </tr>`
-      )
-    );
-
-    initAdminProfileEditor(loadActivities);
-
-    await api("/api/admin/activity-types");
-  }
-
-  // ADMIN / SUPERVISOR: LOAD SUBMISSIONS
-  if (canReview()) {
-    const d = await api("/api/admin/submissions");
-
-    $("submissionsTable").innerHTML = table(
-      ["User", "Activity", "Date", "Status", "Review"],
-      d.submissions.map(s =>
-        `<tr>
-          <td>${escapeHtml(s.full_name)}</td>
-          <td>
-            ${escapeHtml(s.activity_name)}<br>
-            <span class="muted">${escapeHtml(s.description)}</span>
-          </td>
-          <td>${escapeHtml(s.activity_date)}</td>
-          <td>${tag(s.review_status)}</td>
-          <td>
-            <button
-              class="table-action"
-              type="button"
-              data-edit-review="${escapeHtml(s.record_id)}"
-              data-status="${escapeHtml(s.review_status)}"
-              data-remarks="${escapeHtml(s.reviewer_remarks || "")}"
-            >Edit Review</button>
-          </td>
-        </tr>`
-      )
-    );
-
-    $("submissionsTable")
-      .querySelectorAll("[data-edit-review]")
-      .forEach(btn => {
-
-        btn.addEventListener("click", async () => {
-          const recordId = btn.dataset.editReview;
-          const currentStatus = btn.dataset.status;
-          const currentRemarks = btn.dataset.remarks;
-
-          const statusInput = prompt(
-            "Review Status:\nAPPROVED\nNEEDS_REVISION\nREJECTED\nPENDING",
-            currentStatus
-          );
-
-          if (statusInput === null) return;
-
-          const reviewStatus = statusInput.trim().toUpperCase();
-
-          const allowedStatuses = [
-            "PENDING",
-            "APPROVED",
-            "NEEDS_REVISION",
-            "REJECTED"
-          ];
-
-          if (!allowedStatuses.includes(reviewStatus)) {
-            alert("Invalid review status.");
-            return;
-          }
-
-          const remarksInput = prompt(
-            "Reviewer Remarks:",
-            currentRemarks
-          );
-
-          if (remarksInput === null) return;
-
-          try {
-            await api(
-              `/api/admin/submissions/${encodeURIComponent(recordId)}`,
-              {
-                method: "PATCH",
-                body: JSON.stringify({
-                  reviewStatus,
-                  remarks: remarksInput.trim()
-                })
-              }
-            );
-
-            alert("Review updated successfully.");
-
-            await loadAdmin(loadActivities);
-            await loadActivities();
-
-          } catch (e) {
-            alert(e.message);
-          }
-        });
-      });
-  }
+  const auditData = await api("/api/admin/audit-logs");
+  initAuditTrail(auditData);
+  await loadAdminUsers();
+  initAdminProfileEditor({ loadActivities, reloadUsers: loadAdminUsers });
+  initActivityTypeManagement(loadActivities);
+  await loadActivityTypes();
+  initAssignmentManagement();
+  await loadAssignments();
 }

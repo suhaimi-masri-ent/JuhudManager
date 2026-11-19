@@ -1,76 +1,39 @@
-
 import { api } from "../core/api.js";
 import { showMessage } from "../core/helpers.js";
 
 const $ = id => document.getElementById(id);
 
 export function initAdminUsers(loadAdmin, loadActivities) {
-
-  // CREATE USER
-  $("createUserForm").addEventListener("submit", async e => {
-    e.preventDefault();
-
+  $("createUserForm").addEventListener("submit", async event => {
+    event.preventDefault();
     showMessage("createUserMessage", "");
-
     const form = $("createUserForm");
-    const submitButton = form.querySelector('button[type="submit"]');
-
-    submitButton.disabled = true;
-
+    const submit = form.querySelector('button[type="submit"]');
+    submit.disabled = true;
     try {
-      const result = await api("/api/admin/users", {
-        method: "POST",
-        body: JSON.stringify({
-          full_name: $("newFullName").value.trim(),
-          email: $("newEmail").value.trim(),
-          password: $("newPassword").value
-        })
-      });
-
+      const result = await api("/api/admin/users", { method: "POST", body: JSON.stringify({
+        full_name: $("newFullName").value.trim(), email: $("newEmail").value.trim(), password: $("newPassword").value
+      }) });
       form.reset();
-
-      showMessage(
-        "createUserMessage",
-        result.message || "User created successfully"
-      );
-
+      showMessage("createUserMessage", result.message || "User created successfully");
       await loadAdmin();
-
-    } catch (err) {
-      showMessage("createUserMessage", err.message, true);
-
-    } finally {
-      submitButton.disabled = false;
-    }
+    } catch (error) { showMessage("createUserMessage", error.message, true); }
+    finally { submit.disabled = false; }
   });
 
-  // CREATE ACTIVITY TYPE
-  $("createTypeForm").addEventListener("submit", async e => {
-    e.preventDefault();
-
+  $("createTypeForm").addEventListener("submit", async event => {
+    event.preventDefault();
+    const submit = $("createTypeForm").querySelector('button[type="submit"]');
+    submit.disabled = true;
     try {
-      await api("/api/admin/activity-types", {
-        method: "POST",
-        body: JSON.stringify({
-          activityName: $("typeName").value,
-          frequency: $("typeFrequency").value,
-          description: $("typeDescription").value
-        })
-      });
-
-      showMessage(
-        "createTypeMessage",
-        "Activity type created."
-      );
-
+      const result = await api("/api/admin/activity-types", { method: "POST", body: JSON.stringify({
+        activityName: $("typeName").value.trim(), frequency: $("typeFrequency").value, description: $("typeDescription").value.trim()
+      }) });
+      showMessage("createTypeMessage", result.message || "Activity type created.");
       $("createTypeForm").reset();
-
-      await loadActivities();
-
-    } catch (e) {
-      showMessage("createTypeMessage", e.message, true);
-    }
+      await loadAdmin();
+      if (typeof loadActivities === "function") await loadActivities();
+    } catch (error) { showMessage("createTypeMessage", error.message, true); }
+    finally { submit.disabled = false; }
   });
-
 }
-
