@@ -1,4 +1,4 @@
-JuhudManager V2
+##JuhudManager V2
 
 JuhudManager V2 is the next-generation implementation of JuhudManager. It is developed independently from the legacy V1 application to allow the system architecture, database design, authentication, and business modules to be rebuilt in a controlled manner.
 
