@@ -49,10 +49,7 @@ export async function requestRegistrationOtp({
   }
 
   if (!userId || !identityId) {
-    throw httpError(
-      "User ID and identity ID are required.",
-      400
-    );
+    throw httpError("User ID and identity ID are required.", 400);
   }
 
   if (!env.OTP_DELIVERY || typeof env.OTP_DELIVERY.send !== "function") {
@@ -74,8 +71,6 @@ export async function requestRegistrationOtp({
   const currentTime = new Date();
   const currentIso = currentTime.toISOString();
 
-  // Ensure the identity reservation belongs to this user
-  // and matches the destination receiving the OTP.
   const identity = await db.prepare(
     `SELECT identity_id
      FROM user_auth_identities
@@ -96,10 +91,7 @@ export async function requestRegistrationOtp({
   ).first();
 
   if (!identity) {
-    throw httpError(
-      "Identity reservation is invalid or expired.",
-      409
-    );
+    throw httpError("Identity reservation is invalid or expired.", 409);
   }
 
   const windowStart = new Date(
@@ -122,10 +114,7 @@ export async function requestRegistrationOtp({
   ).first();
 
   if ((recent?.total ?? 0) >= RATE_MAX_REQUESTS) {
-    throw httpError(
-      "Too many OTP requests. Please try again later.",
-      429
-    );
+    throw httpError("Too many OTP requests. Please try again later.", 429);
   }
 
   if (recent?.last_sent_at) {
@@ -135,10 +124,7 @@ export async function requestRegistrationOtp({
       Number.isFinite(lastSent) &&
       currentTime.getTime() - lastSent < OTP_RESEND_SECONDS * 1000
     ) {
-      throw httpError(
-        "Please wait before requesting another OTP.",
-        429
-      );
+      throw httpError("Please wait before requesting another OTP.", 429);
     }
   }
 
@@ -260,10 +246,7 @@ export async function verifyRegistrationOtp({
   }
 
   if (!userId || !identityId) {
-    throw httpError(
-      "User ID and identity ID are required.",
-      400
-    );
+    throw httpError("User ID and identity ID are required.", 400);
   }
 
   if (!/^\d{6}$/.test(String(otp ?? ""))) {
@@ -311,10 +294,7 @@ export async function verifyRegistrationOtp({
 
   const expiryTime = new Date(row.expires_at).getTime();
 
-  if (
-    !Number.isFinite(expiryTime) ||
-    expiryTime <= Date.now()
-  ) {
+  if (!Number.isFinite(expiryTime) || expiryTime <= Date.now()) {
     await db.prepare(
       `UPDATE auth_otp_requests
        SET invalidated_at = ?1
@@ -370,12 +350,7 @@ export async function verifyRegistrationOtp({
     );
   }
 
-  // Consume the OTP and verify its associated identity
-  // within the same D1 batch transaction.
-  //
-  // The identity update requires the exact OTP request
-  // to have been consumed successfully.
-  const results = await db.batch([
+  const statements = [
     db.prepare(
       `UPDATE auth_otp_requests
        SET consumed_at = ?1
@@ -406,12 +381,13 @@ export async function verifyRegistrationOtp({
          updated_at = ?1
        WHERE identity_id = ?2
          AND user_id = ?3
+         AND identity_type = ?4
          AND verification_status = 'PENDING'
          AND expires_at > ?1
          AND EXISTS (
            SELECT 1
            FROM auth_otp_requests
-           WHERE otp_request_id = ?4
+           WHERE otp_request_id = ?5
              AND user_id = ?3
              AND identity_id = ?2
              AND consumed_at = ?1
@@ -420,16 +396,53 @@ export async function verifyRegistrationOtp({
       currentTime,
       identityId,
       userId,
+      destinationType,
       row.otp_request_id
     )
-  ]);
+  ];
+
+  if (destinationType === "EMAIL") {
+    statements.push(
+      db.prepare(
+        `UPDATE users
+         SET
+           email = ?1,
+           updated_at = ?2
+         WHERE user_id = ?3
+           AND account_status = 'DISABLED'
+           AND email IS NULL
+           AND EXISTS (
+             SELECT 1
+             FROM user_auth_identities
+             WHERE identity_id = ?4
+               AND user_id = ?3
+               AND identity_type = 'EMAIL'
+               AND verification_status = 'VERIFIED'
+           )`
+      ).bind(
+        normalized,
+        currentTime,
+        userId,
+        identityId
+      )
+    );
+  }
+
+  const results = await db.batch(statements);
 
   const otpChanges = results?.[0]?.meta?.changes ?? 0;
   const identityChanges = results?.[1]?.meta?.changes ?? 0;
+  const emailChanges = destinationType === "EMAIL"
+    ? results?.[2]?.meta?.changes ?? 0
+    : null;
 
-  if (otpChanges !== 1 || identityChanges !== 1) {
+  if (
+    otpChanges !== 1 ||
+    identityChanges !== 1 ||
+    (destinationType === "EMAIL" && emailChanges !== 1)
+  ) {
     throw httpError(
-      "OTP or identity reservation is invalid or expired.",
+      "OTP or identity reservation is invalid, expired or already linked.",
       409
     );
   }
@@ -438,6 +451,7 @@ export async function verifyRegistrationOtp({
     verified: true,
     destinationType,
     identityId,
-    identityStatus: "VERIFIED"
+    identityStatus: "VERIFIED",
+    emailUpdated: destinationType === "EMAIL"
   };
 }
