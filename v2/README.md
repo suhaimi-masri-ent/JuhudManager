@@ -1,35 +1,39 @@
 # JuhudManager V2
 
-V2 is developed independently from the legacy V1 application. Nothing in this directory is part of the existing V1 Worker deployment.
+JuhudManager V2 is the next-generation implementation of JuhudManager. It is developed independently from the legacy V1 application to allow the system architecture, database design, authentication, and business modules to be rebuilt in a controlled manner.
 
-## Current implementation slice
+All V2 application files are maintained inside the `v2/` directory.
 
-- Isolated Cloudflare Worker entry point and Wrangler configuration.
-- Independent D1 migration history.
-- Foundation schema for users, roles, Jemaah, Jemaah membership, Takaza participation and Amer Jemaah appointment history.
-- Domain services for appointment eligibility and replacement rules.
-- Automated domain tests using Node's built-in test runner.
+## 1. Project Principles
 
-## Safety
+- V2 must remain isolated from the existing V1 application.
+- V2 must use its own Cloudflare Worker and D1 database.
+- Existing V1 files, deployment configuration, database, and workflows must not be modified.
+- Business rules must follow the approved JuhudManager requirements and decisions.
+- Unresolved business rules must remain explicitly unresolved until confirmed.
+- Security, auditability, data integrity, and access control must be considered throughout implementation.
 
-- Do not run V2 migrations against the V1 D1 database.
-- The D1 database ID in `wrangler.jsonc` is a local-development placeholder. Replace it only after creating a dedicated V2 D1 database.
-- V2 is not deployed by the existing V1 GitHub Actions workflow.
-- Authentication, full API CRUD, UI screens and remaining business modules are subsequent implementation slices.
+## 2. Current Directory Structure
 
-## Local development
-
-From the repository root:
-
-```bash
-node --test v2/test/*.test.js
-npx wrangler dev --config v2/wrangler.jsonc
-```
-
-Apply migrations locally only:
-
-```bash
-npx wrangler d1 migrations apply juhudmanager-v2-db --local --config v2/wrangler.jsonc
-```
-
-Do not use `--remote` until a separate V2 D1 database has been created and its ID configured.
+```text
+v2/
+├── README.md
+├── README_AUTH_PACKAGE.md
+├── migrations/
+│   ├── 0001_foundation.sql
+│   └── 0002_authentication.sql
+├── src/
+│   ├── index.js
+│   ├── auth/
+│   │   ├── crypto.js
+│   │   └── otp.js
+│   ├── domain/
+│   │   └── amer-appointments.js
+│   ├── lib/
+│   │   └── http.js
+│   └── routes/
+│       └── auth.js
+├── test/
+│   ├── amer-appointments.test.js
+│   └── auth-otp.test.js
+└── wrangler.jsonc
