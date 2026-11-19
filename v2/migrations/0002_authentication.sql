@@ -259,8 +259,9 @@ CREATE TABLE user_sessions (
     ),
 
   CHECK (
-    revoked_at IS NOT NULL
-    OR revocation_reason IS NULL
+    (revoked_at IS NULL AND revocation_reason IS NULL)
+    OR
+    (revoked_at IS NOT NULL AND revocation_reason IS NOT NULL)
   )
 );
 
