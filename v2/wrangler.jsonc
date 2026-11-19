@@ -1,0 +1,18 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "juhudmanager-v2-api",
+  "main": "src/index.js",
+  "compatibility_date": "2026-11-01",
+  "vars": {
+    "APP_ENV": "development",
+    "ALLOWED_ORIGIN": "http://localhost:8788"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "juhudmanager-v2-db",
+      "database_id": "4a4e736b-83ee-4889-bfbb-7fe189f92b5f",
+      "migrations_dir": "migrations"
+    }
+  ]
+}
