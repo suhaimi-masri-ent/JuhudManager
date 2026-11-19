@@ -1,0 +1,14 @@
+
+{
+  "name": "juhudmanager-v2-argon2-worker-smoke",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Isolated Cloudflare Workers compatibility test for Argon2id",
+  "dependencies": {
+    "@hallaxius/argon2w": "0.0.2"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
