@@ -1,10 +1,22 @@
 
 import { json } from "../lib/http.js";
+
 import {
   requestRegistrationOtp,
   verifyRegistrationOtp
 } from "../auth/otp.js";
-import { createRegistrationDraft } from "../auth/registrations.js";
+
+import {
+  createRegistrationDraft
+} from "../auth/registrations.js";
+
+import {
+  issueActivationToken
+} from "../auth/activation.js";
+
+import {
+  setInitialPassword
+} from "../auth/credentials.js";
 
 const ALLOWED_DESTINATION_TYPES = ["EMAIL", "WHATSAPP"];
 
@@ -42,6 +54,10 @@ function validRegistrationIdentity(body) {
 }
 
 export async function handleAuthRequest(request, env, url) {
+  // =======================================================
+  // REGISTRATION
+  // =======================================================
+
   if (
     url.pathname === "/auth/register/start" &&
     request.method === "POST"
@@ -74,6 +90,10 @@ export async function handleAuthRequest(request, env, url) {
     }
   }
 
+  // =======================================================
+  // REGISTRATION OTP REQUEST
+  // =======================================================
+
   if (
     url.pathname === "/auth/otp/request" &&
     request.method === "POST"
@@ -105,6 +125,10 @@ export async function handleAuthRequest(request, env, url) {
     }
   }
 
+  // =======================================================
+  // REGISTRATION OTP VERIFICATION
+  // =======================================================
+
   if (
     url.pathname === "/auth/otp/verify" &&
     request.method === "POST"
@@ -130,6 +154,91 @@ export async function handleAuthRequest(request, env, url) {
         destinationType: body.destinationType,
         destination: body.destination,
         otp: body.otp.trim()
+      });
+
+      return json({
+        ok: true,
+        ...result
+      });
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
+  // =======================================================
+  // ACCOUNT ACTIVATION TOKEN REQUEST
+  // =======================================================
+
+  if (
+    url.pathname === "/auth/activation/request" &&
+    request.method === "POST"
+  ) {
+    const body = await readJson(request);
+
+    if (
+      !body ||
+      typeof body.userId !== "string" ||
+      !body.userId.trim()
+    ) {
+      return json({
+        error: "A valid userId is required."
+      }, 400);
+    }
+
+    try {
+      await issueActivationToken({
+        db: env.DB,
+        env,
+        userId: body.userId.trim()
+      });
+
+      return json({
+        ok: true,
+        message: "If the account is eligible, an activation email will be sent."
+      }, 202);
+    } catch (error) {
+      // Avoid exposing whether an account exists or is eligible.
+      if (
+        error?.status === 404 ||
+        error?.status === 409
+      ) {
+        return json({
+          ok: true,
+          message: "If the account is eligible, an activation email will be sent."
+        }, 202);
+      }
+
+      return errorResponse(error);
+    }
+  }
+
+  // =======================================================
+  // INITIAL PASSWORD SETUP AND ACCOUNT ACTIVATION
+  // =======================================================
+
+  if (
+    url.pathname === "/auth/password/setup" &&
+    request.method === "POST"
+  ) {
+    const body = await readJson(request);
+
+    if (
+      !body ||
+      typeof body.activationToken !== "string" ||
+      !/^[A-Za-z0-9_-]{43}$/.test(body.activationToken) ||
+      typeof body.password !== "string"
+    ) {
+      return json({
+        error: "A valid activationToken and password are required."
+      }, 400);
+    }
+
+    try {
+      const result = await setInitialPassword({
+        db: env.DB,
+        env,
+        activationToken: body.activationToken,
+        password: body.password
       });
 
       return json({
