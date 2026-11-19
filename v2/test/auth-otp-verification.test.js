@@ -10,16 +10,13 @@ import {
 
 const env = {
   HMAC_SECRET: "test-only-hmac-secret-with-sufficient-entropy",
-  OTP_HASH_SECRET: "test-only-otp-secret-with-sufficient-entropy",
-  ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY"
+  OTP_HASH_SECRET: "test-only-otp-secret-with-sufficient-entropy"
 };
 
 const userId = "user-1";
 const identityId = "identity-1";
 const destination = "user@example.com";
 const otp = "123456";
-
-const destinationHashInput = "EMAIL:user@example.com";
 
 class Statement {
   constructor(db, sql) {
@@ -129,8 +126,30 @@ class Statement {
         requestedUserId,
         requestedIdentityId,
         type,
-        hash
+        hash,
+        guardedUserId
       ] = this.args;
+
+      const identity = this.db.identity;
+      const user = this.db.user;
+
+      const identityEligible =
+        identity &&
+        identity.identity_id === requestedIdentityId &&
+        identity.user_id === requestedUserId &&
+        identity.identity_type === type &&
+        identity.identity_scope === "GLOBAL" &&
+        identity.verification_status === "PENDING" &&
+        identity.expires_at > time;
+
+      const emailUserEligible =
+        type !== "EMAIL" ||
+        (
+          user &&
+          user.user_id === guardedUserId &&
+          user.account_status === "DISABLED" &&
+          user.email === null
+        );
 
       if (
         row &&
@@ -142,7 +161,9 @@ class Statement {
         row.consumed_at === null &&
         row.invalidated_at === null &&
         row.expires_at > time &&
-        row.attempt_count < row.max_attempts
+        row.attempt_count < row.max_attempts &&
+        identityEligible &&
+        emailUserEligible
       ) {
         row.consumed_at = time;
         return { meta: { changes: 1 } };
@@ -151,9 +172,7 @@ class Statement {
       return { meta: { changes: 0 } };
     }
 
-    if (
-      this.sql.includes("UPDATE user_auth_identities")
-    ) {
+    if (this.sql.includes("UPDATE user_auth_identities")) {
       const [
         time,
         requestedIdentityId,
@@ -162,23 +181,26 @@ class Statement {
         requestId
       ] = this.args;
 
+      const identity = this.db.identity;
+
       if (
-        this.db.identity &&
-        this.db.identity.identity_id === requestedIdentityId &&
-        this.db.identity.user_id === requestedUserId &&
-        this.db.identity.identity_type === type &&
-        this.db.identity.verification_status === "PENDING" &&
-        this.db.identity.expires_at > time &&
+        identity &&
+        identity.identity_id === requestedIdentityId &&
+        identity.user_id === requestedUserId &&
+        identity.identity_type === type &&
+        identity.identity_scope === "GLOBAL" &&
+        identity.verification_status === "PENDING" &&
+        identity.expires_at > time &&
         row &&
         row.otp_request_id === requestId &&
         row.user_id === requestedUserId &&
         row.identity_id === requestedIdentityId &&
         row.consumed_at === time
       ) {
-        this.db.identity.verification_status = "VERIFIED";
-        this.db.identity.verified_at = time;
-        this.db.identity.expires_at = null;
-        this.db.identity.updated_at = time;
+        identity.verification_status = "VERIFIED";
+        identity.verified_at = time;
+        identity.expires_at = null;
+        identity.updated_at = time;
 
         return { meta: { changes: 1 } };
       }
@@ -194,19 +216,22 @@ class Statement {
         requestedIdentityId
       ] = this.args;
 
+      const user = this.db.user;
+      const identity = this.db.identity;
+
       if (
-        this.db.user &&
-        this.db.user.user_id === requestedUserId &&
-        this.db.user.account_status === "DISABLED" &&
-        this.db.user.email === null &&
-        this.db.identity &&
-        this.db.identity.identity_id === requestedIdentityId &&
-        this.db.identity.user_id === requestedUserId &&
-        this.db.identity.identity_type === "EMAIL" &&
-        this.db.identity.verification_status === "VERIFIED"
+        user &&
+        user.user_id === requestedUserId &&
+        user.account_status === "DISABLED" &&
+        user.email === null &&
+        identity &&
+        identity.identity_id === requestedIdentityId &&
+        identity.user_id === requestedUserId &&
+        identity.identity_type === "EMAIL" &&
+        identity.verification_status === "VERIFIED"
       ) {
-        this.db.user.email = email;
-        this.db.user.updated_at = time;
+        user.email = email;
+        user.updated_at = time;
 
         return { meta: { changes: 1 } };
       }
@@ -254,11 +279,6 @@ async function createDb(options = {}) {
     `${type}:${normalized}`
   );
 
-  const identityHash = await hashValue(
-    env.HMAC_SECRET,
-    `${type}:GLOBAL:${normalized}`
-  );
-
   const now = Date.now();
 
   db.user = {
@@ -272,7 +292,6 @@ async function createDb(options = {}) {
     user_id: userId,
     identity_type: type,
     identity_scope: "GLOBAL",
-    identity_hash: identityHash,
     verification_status: "PENDING",
     expires_at: new Date(now + 10 * 60 * 1000).toISOString()
   };
@@ -324,7 +343,7 @@ test("correct email OTP verifies identity and updates users.email", async () => 
   assert.equal(result.identityStatus, "VERIFIED");
   assert.equal(result.emailUpdated, true);
 
-  assert.equal(db.request.consumed_at !== null, true);
+  assert.ok(db.request.consumed_at);
   assert.equal(db.identity.verification_status, "VERIFIED");
   assert.equal(db.identity.expires_at, null);
   assert.equal(db.user.email, destination);
@@ -332,6 +351,7 @@ test("correct email OTP verifies identity and updates users.email", async () => 
 
 test("correct WhatsApp OTP verifies identity without updating users.email", async () => {
   const whatsapp = "+60123456789";
+
   const db = await createDb({
     destinationType: "WHATSAPP",
     destination: whatsapp
@@ -346,7 +366,7 @@ test("correct WhatsApp OTP verifies identity without updating users.email", asyn
   assert.equal(result.destinationType, "WHATSAPP");
   assert.equal(result.emailUpdated, false);
 
-  assert.equal(db.request.consumed_at !== null, true);
+  assert.ok(db.request.consumed_at);
   assert.equal(db.identity.verification_status, "VERIFIED");
   assert.equal(db.user.email, null);
 });
@@ -376,7 +396,7 @@ test("fifth incorrect OTP invalidates the request", async () => {
   }
 
   assert.equal(db.request.attempt_count, 5);
-  assert.notEqual(db.request.invalidated_at, null);
+  assert.ok(db.request.invalidated_at);
   assert.equal(db.identity.verification_status, "PENDING");
 });
 
@@ -391,7 +411,7 @@ test("expired OTP is invalidated and rejected", async () => {
       /invalid or expired/i.test(error.message)
   );
 
-  assert.notEqual(db.request.invalidated_at, null);
+  assert.ok(db.request.invalidated_at);
   assert.equal(db.request.consumed_at, null);
   assert.equal(db.identity.verification_status, "PENDING");
 });
@@ -441,6 +461,35 @@ test("OTP cannot verify an identity with an expired reservation", async () => {
     error => error.status === 409
   );
 
+  assert.equal(db.request.consumed_at, null);
+  assert.equal(db.identity.verification_status, "PENDING");
+  assert.equal(db.user.email, null);
+});
+
+test("email OTP cannot be consumed when user already has an email", async () => {
+  const db = await createDb();
+  db.user.email = "existing@example.com";
+
+  await assert.rejects(
+    verify(db),
+    error => error.status === 409
+  );
+
+  assert.equal(db.request.consumed_at, null);
+  assert.equal(db.identity.verification_status, "PENDING");
+  assert.equal(db.user.email, "existing@example.com");
+});
+
+test("email OTP cannot be consumed when user is not DISABLED", async () => {
+  const db = await createDb();
+  db.user.account_status = "ACTIVE";
+
+  await assert.rejects(
+    verify(db),
+    error => error.status === 409
+  );
+
+  assert.equal(db.request.consumed_at, null);
   assert.equal(db.identity.verification_status, "PENDING");
   assert.equal(db.user.email, null);
 });
