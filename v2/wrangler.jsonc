@@ -11,7 +11,7 @@
     {
       "binding": "DB",
       "database_name": "juhudmanager-v2-db",
-      "database_id": "00000000-0000-0000-0000-000000000002",
+      "database_id": "4a4e736b-83ee-4889-bfbb-7fe189f92b5f",
       "migrations_dir": "migrations"
     }
   ]
