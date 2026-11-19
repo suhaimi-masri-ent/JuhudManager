@@ -1,9 +1,9 @@
-import argon2Wasm from "@hallaxius/argon2w/wasm";
+import argon2Wasm from "@shtora/argon2w/wasm";
 import {
   configureWasm,
   hash,
   verify
-} from "@hallaxius/argon2w";
+} from "@shtora/argon2w";
 
 configureWasm(argon2Wasm);
 
