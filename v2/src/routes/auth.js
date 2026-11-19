@@ -4,7 +4,7 @@ import {
   requestRegistrationOtp,
   verifyRegistrationOtp
 } from "../auth/otp.js";
-import { createRegistrationDraft } from "../auth/registration.js";
+import { createRegistrationDraft } from "../auth/registrations.js";
 
 const ALLOWED_DESTINATION_TYPES = ["EMAIL", "WHATSAPP"];
 
@@ -49,7 +49,9 @@ export async function handleAuthRequest(request, env, url) {
     const body = await readJson(request);
 
     if (!body) {
-      return json({ error: "A valid JSON request body is required." }, 400);
+      return json({
+        error: "A valid JSON request body is required."
+      }, 400);
     }
 
     try {
@@ -112,10 +114,10 @@ export async function handleAuthRequest(request, env, url) {
     if (
       !validRegistrationIdentity(body) ||
       typeof body.otp !== "string" ||
-      !body.otp.trim()
+      !/^\d{6}$/.test(body.otp.trim())
     ) {
       return json({
-        error: "userId, identityId, destinationType, destination and otp are required."
+        error: "userId, identityId, destinationType, destination and six-digit otp are required."
       }, 400);
     }
 
