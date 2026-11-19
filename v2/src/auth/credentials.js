@@ -4,6 +4,10 @@ import {
   validatePassword
 } from "./password.js";
 
+import {
+  findValidActivationToken
+} from "./activation.js";
+
 function httpError(message, status) {
   const error = new Error(message);
   error.status = status;
@@ -19,110 +23,93 @@ function isUniqueConstraintError(error) {
 /**
  * Set the initial password and activate a registered account.
  *
- * All three required identity types must already be VERIFIED.
- * The account must still be DISABLED.
+ * Requires a valid, unused activation token.
  *
- * Credential creation and account activation are committed
- * together using a D1 batch transaction.
+ * The following operations are committed together:
+ * 1. Consume activation token.
+ * 2. Create password credential.
+ * 3. Activate user account.
+ * 4. Record successful activation event.
  */
 export async function setInitialPassword({
   db,
-  userId,
+  env,
+  activationToken,
   password
 }) {
-  if (
-    typeof userId !== "string" ||
-    !userId.trim()
-  ) {
-    throw httpError("A valid user ID is required.", 400);
-  }
-
   validatePassword(password);
 
-  const normalizedUserId = userId.trim();
+  // Validate token before performing expensive password hashing.
+  // The token is not consumed at this stage.
+  const activation = await findValidActivationToken({
+    db,
+    env,
+    token: activationToken
+  });
 
-  const user = await db.prepare(
-    `SELECT
-       user_id,
-       account_status,
-       email
-     FROM users
-     WHERE user_id = ?1
-     LIMIT 1`
-  ).bind(normalizedUserId).first();
-
-  if (!user) {
-    throw httpError("Registration account was not found.", 404);
-  }
-
-  if (user.account_status !== "DISABLED") {
-    throw httpError("Account is not eligible for activation.", 409);
-  }
-
-  if (!user.email) {
-    throw httpError("Verified email address is required.", 409);
-  }
-
-  const identitySummary = await db.prepare(
-    `SELECT
-       COUNT(*) AS total,
-       SUM(
-         CASE WHEN identity_type = 'NATIONAL_ID'
-           THEN 1 ELSE 0 END
-       ) AS national_id_total,
-       SUM(
-         CASE WHEN identity_type = 'EMAIL'
-           THEN 1 ELSE 0 END
-       ) AS email_total,
-       SUM(
-         CASE WHEN identity_type = 'WHATSAPP'
-           THEN 1 ELSE 0 END
-       ) AS whatsapp_total
-     FROM user_auth_identities
-     WHERE user_id = ?1
-       AND verification_status = 'VERIFIED'
-       AND identity_type IN (
-         'NATIONAL_ID',
-         'EMAIL',
-         'WHATSAPP'
-       )`
-  ).bind(normalizedUserId).first();
-
-  if (
-    (identitySummary?.national_id_total ?? 0) < 1 ||
-    (identitySummary?.email_total ?? 0) < 1 ||
-    (identitySummary?.whatsapp_total ?? 0) < 1
-  ) {
-    throw httpError(
-      "All required identities must be verified before password setup.",
-      409
-    );
-  }
-
-  const existingCredential = await db.prepare(
-    `SELECT credential_id
-     FROM user_credentials
-     WHERE user_id = ?1
-       AND credential_type = 'PASSWORD'
-       AND revoked_at IS NULL
-     LIMIT 1`
-  ).bind(normalizedUserId).first();
-
-  if (existingCredential) {
-    throw httpError(
-      "An active password credential already exists.",
-      409
-    );
-  }
-
-  // Perform expensive hashing before the final database transaction.
   const passwordHash = await hashPassword(password);
 
   const credentialId = crypto.randomUUID();
+  const eventId = crypto.randomUUID();
   const now = new Date().toISOString();
 
   try {
     const results = await db.batch([
+      // 1. Consume the activation token.
+      // All account prerequisites are checked again inside
+      // the transaction to prevent stale validation.
+      db.prepare(
+        `UPDATE user_activation_tokens
+         SET consumed_at = ?1
+         WHERE activation_token_id = ?2
+           AND user_id = ?3
+           AND consumed_at IS NULL
+           AND invalidated_at IS NULL
+           AND expires_at > ?1
+           AND EXISTS (
+             SELECT 1
+             FROM users
+             WHERE user_id = ?3
+               AND account_status = 'DISABLED'
+               AND email IS NOT NULL
+           )
+           AND EXISTS (
+             SELECT 1
+             FROM user_auth_identities
+             WHERE user_id = ?3
+               AND identity_type = 'NATIONAL_ID'
+               AND verification_status = 'VERIFIED'
+           )
+           AND EXISTS (
+             SELECT 1
+             FROM user_auth_identities
+             WHERE user_id = ?3
+               AND identity_type = 'EMAIL'
+               AND verification_status = 'VERIFIED'
+           )
+           AND EXISTS (
+             SELECT 1
+             FROM user_auth_identities
+             WHERE user_id = ?3
+               AND identity_type = 'WHATSAPP'
+               AND verification_status = 'VERIFIED'
+           )
+           AND NOT EXISTS (
+             SELECT 1
+             FROM user_credentials
+             WHERE user_id = ?3
+               AND credential_type = 'PASSWORD'
+               AND revoked_at IS NULL
+           )`
+      ).bind(
+        now,
+        activation.activationTokenId,
+        activation.userId
+      ),
+
+      // 2. Create the initial password credential.
+      // This only succeeds when the activation token was
+      // consumed successfully in the preceding statement.
       db.prepare(
         `INSERT INTO user_credentials (
            credential_id,
@@ -134,50 +121,42 @@ export async function setInitialPassword({
          )
          SELECT
            ?1,
-           user_id,
-           'PASSWORD',
            ?2,
+           'PASSWORD',
            ?3,
-           ?3
-         FROM users
-         WHERE user_id = ?4
-           AND account_status = 'DISABLED'
-           AND email IS NOT NULL
-           AND EXISTS (
-             SELECT 1
-             FROM user_auth_identities
-             WHERE user_id = ?4
-               AND identity_type = 'NATIONAL_ID'
-               AND verification_status = 'VERIFIED'
-           )
-           AND EXISTS (
-             SELECT 1
-             FROM user_auth_identities
-             WHERE user_id = ?4
-               AND identity_type = 'EMAIL'
-               AND verification_status = 'VERIFIED'
-           )
-           AND EXISTS (
-             SELECT 1
-             FROM user_auth_identities
-             WHERE user_id = ?4
-               AND identity_type = 'WHATSAPP'
-               AND verification_status = 'VERIFIED'
-           )
-           AND NOT EXISTS (
-             SELECT 1
-             FROM user_credentials
-             WHERE user_id = ?4
-               AND credential_type = 'PASSWORD'
-               AND revoked_at IS NULL
-           )`
+           ?4,
+           ?4
+         WHERE EXISTS (
+           SELECT 1
+           FROM user_activation_tokens
+           WHERE activation_token_id = ?5
+             AND user_id = ?2
+             AND consumed_at = ?4
+             AND invalidated_at IS NULL
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM users
+           WHERE user_id = ?2
+             AND account_status = 'DISABLED'
+             AND email IS NOT NULL
+         )
+         AND NOT EXISTS (
+           SELECT 1
+           FROM user_credentials
+           WHERE user_id = ?2
+             AND credential_type = 'PASSWORD'
+             AND revoked_at IS NULL
+         )`
       ).bind(
         credentialId,
+        activation.userId,
         passwordHash,
         now,
-        normalizedUserId
+        activation.activationTokenId
       ),
 
+      // 3. Activate the account only after the credential exists.
       db.prepare(
         `UPDATE users
          SET
@@ -185,7 +164,6 @@ export async function setInitialPassword({
            updated_at = ?1
          WHERE user_id = ?2
            AND account_status = 'DISABLED'
-           AND email IS NOT NULL
            AND EXISTS (
              SELECT 1
              FROM user_credentials
@@ -196,6 +174,14 @@ export async function setInitialPassword({
            )
            AND EXISTS (
              SELECT 1
+             FROM user_activation_tokens
+             WHERE activation_token_id = ?4
+               AND user_id = ?2
+               AND consumed_at = ?1
+               AND invalidated_at IS NULL
+           )
+           AND EXISTS (
+             SELECT 1
              FROM user_auth_identities
              WHERE user_id = ?2
                AND identity_type = 'NATIONAL_ID'
@@ -217,20 +203,69 @@ export async function setInitialPassword({
            )`
       ).bind(
         now,
-        normalizedUserId,
+        activation.userId,
+        credentialId,
+        activation.activationTokenId
+      ),
+
+      // 4. Record account activation in the authentication audit log.
+      db.prepare(
+        `INSERT INTO auth_events (
+           event_id,
+           user_id,
+           session_id,
+           event_type,
+           event_status,
+           event_details,
+           created_at
+         )
+         SELECT
+           ?1,
+           ?2,
+           NULL,
+           'ACCOUNT_ACTIVATED',
+           'SUCCESS',
+           ?3,
+           ?4
+         WHERE EXISTS (
+           SELECT 1
+           FROM users
+           WHERE user_id = ?2
+             AND account_status = 'ACTIVE'
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM user_credentials
+           WHERE credential_id = ?5
+             AND user_id = ?2
+             AND credential_type = 'PASSWORD'
+             AND revoked_at IS NULL
+         )`
+      ).bind(
+        eventId,
+        activation.userId,
+        JSON.stringify({
+          activationMethod: "EMAIL_TOKEN",
+          credentialType: "PASSWORD"
+        }),
+        now,
         credentialId
       )
     ]);
 
-    const credentialChanges = results?.[0]?.meta?.changes ?? 0;
-    const accountChanges = results?.[1]?.meta?.changes ?? 0;
+    const tokenChanges = results?.[0]?.meta?.changes ?? 0;
+    const credentialChanges = results?.[1]?.meta?.changes ?? 0;
+    const accountChanges = results?.[2]?.meta?.changes ?? 0;
+    const auditChanges = results?.[3]?.meta?.changes ?? 0;
 
     if (
+      tokenChanges !== 1 ||
       credentialChanges !== 1 ||
-      accountChanges !== 1
+      accountChanges !== 1 ||
+      auditChanges !== 1
     ) {
       throw httpError(
-        "Account verification state changed. Password setup was not completed.",
+        "Account activation could not be completed.",
         409
       );
     }
@@ -241,7 +276,7 @@ export async function setInitialPassword({
 
     if (isUniqueConstraintError(error)) {
       throw httpError(
-        "An active password credential already exists.",
+        "Activation token is invalid, expired or already used.",
         409
       );
     }
@@ -251,7 +286,7 @@ export async function setInitialPassword({
 
   return {
     activated: true,
-    userId: normalizedUserId,
+    userId: activation.userId,
     credentialId,
     accountStatus: "ACTIVE",
     credentialType: "PASSWORD"
