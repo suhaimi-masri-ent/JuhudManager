@@ -1,4 +1,3 @@
-
 import {
   constantTimeEqual,
   encryptValue,
@@ -350,6 +349,31 @@ export async function verifyRegistrationOtp({
     );
   }
 
+  // The OTP can only be consumed if the identity reservation is
+  // still valid. EMAIL verification also requires an eligible user row.
+  const emailAccountGuard = destinationType === "EMAIL"
+    ? `AND EXISTS (
+         SELECT 1
+         FROM users
+         WHERE user_id = ?7
+           AND account_status = 'DISABLED'
+           AND email IS NULL
+       )`
+    : "";
+
+  const consumeBindings = [
+    currentTime,
+    row.otp_request_id,
+    userId,
+    identityId,
+    destinationType,
+    destinationHash
+  ];
+
+  if (destinationType === "EMAIL") {
+    consumeBindings.push(userId);
+  }
+
   const statements = [
     db.prepare(
       `UPDATE auth_otp_requests
@@ -362,15 +386,19 @@ export async function verifyRegistrationOtp({
          AND consumed_at IS NULL
          AND invalidated_at IS NULL
          AND expires_at > ?1
-         AND attempt_count < max_attempts`
-    ).bind(
-      currentTime,
-      row.otp_request_id,
-      userId,
-      identityId,
-      destinationType,
-      destinationHash
-    ),
+         AND attempt_count < max_attempts
+         AND EXISTS (
+           SELECT 1
+           FROM user_auth_identities
+           WHERE identity_id = ?4
+             AND user_id = ?3
+             AND identity_type = ?5
+             AND identity_scope = 'GLOBAL'
+             AND verification_status = 'PENDING'
+             AND expires_at > ?1
+         )
+         ${emailAccountGuard}`
+    ).bind(...consumeBindings),
 
     db.prepare(
       `UPDATE user_auth_identities
@@ -382,6 +410,7 @@ export async function verifyRegistrationOtp({
        WHERE identity_id = ?2
          AND user_id = ?3
          AND identity_type = ?4
+         AND identity_scope = 'GLOBAL'
          AND verification_status = 'PENDING'
          AND expires_at > ?1
          AND EXISTS (
@@ -428,6 +457,11 @@ export async function verifyRegistrationOtp({
     );
   }
 
+  // D1 batch executes these statements in one transaction.
+  // The first statement checks the prerequisites for all subsequent
+  // updates. A SQL constraint error (for example, duplicate email)
+  // causes the batch transaction to fail rather than leaving a
+  // partially verified account.
   const results = await db.batch(statements);
 
   const otpChanges = results?.[0]?.meta?.changes ?? 0;
