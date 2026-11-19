@@ -3,6 +3,13 @@
 -- Migration: 0002_authentication.sql
 -- Requires: 0001_foundation.sql
 -- Database: Dedicated JuhudManager V2 D1 only
+--
+-- Application responsibilities:
+-- - Expire PENDING identities after 15 minutes before reuse.
+-- - Enforce OTP expiry, attempt limits, resend cooldown and replacement.
+-- - Enforce password policy, Argon2id hashing and session timeouts.
+-- - Keep auth_events append-only through normal application operations.
+-- - Apply the 24-month auth event retention policy through a controlled process.
 
 PRAGMA foreign_keys = ON;
 
@@ -12,9 +19,7 @@ PRAGMA foreign_keys = ON;
 
 CREATE TABLE user_auth_identities (
   identity_id TEXT PRIMARY KEY,
-
-  user_id TEXT NOT NULL
-    REFERENCES users(user_id),
+  user_id TEXT NOT NULL REFERENCES users(user_id),
 
   identity_type TEXT NOT NULL
     CHECK (identity_type IN (
@@ -25,9 +30,7 @@ CREATE TABLE user_auth_identities (
     )),
 
   country_code TEXT,
-
   identity_scope TEXT NOT NULL,
-
   identity_hash TEXT NOT NULL,
 
   hash_key_version INTEGER NOT NULL
@@ -45,7 +48,6 @@ CREATE TABLE user_auth_identities (
 
   expires_at TEXT,
   verified_at TEXT,
-
   revoked_at TEXT,
   revoked_by TEXT REFERENCES users(user_id),
 
@@ -86,8 +88,8 @@ CREATE TABLE user_auth_identities (
   )
 );
 
--- A PENDING or VERIFIED identity can only belong
--- to one account at a time.
+-- PENDING and VERIFIED identities are uniquely reserved.
+-- API must mark expired PENDING rows as EXPIRED before reuse.
 CREATE UNIQUE INDEX uq_auth_identity_active
   ON user_auth_identities(
     identity_type,
@@ -110,9 +112,7 @@ CREATE INDEX idx_auth_identity_expiry
 
 CREATE TABLE user_credentials (
   credential_id TEXT PRIMARY KEY,
-
-  user_id TEXT NOT NULL
-    REFERENCES users(user_id),
+  user_id TEXT NOT NULL REFERENCES users(user_id),
 
   credential_type TEXT NOT NULL
     CHECK (credential_type = 'PASSWORD'),
@@ -126,7 +126,6 @@ CREATE TABLE user_credentials (
     DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
 
   changed_at TEXT,
-
   revoked_at TEXT
 );
 
@@ -163,7 +162,6 @@ CREATE TABLE auth_otp_requests (
     CHECK (destination_type IN ('EMAIL','WHATSAPP')),
 
   destination_hash TEXT NOT NULL,
-
   destination_encrypted TEXT NOT NULL,
 
   destination_hash_key_version INTEGER NOT NULL
@@ -183,7 +181,6 @@ CREATE TABLE auth_otp_requests (
     CHECK (max_attempts > 0),
 
   last_sent_at TEXT NOT NULL,
-
   consumed_at TEXT,
   invalidated_at TEXT,
 
@@ -219,9 +216,7 @@ CREATE INDEX idx_auth_otp_expiry
 
 CREATE TABLE user_sessions (
   session_id TEXT PRIMARY KEY,
-
-  user_id TEXT NOT NULL
-    REFERENCES users(user_id),
+  user_id TEXT NOT NULL REFERENCES users(user_id),
 
   token_hash TEXT NOT NULL UNIQUE,
 
@@ -236,7 +231,6 @@ CREATE TABLE user_sessions (
     )),
 
   ip_address TEXT,
-
   user_agent TEXT,
 
   created_at TEXT NOT NULL
@@ -246,7 +240,6 @@ CREATE TABLE user_sessions (
     DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
 
   expires_at TEXT NOT NULL,
-
   revoked_at TEXT,
 
   revocation_reason TEXT
@@ -297,7 +290,6 @@ CREATE TABLE auth_events (
     CHECK (event_status IN ('SUCCESS','FAILED')),
 
   ip_address TEXT,
-
   user_agent TEXT,
 
   event_details TEXT
