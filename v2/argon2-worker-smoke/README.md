@@ -69,3 +69,7 @@ keep the complete error output.
 
 Do not change the main JuhudManager V2 Worker or its dependencies
 until the compatibility issue has been reviewed.
+
+## Deployment trigger
+
+Cloudflare Workers Builds deployment configuration.
