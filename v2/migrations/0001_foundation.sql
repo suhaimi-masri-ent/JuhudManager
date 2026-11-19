@@ -1,3 +1,4 @@
+
 -- JuhudManager V2 - Foundation schema
 -- Independent from V1. Apply only to a dedicated V2 D1 database.
 
@@ -88,19 +89,23 @@ CREATE TABLE takaza_participations (
   ended_at TEXT,
   ended_by TEXT REFERENCES users(user_id),
   end_reason TEXT,
-  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+  created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  -- Composite parent key for Amer appointment integrity.
+  UNIQUE (participation_id, takaza_id, user_id)
 );
 
 CREATE UNIQUE INDEX uq_takaza_active_participation
   ON takaza_participations(takaza_id, user_id)
   WHERE participation_status IN ('PENDING','ACTIVE');
 
--- Amer is an appointment attached to an existing participant record.
+-- Amer is an appointment attached to the same user's participation
+-- in the same Takaza.
 -- Detailed Kawaif/Tafakut eligibility integration remains a later slice.
 CREATE TABLE amer_appointments (
   appointment_id TEXT PRIMARY KEY,
   takaza_id TEXT NOT NULL REFERENCES takazas(takaza_id),
-  participation_id TEXT NOT NULL REFERENCES takaza_participations(participation_id),
+  participation_id TEXT NOT NULL,
   appointee_user_id TEXT NOT NULL REFERENCES users(user_id),
   eligibility_status TEXT NOT NULL
     CHECK (eligibility_status IN ('ELIGIBLE','PENDING','INELIGIBLE')),
@@ -113,8 +118,18 @@ CREATE TABLE amer_appointments (
   change_reason TEXT,
   former_access_policy TEXT NOT NULL DEFAULT 'ADMIN_CONTROLLED'
     CHECK (former_access_policy IN ('ADMIN_CONTROLLED','READ_ONLY','NO_ACCESS')),
-  CHECK (eligibility_status <> 'ELIGIBLE' OR
-         (eligibility_reference IS NOT NULL AND length(trim(eligibility_reference)) > 0))
+
+  CHECK (
+    eligibility_status <> 'ELIGIBLE'
+    OR (
+      eligibility_reference IS NOT NULL
+      AND length(trim(eligibility_reference)) > 0
+    )
+  ),
+
+  -- Enforce same participation, same Takaza and same user.
+  FOREIGN KEY (participation_id, takaza_id, appointee_user_id)
+    REFERENCES takaza_participations(participation_id, takaza_id, user_id)
 );
 
 CREATE UNIQUE INDEX uq_takaza_current_amer
@@ -133,10 +148,17 @@ CREATE TABLE audit_logs (
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
-CREATE INDEX idx_jemaah_memberships_user ON jemaah_memberships(user_id, membership_status);
-CREATE INDEX idx_takaza_participations_user ON takaza_participations(user_id, participation_status);
-CREATE INDEX idx_amer_appointments_takaza ON amer_appointments(takaza_id, appointed_at);
-CREATE INDEX idx_audit_entity ON audit_logs(entity_type, entity_id, created_at);
+CREATE INDEX idx_jemaah_memberships_user
+  ON jemaah_memberships(user_id, membership_status);
+
+CREATE INDEX idx_takaza_participations_user
+  ON takaza_participations(user_id, participation_status);
+
+CREATE INDEX idx_amer_appointments_takaza
+  ON amer_appointments(takaza_id, appointed_at);
+
+CREATE INDEX idx_audit_entity
+  ON audit_logs(entity_type, entity_id, created_at);
 
 INSERT INTO roles(role_id, role_code, role_name, description) VALUES
   ('role-super-admin','SUPER_ADMIN','Super Admin','Full system administration'),
