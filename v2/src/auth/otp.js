@@ -32,20 +32,15 @@ function normalizeInput(destinationType, destination) {
   try {
     return normalizeDestination(destinationType, destination);
   } catch (error) {
-    if (error instanceof TypeError) {
-      throw httpError(error.message, 400);
-    }
-    throw error;
+    throw httpError(error.message, 400);
   }
-}
-
-function hasOneChange(result) {
-  return result?.meta?.changes === 1;
 }
 
 export async function requestRegistrationOtp({
   db,
   env,
+  userId,
+  identityId,
   destinationType,
   destination
 }) {
@@ -53,11 +48,24 @@ export async function requestRegistrationOtp({
     throw new Error("Authentication secrets are not configured.");
   }
 
+  if (!userId || !identityId) {
+    throw httpError(
+      "User ID and identity ID are required.",
+      400
+    );
+  }
+
   if (!env.OTP_DELIVERY || typeof env.OTP_DELIVERY.send !== "function") {
     throw httpError("OTP delivery provider is not configured.", 503);
   }
 
   const normalized = normalizeInput(destinationType, destination);
+
+  const identityHash = await hashValue(
+    env.HMAC_SECRET,
+    `${destinationType}:GLOBAL:${normalized}`
+  );
+
   const destinationHash = await hashValue(
     env.HMAC_SECRET,
     `${destinationType}:${normalized}`
@@ -65,6 +73,35 @@ export async function requestRegistrationOtp({
 
   const currentTime = new Date();
   const currentIso = currentTime.toISOString();
+
+  // Ensure the identity reservation belongs to this user
+  // and matches the destination receiving the OTP.
+  const identity = await db.prepare(
+    `SELECT identity_id
+     FROM user_auth_identities
+     WHERE identity_id = ?1
+       AND user_id = ?2
+       AND identity_type = ?3
+       AND identity_scope = 'GLOBAL'
+       AND identity_hash = ?4
+       AND verification_status = 'PENDING'
+       AND expires_at > ?5
+     LIMIT 1`
+  ).bind(
+    identityId,
+    userId,
+    destinationType,
+    identityHash,
+    currentIso
+  ).first();
+
+  if (!identity) {
+    throw httpError(
+      "Identity reservation is invalid or expired.",
+      409
+    );
+  }
+
   const windowStart = new Date(
     currentTime.getTime() - RATE_WINDOW_MINUTES * 60000
   ).toISOString();
@@ -93,11 +130,10 @@ export async function requestRegistrationOtp({
 
   if (recent?.last_sent_at) {
     const lastSent = new Date(recent.last_sent_at).getTime();
-    const elapsed = currentTime.getTime() - lastSent;
 
     if (
       Number.isFinite(lastSent) &&
-      elapsed < OTP_RESEND_SECONDS * 1000
+      currentTime.getTime() - lastSent < OTP_RESEND_SECONDS * 1000
     ) {
       throw httpError(
         "Please wait before requesting another OTP.",
@@ -126,11 +162,6 @@ export async function requestRegistrationOtp({
     OTP_LIFETIME_MINUTES * 60
   );
 
-  // Invalidate the previous OTP and insert the new OTP
-  // in one D1 batch operation.
-  //
-  // D1 batch executes its statements transactionally.
-  // This also protects the active-OTP unique index.
   await db.batch([
     db.prepare(
       `UPDATE auth_otp_requests
@@ -149,6 +180,8 @@ export async function requestRegistrationOtp({
     db.prepare(
       `INSERT INTO auth_otp_requests (
          otp_request_id,
+         user_id,
+         identity_id,
          otp_purpose,
          destination_type,
          destination_hash,
@@ -162,10 +195,13 @@ export async function requestRegistrationOtp({
          last_sent_at
        )
        VALUES (
-         ?1, 'REGISTER', ?2, ?3, ?4, 1, ?5, 1, ?6, 0, ?7, ?8
+         ?1, ?2, ?3, 'REGISTER', ?4, ?5, ?6, 1,
+         ?7, 1, ?8, 0, ?9, ?10
        )`
     ).bind(
       otpRequestId,
+      userId,
+      identityId,
       destinationType,
       destinationHash,
       encryptedDestination,
@@ -213,12 +249,21 @@ export async function requestRegistrationOtp({
 export async function verifyRegistrationOtp({
   db,
   env,
+  userId,
+  identityId,
   destinationType,
   destination,
   otp
 }) {
   if (!env.HMAC_SECRET || !env.OTP_HASH_SECRET) {
     throw new Error("Authentication secrets are not configured.");
+  }
+
+  if (!userId || !identityId) {
+    throw httpError(
+      "User ID and identity ID are required.",
+      400
+    );
   }
 
   if (!/^\d{6}$/.test(String(otp ?? ""))) {
@@ -232,22 +277,30 @@ export async function verifyRegistrationOtp({
     `${destinationType}:${normalized}`
   );
 
+  const currentTime = nowIso();
+
   const row = await db.prepare(
     `SELECT
        otp_request_id,
+       user_id,
+       identity_id,
        otp_hash,
        expires_at,
        attempt_count,
        max_attempts
      FROM auth_otp_requests
-     WHERE destination_type = ?1
-       AND destination_hash = ?2
+     WHERE user_id = ?1
+       AND identity_id = ?2
+       AND destination_type = ?3
+       AND destination_hash = ?4
        AND otp_purpose = 'REGISTER'
        AND consumed_at IS NULL
        AND invalidated_at IS NULL
      ORDER BY created_at DESC
      LIMIT 1`
   ).bind(
+    userId,
+    identityId,
     destinationType,
     destinationHash
   ).first();
@@ -255,8 +308,6 @@ export async function verifyRegistrationOtp({
   if (!row) {
     throw httpError("OTP is invalid or expired.", 400);
   }
-
-  const currentTime = nowIso();
 
   const expiryTime = new Date(row.expires_at).getTime();
 
@@ -290,9 +341,6 @@ export async function verifyRegistrationOtp({
   );
 
   if (!constantTimeEqual(candidateHash, row.otp_hash)) {
-    // Increment the attempt counter atomically.
-    // The conditional UPDATE prevents concurrent requests
-    // from exceeding the configured attempt limit.
     const updated = await db.prepare(
       `UPDATE auth_otp_requests
        SET
@@ -322,31 +370,74 @@ export async function verifyRegistrationOtp({
     );
   }
 
-  // Consume the OTP only if it is still active,
-  // unexpired and below the attempt limit.
+  // Consume the OTP and verify its associated identity
+  // within the same D1 batch transaction.
   //
-  // RETURNING confirms that exactly one active OTP
-  // was successfully consumed.
-  const consumed = await db.prepare(
-    `UPDATE auth_otp_requests
-     SET consumed_at = ?1
-     WHERE otp_request_id = ?2
-       AND consumed_at IS NULL
-       AND invalidated_at IS NULL
-       AND expires_at > ?1
-       AND attempt_count < max_attempts
-     RETURNING otp_request_id`
-  ).bind(
-    currentTime,
-    row.otp_request_id
-  ).first();
+  // The identity update requires the exact OTP request
+  // to have been consumed successfully.
+  const results = await db.batch([
+    db.prepare(
+      `UPDATE auth_otp_requests
+       SET consumed_at = ?1
+       WHERE otp_request_id = ?2
+         AND user_id = ?3
+         AND identity_id = ?4
+         AND destination_type = ?5
+         AND destination_hash = ?6
+         AND consumed_at IS NULL
+         AND invalidated_at IS NULL
+         AND expires_at > ?1
+         AND attempt_count < max_attempts`
+    ).bind(
+      currentTime,
+      row.otp_request_id,
+      userId,
+      identityId,
+      destinationType,
+      destinationHash
+    ),
 
-  if (!consumed) {
-    throw httpError("OTP is invalid or expired.", 400);
+    db.prepare(
+      `UPDATE user_auth_identities
+       SET
+         verification_status = 'VERIFIED',
+         verified_at = ?1,
+         expires_at = NULL,
+         updated_at = ?1
+       WHERE identity_id = ?2
+         AND user_id = ?3
+         AND verification_status = 'PENDING'
+         AND expires_at > ?1
+         AND EXISTS (
+           SELECT 1
+           FROM auth_otp_requests
+           WHERE otp_request_id = ?4
+             AND user_id = ?3
+             AND identity_id = ?2
+             AND consumed_at = ?1
+         )`
+    ).bind(
+      currentTime,
+      identityId,
+      userId,
+      row.otp_request_id
+    )
+  ]);
+
+  const otpChanges = results?.[0]?.meta?.changes ?? 0;
+  const identityChanges = results?.[1]?.meta?.changes ?? 0;
+
+  if (otpChanges !== 1 || identityChanges !== 1) {
+    throw httpError(
+      "OTP or identity reservation is invalid or expired.",
+      409
+    );
   }
 
   return {
     verified: true,
-    destinationType
+    destinationType,
+    identityId,
+    identityStatus: "VERIFIED"
   };
 }
