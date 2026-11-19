@@ -4,6 +4,7 @@ import {
   requestRegistrationOtp,
   verifyRegistrationOtp
 } from "../auth/otp.js";
+import { createRegistrationDraft } from "../auth/registration.js";
 
 const ALLOWED_DESTINATION_TYPES = ["EMAIL", "WHATSAPP"];
 
@@ -41,6 +42,36 @@ function validRegistrationIdentity(body) {
 }
 
 export async function handleAuthRequest(request, env, url) {
+  if (
+    url.pathname === "/auth/register/start" &&
+    request.method === "POST"
+  ) {
+    const body = await readJson(request);
+
+    if (!body) {
+      return json({ error: "A valid JSON request body is required." }, 400);
+    }
+
+    try {
+      const result = await createRegistrationDraft({
+        db: env.DB,
+        env,
+        fullName: body.fullName,
+        countryCode: body.countryCode,
+        nationalId: body.nationalId,
+        email: body.email,
+        whatsapp: body.whatsapp
+      });
+
+      return json({
+        ok: true,
+        ...result
+      }, 201);
+    } catch (error) {
+      return errorResponse(error);
+    }
+  }
+
   if (
     url.pathname === "/auth/otp/request" &&
     request.method === "POST"
