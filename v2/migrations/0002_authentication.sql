@@ -7,9 +7,13 @@
 -- Application responsibilities:
 -- - Expire PENDING identities after 15 minutes before reuse.
 -- - Enforce OTP expiry, attempt limits, resend cooldown and replacement.
+-- - Enforce HMAC key rotation across all active key versions.
 -- - Enforce password policy, Argon2id hashing and session timeouts.
 -- - Keep auth_events append-only through normal application operations.
 -- - Apply the 24-month auth event retention policy through a controlled process.
+--
+-- IMPORTANT:
+-- Do not apply this migration to V1 or schema-test databases.
 
 PRAGMA foreign_keys = ON;
 
@@ -57,11 +61,15 @@ CREATE TABLE user_auth_identities (
   updated_at TEXT NOT NULL
     DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
 
+  CHECK (length(trim(identity_scope)) > 0),
+  CHECK (length(trim(identity_hash)) > 0),
+  CHECK (length(trim(encrypted_value)) > 0),
+
   CHECK (
     (
       identity_type IN ('NATIONAL_ID','PASSPORT')
       AND country_code IS NOT NULL
-      AND length(country_code) = 2
+      AND country_code GLOB '[A-Z][A-Z]'
       AND identity_scope = country_code
     )
     OR
@@ -83,9 +91,23 @@ CREATE TABLE user_auth_identities (
   ),
 
   CHECK (
-    verification_status <> 'REVOKED'
-    OR revoked_at IS NOT NULL
-  )
+    (
+      verification_status = 'REVOKED'
+      AND revoked_at IS NOT NULL
+    )
+    OR
+    (
+      verification_status <> 'REVOKED'
+      AND revoked_at IS NULL
+    )
+  ),
+
+  CHECK (
+    revoked_by IS NULL
+    OR verification_status = 'REVOKED'
+  ),
+
+  UNIQUE (identity_id, user_id)
 );
 
 -- PENDING and VERIFIED identities are uniquely reserved.
@@ -117,7 +139,8 @@ CREATE TABLE user_credentials (
   credential_type TEXT NOT NULL
     CHECK (credential_type = 'PASSWORD'),
 
-  password_hash TEXT NOT NULL,
+  password_hash TEXT NOT NULL
+    CHECK (length(trim(password_hash)) > 0),
 
   created_at TEXT NOT NULL
     DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
@@ -147,8 +170,7 @@ CREATE TABLE auth_otp_requests (
 
   user_id TEXT REFERENCES users(user_id),
 
-  identity_id TEXT
-    REFERENCES user_auth_identities(identity_id),
+  identity_id TEXT,
 
   otp_purpose TEXT NOT NULL
     CHECK (otp_purpose IN (
@@ -161,13 +183,17 @@ CREATE TABLE auth_otp_requests (
   destination_type TEXT NOT NULL
     CHECK (destination_type IN ('EMAIL','WHATSAPP')),
 
-  destination_hash TEXT NOT NULL,
-  destination_encrypted TEXT NOT NULL,
+  destination_hash TEXT NOT NULL
+    CHECK (length(trim(destination_hash)) > 0),
+
+  destination_encrypted TEXT NOT NULL
+    CHECK (length(trim(destination_encrypted)) > 0),
 
   destination_hash_key_version INTEGER NOT NULL
     CHECK (destination_hash_key_version > 0),
 
-  otp_hash TEXT NOT NULL,
+  otp_hash TEXT NOT NULL
+    CHECK (length(trim(otp_hash)) > 0),
 
   otp_hash_key_version INTEGER NOT NULL
     CHECK (otp_hash_key_version > 0),
@@ -188,11 +214,24 @@ CREATE TABLE auth_otp_requests (
     DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
 
   CHECK (
+    identity_id IS NULL
+    OR user_id IS NOT NULL
+  ),
+
+  CHECK (
     identity_id IS NOT NULL
     OR otp_purpose = 'REGISTER'
   ),
 
-  CHECK (attempt_count <= max_attempts)
+  CHECK (attempt_count <= max_attempts),
+
+  CHECK (
+    consumed_at IS NULL
+    OR invalidated_at IS NULL
+  ),
+
+  FOREIGN KEY (identity_id, user_id)
+    REFERENCES user_auth_identities(identity_id, user_id)
 );
 
 CREATE INDEX idx_auth_otp_user
@@ -209,6 +248,17 @@ CREATE INDEX idx_auth_otp_expiry
   WHERE consumed_at IS NULL
     AND invalidated_at IS NULL;
 
+-- Only one active OTP per destination and purpose.
+-- API must invalidate the previous OTP before issuing a new one.
+CREATE UNIQUE INDEX uq_auth_otp_active_destination
+  ON auth_otp_requests(
+    destination_type,
+    destination_hash,
+    otp_purpose
+  )
+  WHERE consumed_at IS NULL
+    AND invalidated_at IS NULL;
+
 
 -- =========================================================
 -- 4. USER SESSIONS
@@ -218,7 +268,8 @@ CREATE TABLE user_sessions (
   session_id TEXT PRIMARY KEY,
   user_id TEXT NOT NULL REFERENCES users(user_id),
 
-  token_hash TEXT NOT NULL UNIQUE,
+  token_hash TEXT NOT NULL UNIQUE
+    CHECK (length(trim(token_hash)) > 0),
 
   device_name TEXT,
 
@@ -262,7 +313,9 @@ CREATE TABLE user_sessions (
     (revoked_at IS NULL AND revocation_reason IS NULL)
     OR
     (revoked_at IS NOT NULL AND revocation_reason IS NOT NULL)
-  )
+  ),
+
+  UNIQUE (session_id, user_id)
 );
 
 CREATE INDEX idx_user_sessions_user
@@ -282,8 +335,7 @@ CREATE TABLE auth_events (
 
   user_id TEXT REFERENCES users(user_id),
 
-  session_id TEXT
-    REFERENCES user_sessions(session_id),
+  session_id TEXT,
 
   event_type TEXT NOT NULL,
 
@@ -300,7 +352,15 @@ CREATE TABLE auth_events (
     ),
 
   created_at TEXT NOT NULL
-    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+    DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now')),
+
+  CHECK (
+    session_id IS NULL
+    OR user_id IS NOT NULL
+  ),
+
+  FOREIGN KEY (session_id, user_id)
+    REFERENCES user_sessions(session_id, user_id)
 );
 
 CREATE INDEX idx_auth_events_user
