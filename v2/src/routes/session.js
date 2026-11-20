@@ -3,7 +3,8 @@ import { json } from "../lib/http.js";
 
 import {
   authenticateSession,
-  revokeSession
+  revokeSession,
+  revokeAllSessions
 } from "../auth/sessions.js";
 
 function getBearerToken(request) {
@@ -61,8 +62,9 @@ async function requireSession(request, env) {
 /**
  * Handle authenticated session actions.
  *
- * GET /auth/me
+ * GET  /auth/me
  * POST /auth/logout
+ * POST /auth/logout-all
  *
  * Header:
  * Authorization: Bearer <accessToken>
@@ -76,7 +78,15 @@ export async function handleSessionRequest(request, env, url) {
     url.pathname === "/auth/logout" &&
     request.method === "POST";
 
-  if (!isMeRequest && !isLogoutRequest) {
+  const isLogoutAllRequest =
+    url.pathname === "/auth/logout-all" &&
+    request.method === "POST";
+
+  if (
+    !isMeRequest &&
+    !isLogoutRequest &&
+    !isLogoutAllRequest
+  ) {
     return null;
   }
 
@@ -104,22 +114,69 @@ export async function handleSessionRequest(request, env, url) {
       });
     }
 
-    const revoked = await revokeSession({
+    if (isLogoutRequest) {
+      const revoked = await revokeSession({
+        db: env.DB,
+        sessionId: session.sessionId,
+        userId: session.userId,
+        reason: "LOGOUT"
+      });
+
+      if (!revoked.revoked) {
+        return json({
+          error: "Session is no longer active."
+        }, 401);
+      }
+
+      return json({
+        ok: true,
+        message: "You have been logged out."
+      });
+    }
+
+    const revoked = await revokeAllSessions({
       db: env.DB,
-      sessionId: session.sessionId,
       userId: session.userId,
-      reason: "LOGOUT"
+      reason: "LOGOUT_ALL"
     });
 
-    if (!revoked.revoked) {
-      return json({
-        error: "Session is no longer active."
-      }, 401);
-    }
+    const eventId = crypto.randomUUID();
+
+    await env.DB.prepare(
+      `INSERT INTO auth_events (
+         event_id,
+         user_id,
+         session_id,
+         event_type,
+         event_status,
+         ip_address,
+         user_agent,
+         event_details,
+         created_at
+       )
+       VALUES (
+         ?1, ?2, ?3,
+         'SESSION_REVOKED_ALL',
+         'SUCCESS',
+         ?4, ?5, ?6, ?7
+       )`
+    ).bind(
+      eventId,
+      session.userId,
+      session.sessionId,
+      request.headers.get("CF-Connecting-IP"),
+      request.headers.get("User-Agent"),
+      JSON.stringify({
+        reason: "LOGOUT_ALL",
+        revokedCount: revoked.revokedCount
+      }),
+      revoked.revokedAt
+    ).run();
 
     return json({
       ok: true,
-      message: "You have been logged out."
+      message: "All sessions have been logged out.",
+      revokedCount: revoked.revokedCount
     });
   } catch (error) {
     return errorResponse(error);
