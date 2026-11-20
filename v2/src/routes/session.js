@@ -64,6 +64,8 @@ async function requireSession(request, env) {
  * GET  /auth/me
  * POST /auth/logout
  * POST /auth/logout-all
+ * GET  /auth/sessions
+ * POST /auth/sessions/:sessionId/revoke
  *
  * Header:
  * Authorization: Bearer <accessToken>
@@ -81,10 +83,24 @@ export async function handleSessionRequest(request, env, url) {
     url.pathname === "/auth/logout-all" &&
     request.method === "POST";
 
+  const isListSessionsRequest =
+    url.pathname === "/auth/sessions" &&
+    request.method === "GET";
+
+  const revokeMatch = url.pathname.match(
+    /^\/auth\/sessions\/([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\/revoke$/i
+  );
+
+  const isRevokeSelectedRequest =
+    Boolean(revokeMatch) &&
+    request.method === "POST";
+
   if (
     !isMeRequest &&
     !isLogoutRequest &&
-    !isLogoutAllRequest
+    !isLogoutAllRequest &&
+    !isListSessionsRequest &&
+    !isRevokeSelectedRequest
   ) {
     return null;
   }
@@ -98,6 +114,7 @@ export async function handleSessionRequest(request, env, url) {
 
     const session = result.session;
 
+    // GET /auth/me
     if (isMeRequest) {
       return json({
         ok: true,
@@ -113,6 +130,7 @@ export async function handleSessionRequest(request, env, url) {
       });
     }
 
+    // POST /auth/logout
     if (isLogoutRequest) {
       const revoked = await revokeSession({
         db: env.DB,
@@ -133,84 +151,155 @@ export async function handleSessionRequest(request, env, url) {
       });
     }
 
-    // Revoke all active sessions and record the audit event
-    // in one D1 batch.
-    const now = new Date().toISOString();
-    const eventId = crypto.randomUUID();
+    // POST /auth/logout-all
+    if (isLogoutAllRequest) {
+      const now = new Date().toISOString();
+      const eventId = crypto.randomUUID();
 
-    const results = await env.DB.batch([
-      env.DB.prepare(
-        `UPDATE user_sessions
-         SET
-           revoked_at = ?1,
-           revocation_reason = 'LOGOUT_ALL'
-         WHERE user_id = ?2
-           AND revoked_at IS NULL`
-      ).bind(
-        now,
-        session.userId
-      ),
+      const results = await env.DB.batch([
+        env.DB.prepare(
+          `UPDATE user_sessions
+           SET
+             revoked_at = ?1,
+             revocation_reason = 'LOGOUT_ALL'
+           WHERE user_id = ?2
+             AND revoked_at IS NULL`
+        ).bind(
+          now,
+          session.userId
+        ),
 
-      env.DB.prepare(
-        `INSERT INTO auth_events (
-           event_id,
-           user_id,
-           session_id,
-           event_type,
-           event_status,
-           ip_address,
-           user_agent,
-           event_details,
-           created_at
-         )
-         SELECT
-           ?1,
-           ?2,
-           ?3,
-           'SESSION_REVOKED_ALL',
-           'SUCCESS',
-           ?4,
-           ?5,
-           ?6,
-           ?7
-         WHERE EXISTS (
-           SELECT 1
-           FROM user_sessions
-           WHERE session_id = ?3
-             AND user_id = ?2
-             AND revoked_at = ?7
-             AND revocation_reason = 'LOGOUT_ALL'
-         )`
-      ).bind(
-        eventId,
-        session.userId,
-        session.sessionId,
-        request.headers.get("CF-Connecting-IP"),
-        request.headers.get("User-Agent"),
-        JSON.stringify({
-          reason: "LOGOUT_ALL"
-        }),
-        now
-      )
-    ]);
+        env.DB.prepare(
+          `INSERT INTO auth_events (
+             event_id,
+             user_id,
+             session_id,
+             event_type,
+             event_status,
+             ip_address,
+             user_agent,
+             event_details,
+             created_at
+           )
+           SELECT
+             ?1,
+             ?2,
+             ?3,
+             'SESSION_REVOKED_ALL',
+             'SUCCESS',
+             ?4,
+             ?5,
+             ?6,
+             ?7
+           WHERE EXISTS (
+             SELECT 1
+             FROM user_sessions
+             WHERE session_id = ?3
+               AND user_id = ?2
+               AND revoked_at = ?7
+               AND revocation_reason = 'LOGOUT_ALL'
+           )`
+        ).bind(
+          eventId,
+          session.userId,
+          session.sessionId,
+          request.headers.get("CF-Connecting-IP"),
+          request.headers.get("User-Agent"),
+          JSON.stringify({
+            reason: "LOGOUT_ALL"
+          }),
+          now
+        )
+      ]);
 
-    const revokedCount =
-      results?.[0]?.meta?.changes ?? 0;
+      const revokedCount =
+        results?.[0]?.meta?.changes ?? 0;
 
-    const auditChanges =
-      results?.[1]?.meta?.changes ?? 0;
+      const auditChanges =
+        results?.[1]?.meta?.changes ?? 0;
 
-    if (auditChanges !== 1) {
-      throw new Error(
-        "Logout-all audit event could not be recorded."
-      );
+      if (auditChanges !== 1) {
+        throw new Error(
+          "Logout-all audit event could not be recorded."
+        );
+      }
+
+      return json({
+        ok: true,
+        message: "All sessions have been logged out.",
+        revokedCount
+      });
     }
 
-    return json({
-      ok: true,
-      message: "All sessions have been logged out.",
-      revokedCount
-    });
+    // GET /auth/sessions
+    if (isListSessionsRequest) {
+      const now = new Date().toISOString();
+
+      const result = await env.DB.prepare(
+        `SELECT
+           session_id,
+           device_name,
+           device_type,
+           created_at,
+           last_activity_at,
+           expires_at
+         FROM user_sessions
+         WHERE user_id = ?1
+           AND revoked_at IS NULL
+           AND expires_at > ?2
+         ORDER BY last_activity_at DESC
+         LIMIT 50`
+      ).bind(
+        session.userId,
+        now
+      ).all();
+
+      const rows = result?.results ?? [];
+
+      const sessions = rows.map((item) => ({
+        sessionId: item.session_id,
+        deviceName: item.device_name,
+        deviceType: item.device_type,
+        createdAt: item.created_at,
+        lastActivityAt: item.last_activity_at,
+        expiresAt: item.expires_at,
+        isCurrent: item.session_id === session.sessionId
+      }));
+
+      return json({
+        ok: true,
+        sessions,
+        count: sessions.length
+      });
+    }
+
+    // POST /auth/sessions/:sessionId/revoke
+    if (isRevokeSelectedRequest) {
+      const targetSessionId = revokeMatch[1];
+
+      const revoked = await revokeSession({
+        db: env.DB,
+        sessionId: targetSessionId,
+        userId: session.userId,
+        reason: "USER_REVOKED"
+      });
+
+      if (!revoked.revoked) {
+        return json({
+          error: "Session not found or is no longer active."
+        }, 404);
+      }
+
+      return json({
+        ok: true,
+        message: "Selected session has been revoked.",
+        sessionId: targetSessionId,
+        currentSessionRevoked:
+          targetSessionId === session.sessionId
+      });
+    }
+
+    return null;
   } catch (error) {
     return errorResponse(error);
   }
