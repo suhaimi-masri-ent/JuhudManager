@@ -4,6 +4,7 @@ import { createResendDelivery } from "./lib/resend-email.js";
 import { createWhatsAppCloudDelivery } from "./lib/whatsapp-cloud.js";
 import { handleAuthRequest } from "./routes/auth.js";
 import { handleLoginRequest } from "./routes/login.js";
+import { handlePasswordChangeRequest } from "./routes/password-change.js";
 import { handleSessionRequest } from "./routes/session.js";
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
@@ -97,9 +98,21 @@ export default {
           url
         );
 
-        // Authenticated session actions:
+        // Authenticated password change.
+        if (!response) {
+          response = await handlePasswordChangeRequest(
+            request,
+            env,
+            url
+          );
+        }
+
+        // Authenticated session actions.
         // GET /auth/me
         // POST /auth/logout
+        // POST /auth/logout-all
+        // GET /auth/sessions
+        // POST /auth/sessions/:sessionId/revoke
         if (!response) {
           response = await handleSessionRequest(
             request,
