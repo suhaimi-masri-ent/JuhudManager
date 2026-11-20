@@ -3,10 +3,17 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "juhudmanager-v2-api",
   "main": "src/index.js",
-  "compatibility_date": "2026-11-01",
+  "compatibility_date": "2026-11-20",
+  "preview_urls": true,
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true
+    }
+  },
   "vars": {
-    "APP_ENV": "development",
-    "ALLOWED_ORIGIN": "http://localhost:8788"
+    "APP_ENV": "production",
+    "ALLOWED_ORIGIN": "https://suhaimi-masri-ent.github.io"
   },
   "d1_databases": [
     {
