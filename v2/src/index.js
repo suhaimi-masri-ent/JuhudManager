@@ -3,14 +3,54 @@ import { json } from "./lib/http.js";
 import { createResendDelivery } from "./lib/resend-email.js";
 import { handleAuthRequest } from "./routes/auth.js";
 
+const ALLOWED_METHODS = "POST, OPTIONS";
+const ALLOWED_HEADERS = "Content-Type, Authorization";
+
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
+    const origin = request.headers.get("Origin");
+
+    // Reject browser requests from unapproved origins.
+    if (origin && origin !== env.ALLOWED_ORIGIN) {
+      return json({
+        error: "Origin not allowed."
+      }, 403);
+    }
 
     if (request.method === "OPTIONS") {
+      const requestedMethod = request.headers.get(
+        "Access-Control-Request-Method"
+      );
+
+      if (requestedMethod && requestedMethod !== "POST") {
+        return json({
+          error: "Requested method is not allowed."
+        }, 405);
+      }
+
+      const requestedHeaders = request.headers.get(
+        "Access-Control-Request-Headers"
+      );
+
+      if (requestedHeaders) {
+        const allowed = requestedHeaders
+          .split(",")
+          .map(header => header.trim().toLowerCase());
+
+        const permitted = ["content-type", "authorization"];
+
+        if (allowed.some(header => !permitted.includes(header))) {
+          return json({
+            error: "Requested headers are not allowed."
+          }, 403);
+        }
+      }
+
       return withCors(
         new Response(null, { status: 204 }),
-        env
+        env,
+        origin
       );
     }
 
@@ -41,9 +81,6 @@ export default {
       }
     } else {
       try {
-        // One Resend adapter handles both email purposes:
-        // 1. Registration OTP
-        // 2. Account activation
         const emailDelivery = createResendDelivery(env);
 
         const authEnv = {
@@ -70,25 +107,21 @@ export default {
       }
     }
 
-    return withCors(response, env);
+    return withCors(response, env, origin);
   }
 };
 
-function corsHeaders(env) {
-  return {
-    "Access-Control-Allow-Origin": env.ALLOWED_ORIGIN || "null",
-    "Access-Control-Allow-Methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, Authorization",
-    "Access-Control-Max-Age": "86400",
-    "Vary": "Origin"
-  };
-}
-
-function withCors(response, env) {
+function withCors(response, env, origin) {
   const headers = new Headers(response.headers);
 
-  for (const [key, value] of Object.entries(corsHeaders(env))) {
-    headers.set(key, value);
+  headers.set("Vary", "Origin");
+  headers.set("Cache-Control", "no-store");
+
+  if (origin && origin === env.ALLOWED_ORIGIN) {
+    headers.set("Access-Control-Allow-Origin", origin);
+    headers.set("Access-Control-Allow-Methods", ALLOWED_METHODS);
+    headers.set("Access-Control-Allow-Headers", ALLOWED_HEADERS);
+    headers.set("Access-Control-Max-Age", "86400");
   }
 
   return new Response(response.body, {
