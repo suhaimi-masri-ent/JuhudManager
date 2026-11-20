@@ -159,8 +159,8 @@ export async function changePassword({
 
   const results = await db.batch([
     // 1. Replace the active password credential.
-    // The old hash is included in the WHERE clause to
-    // prevent overwriting a concurrent password change.
+    // Require the current session to remain valid at commit time.
+    // The old hash prevents overwriting a concurrent password change.
     db.prepare(
       `UPDATE user_credentials
        SET
@@ -177,13 +177,22 @@ export async function changePassword({
            FROM users
            WHERE user_id = ?4
              AND account_status = 'ACTIVE'
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM user_sessions
+           WHERE session_id = ?6
+             AND user_id = ?4
+             AND revoked_at IS NULL
+             AND expires_at > ?2
          )`
     ).bind(
       newPasswordHash,
       now,
       credential.credential_id,
       normalizedUserId,
-      credential.password_hash
+      credential.password_hash,
+      normalizedSessionId
     ),
 
     // 2. Revoke every other active session.
@@ -215,6 +224,7 @@ export async function changePassword({
     ),
 
     // 3. Record the successful password change.
+    // Confirm the current session is still valid and unexpired.
     db.prepare(
       `INSERT INTO auth_events (
          event_id,
@@ -252,6 +262,7 @@ export async function changePassword({
          WHERE session_id = ?3
            AND user_id = ?2
            AND revoked_at IS NULL
+           AND expires_at > ?7
        )`
     ).bind(
       eventId,
