@@ -1,6 +1,9 @@
 
 import { json } from "../lib/http.js";
-import { enforceRateLimit } from "../lib/rate-limit.js";
+import {
+  checkRateLimit as checkRateLimitCounter,
+  enforceRateLimit
+} from "../lib/rate-limit.js";
 
 import {
   authenticatePasswordLogin
@@ -42,7 +45,21 @@ function errorResponse(error) {
   }, status);
 }
 
-async function checkRateLimit(request, env, options) {
+function tooManyAttemptsResponse(retryAfterSeconds) {
+  return new Response(JSON.stringify({
+    error: "Too many login attempts. Please try again later.",
+    retryAfterSeconds
+  }), {
+    status: 429,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Cache-Control": "no-store",
+      "Retry-After": String(retryAfterSeconds)
+    }
+  });
+}
+
+async function enforceRequestLimit(request, env, options) {
   try {
     const result = await enforceRateLimit({
       db: env.DB,
@@ -51,21 +68,26 @@ async function checkRateLimit(request, env, options) {
       ...options
     });
 
-    if (!result.allowed) {
-      return new Response(JSON.stringify({
-        error: "Too many login attempts. Please try again later.",
-        retryAfterSeconds: result.retryAfterSeconds
-      }), {
-        status: 429,
-        headers: {
-          "Content-Type": "application/json; charset=utf-8",
-          "Cache-Control": "no-store",
-          "Retry-After": String(result.retryAfterSeconds)
-        }
-      });
-    }
+    return result.allowed
+      ? null
+      : tooManyAttemptsResponse(result.retryAfterSeconds);
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
 
-    return null;
+async function checkIdentityLimit(request, env, options) {
+  try {
+    const result = await checkRateLimitCounter({
+      db: env.DB,
+      env,
+      request,
+      ...options
+    });
+
+    return result.allowed
+      ? null
+      : tooManyAttemptsResponse(result.retryAfterSeconds);
   } catch (error) {
     return errorResponse(error);
   }
@@ -175,8 +197,8 @@ export async function handleLoginRequest(request, env, url) {
     return null;
   }
 
-  // Layer 1: limit requests from the same IP.
-  const ipLimited = await checkRateLimit(
+  // Layer 1: every request counts towards the IP limit.
+  const ipLimited = await enforceRequestLimit(
     request,
     env,
     IP_RATE_LIMIT
@@ -200,23 +222,26 @@ export async function handleLoginRequest(request, env, url) {
     }, 400);
   }
 
-  // Layer 2: limit attempts against the same identity.
-  // The key is HMAC-hashed inside enforceRateLimit.
-  const identityLimited = await checkRateLimit(
+  const identityLimitOptions = {
+    ...IDENTITY_RATE_LIMIT,
+    key: getIdentityRateLimitKey(body)
+  };
+
+  // Layer 2: check the failed-attempt counter without incrementing.
+  const identityLimited = await checkIdentityLimit(
     request,
     env,
-    {
-      ...IDENTITY_RATE_LIMIT,
-      key: getIdentityRateLimitKey(body)
-    }
+    identityLimitOptions
   );
 
   if (identityLimited) {
     return identityLimited;
   }
 
+  let authentication;
+
   try {
-    const authentication = await authenticatePasswordLogin({
+    authentication = await authenticatePasswordLogin({
       db: env.DB,
       env,
       identityType: body.identityType,
@@ -225,7 +250,25 @@ export async function handleLoginRequest(request, env, url) {
       password: body.password,
       request
     });
+  } catch (error) {
+    // Only failed authentication increments the identity counter.
+    if (error?.status === 401) {
+      const failedAttempt = await enforceRequestLimit(
+        request,
+        env,
+        identityLimitOptions
+      );
 
+      if (failedAttempt) {
+        return failedAttempt;
+      }
+    }
+
+    return errorResponse(error);
+  }
+
+  // Successful authentication does not increase the identity counter.
+  try {
     const session = await createSession({
       db: env.DB,
       env,
