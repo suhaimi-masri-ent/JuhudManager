@@ -192,12 +192,11 @@ export async function requestRegistrationOtp({
          AND consumed_at IS NULL
          AND invalidated_at IS NULL
          AND EXISTS (
-           SELECT 1
-           FROM auth_otp_requests
-           WHERE otp_request_id = ?4
-             AND destination_type = ?2
-             AND destination_hash = ?3
-             AND created_at = ?1
+          SELECT 1
+          FROM auth_otp_requests
+          WHERE otp_request_id = ?4
+            AND destination_type = ?2
+            AND destination_hash = ?3
          )`
     ).bind(
       currentIso,
