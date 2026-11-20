@@ -1,0 +1,92 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>JuhudManager V2 - Authentication Test</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 650px;
+      margin: 30px auto;
+      padding: 16px;
+      line-height: 1.5;
+    }
+    button {
+      padding: 12px 18px;
+      cursor: pointer;
+    }
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      background: #eee;
+      color: #111;
+      padding: 14px;
+      border-radius: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h2>JuhudManager V2 Authentication Test</h2>
+  <p>
+    Safe registration endpoint test.
+    No account will be created and no OTP will be sent.
+  </p>
+
+  <button id="runTest">Test Registration Endpoint</button>
+  <pre id="result">Ready.</pre>
+
+  <script>
+    const API =
+      "https://juhudmanager-v2-api.bitsuhami.workers.dev";
+
+    const output = document.getElementById("result");
+    const button = document.getElementById("runTest");
+
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      output.textContent = "Testing registration endpoint...\n";
+
+      try {
+        const response = await fetch(
+          API + "/auth/register/start",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json"
+            },
+            body: JSON.stringify({})
+          }
+        );
+
+        const responseText = await response.text();
+
+        output.textContent +=
+          "Endpoint: POST /auth/register/start\n" +
+          "HTTP Status: " + response.status + "\n" +
+          "Response:\n" + responseText + "\n\n";
+
+        if (response.status === 400) {
+          output.textContent +=
+            "RESULT: PASS\n" +
+            "Registration route and input validation are responding correctly.\n" +
+            "No account was created and no OTP was sent.";
+        } else {
+          output.textContent +=
+            "RESULT: CHECK REQUIRED\n" +
+            "Expected HTTP 400 for an empty registration body.";
+        }
+
+      } catch (error) {
+        output.textContent +=
+          "\nRESULT: FAILED\n" +
+          error.name + ": " + error.message +
+          "\nCheck CORS or network connectivity.";
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
+</body>
+</html>
