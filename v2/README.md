@@ -1,17 +1,18 @@
+
 # JuhudManager V2
 
-JuhudManager V2 is the next-generation implementation of JuhudManager. It is developed independently from the legacy V1 application to allow the system architecture, database design, authentication, and business modules to be rebuilt in a controlled manner.
+JuhudManager V2 is the next-generation implementation of JuhudManager. It is developed independently from the legacy V1 application to provide a controlled architecture for authentication, database operations and business modules.
 
 All V2 application files are maintained inside the `v2/` directory.
 
 ## 1. Project Principles
 
 - V2 must remain isolated from the existing V1 application.
-- V2 must use its own Cloudflare Worker and D1 database.
-- Existing V1 files, deployment configuration, database, and workflows must not be modified.
-- Business rules must follow the approved JuhudManager requirements and decisions.
+- V2 uses its own Cloudflare Worker and dedicated D1 database.
+- Existing V1 files, deployment configuration, database and workflows must not be modified.
+- Business rules must follow approved JuhudManager requirements and decisions.
 - Unresolved business rules must remain explicitly unresolved until confirmed.
-- Security, auditability, data integrity, and access control must be considered throughout implementation.
+- Security, auditability, data integrity and access control must be considered throughout implementation.
 
 ## 2. Current Directory Structure
 
@@ -21,70 +22,63 @@ v2/
 ├── README_AUTH_PACKAGE.md
 ├── migrations/
 │   ├── 0001_foundation.sql
-│   └── 0002_authentication.sql
+│   ├── 0002_authentication.sql
+│   ├── 0003_account_activation.sql
+│   └── 0004_auth_rate_limits.sql
 ├── src/
 │   ├── index.js
 │   ├── auth/
-│   │   ├── crypto.js
-│   │   └── otp.js
 │   ├── domain/
-│   │   └── amer-appointments.js
 │   ├── lib/
-│   │   └── http.js
 │   └── routes/
-│       └── auth.js
 ├── test/
-│   ├── amer-appointments.test.js
-│   └── auth-otp.test.js
+├── package.json
 └── wrangler.jsonc
 ```
 
-The directory structure may expand as additional modules are implemented. New V2 files must remain inside `v2/`.
+The directory structure may expand as additional modules are implemented. All new V2 application files must remain inside `v2/`.
 
 ## 3. Implementation Status
 
 ### 3.1 Foundation
 
-- [x] Independent V2 Cloudflare Worker configuration.
-- [x] Independent V2 D1 database configuration.
+- [x] Independent V2 Worker configuration.
+- [x] Dedicated V2 D1 database configuration.
 - [x] Foundation database migration.
 - [x] Authentication database migration.
+- [x] Account activation migration.
+- [x] Authentication rate-limit migration.
 - [x] Initial domain implementation for Amer Jemaah appointment rules.
 - [x] Initial automated domain tests.
 
 ### 3.2 Authentication
 
-The first authentication implementation package provides:
+The current backend implementation includes:
 
-- Registration OTP request and verification endpoints.
-- Email and WhatsApp destination support.
-- Six-digit OTP.
-- Five-minute OTP validity.
-- Maximum five verification attempts.
-- Sixty-second resend cooldown.
-- Per-destination request throttling.
-- HMAC-based destination and OTP protection.
-- AES-GCM encryption for stored destination values.
-- Provider-neutral OTP delivery interface.
+- Registration draft creation.
+- Disabled account creation pending verification.
+- NATIONAL_ID, EMAIL and WHATSAPP identity reservations.
+- Country-scoped NATIONAL_ID and PASSPORT identities.
+- Temporary PENDING identity reservations lasting 15 minutes.
+- Email and WhatsApp registration OTP verification.
+- Account activation token issuance and verification.
+- Initial password setup using Argon2id.
+- Password login using NATIONAL_ID or PASSPORT.
+- Authenticated password change.
+- Session creation, authentication and sliding expiry.
+- Logout and logout-all.
+- Session listing and individual session revocation.
+- Authentication event recording.
+- IP and identity-based rate limiting.
+- Scheduled cleanup of expired rate-limit records.
 
-Authentication is still under development. The complete authentication specification includes additional work such as:
+Authentication remains under development and has not completed production integration testing.
 
-- Pending identity reservation and expiry.
-- Account creation and identity linking.
-- National ID and passport verification.
-- Password authentication using Argon2id.
-- Session management and device management.
-- Password recovery and account recovery.
-- Admin-assisted registration and recovery.
-- Security events, audit records, and account lockout controls.
-
-The current OTP implementation must not be considered a complete or production-ready authentication system.
-
-Refer to `README_AUTH_PACKAGE.md` for the current authentication package details.
+Refer to `README_AUTH_PACKAGE.md` for authentication details, route definitions, security policies and outstanding blockers.
 
 ### 3.3 Business Modules
 
-The following business requirements have been established and will guide subsequent implementation:
+The following business requirements have been established and guide subsequent implementation:
 
 - Jemaah and Jemaah membership.
 - Takaza participation.
@@ -93,7 +87,9 @@ The following business requirements have been established and will guide subsequ
 - Tafakut, including Common Tafakut and Specific Tafakut.
 - Rekod Amal.
 
-Business rules that have not yet been confirmed must not be implemented based on assumptions.
+The initial Amer Jemaah appointment domain validation module exists. It is not yet connected to a complete business API workflow.
+
+Business rules that have not been confirmed must not be implemented based on assumptions.
 
 Case Management remains on hold as a separate module.
 
@@ -102,20 +98,23 @@ Case Management remains on hold as a separate module.
 V2 uses a dedicated Cloudflare D1 database:
 
 - Database name: `juhudmanager-v2-db`
+- Binding: `DB`
 - Migration directory: `v2/migrations/`
 
-The following migrations have already been applied to the dedicated V2 remote database:
+The following migrations have already been applied to the remote V2 database:
 
 - `0001_foundation.sql`
 - `0002_authentication.sql`
+- `0003_account_activation.sql`
+- `0004_auth_rate_limits.sql`
 
-**Important database rules:**
+### Database rules
 
 1. Never run V2 migrations against the V1 database.
-2. Do not rerun migrations `0001` or `0002` against the existing V2 remote database.
-3. Any future database changes must be delivered as new migration files.
-4. SQL commands intended for the Cloudflare D1 Console must be clearly identified.
-5. Do not modify the database schema without an agreed requirement and an explicit migration plan.
+2. Do not rerun migrations `0001` through `0004` against the existing remote V2 database.
+3. Any future database changes require a new migration file.
+4. SQL commands intended for Cloudflare D1 Console must be clearly identified.
+5. Do not modify the database schema without an agreed requirement and migration plan.
 6. Never expose database credentials or application secrets in source files.
 
 ## 5. Authentication Security Requirements
@@ -124,17 +123,16 @@ The authentication implementation must follow these principles:
 
 - One individual has one `user_id`, with multiple linked login identities permitted.
 - Identity uniqueness is enforced by identity type and applicable scope.
-- Email addresses are normalized before identity lookup.
-- WhatsApp numbers use E.164 normalization.
+- Email addresses and WhatsApp numbers must be normalized before identity lookup.
 - National IDs and passports are scoped by issuing country.
 - Sensitive identity values must be protected using keyed HMAC and encryption where appropriate.
 - OTP values must never be returned in API responses.
-- OTP verification must enforce expiry, attempt limits, resend cooldown, and rate limits.
+- OTP verification must enforce expiry, attempt limits, resend cooldown and rate limits.
 - Pending identities are reserved for 15 minutes.
-- During the reservation period, another account cannot claim the same identity.
 - An unverified pending identity may be released after its reservation expires.
 - Verified identities remain unique until revoked through an authorized process.
-- Passwords must use Argon2id when password authentication is implemented.
+- National ID and passport verification must use an authorized verification process.
+- Passwords must use Argon2id.
 - Session tokens must be securely generated and stored as hashes.
 - Sensitive account changes and administrative actions must be auditable.
 - Authentication failures must not expose unnecessary account or identity information.
@@ -163,67 +161,77 @@ Approved rules:
 - Multiple free-form reports are permitted throughout the Takaza lifecycle.
 - Reports may still be created after a Takaza is marked `COMPLETED`.
 - Admin does not create progress reports but may comment.
-- Admin, Amer Jemaah, and all Ahbab participating in the Takaza may comment.
+- Admin, Amer Jemaah and all Ahbab participating in the Takaza may comment.
 - Only the report author may edit their report.
 - Only the comment author may edit their comment.
 - Report and comment history must be preserved.
 
-## 8. Development and Testing
+## 8. Runtime Configuration
 
-Run automated tests from the repository root:
+The V2 Worker configuration is maintained in:
 
-```bash
-node --test v2/test/*.test.js
-```
+`v2/wrangler.jsonc`
 
-Run the V2 Worker locally:
+It defines:
 
-```bash
-npx wrangler dev --config v2/wrangler.jsonc
-```
+- Worker entry point.
+- Compatibility date.
+- D1 database binding.
+- Runtime variables.
+- Scheduled cleanup trigger.
 
-These commands are for local development and testing.
+Production configuration must be established separately.
 
-Database changes must follow the approved migration process. Do not use remote migration commands unless explicitly instructed.
+Secrets must be configured through Cloudflare Worker secrets and must never be committed to GitHub.
 
-## 9. Required Runtime Configuration
+The email and WhatsApp delivery adapters are implemented, but production provider configuration and end-to-end delivery verification remain outstanding.
 
-The authentication package requires the following runtime secrets and service binding:
+## 9. Testing
 
-- `HMAC_SECRET`
-- `OTP_HASH_SECRET`
-- `ENCRYPTION_KEY`
-- `OTP_DELIVERY`
+Automated tests are maintained under:
 
-These values must be configured securely in the appropriate Cloudflare environment.
+`v2/test/`
 
-Never commit secrets into GitHub or include them in source files, documentation, screenshots, or API responses.
+The repository includes tests for authentication, identity reservations, OTP flows, registration routes and Amer Jemaah appointment rules.
 
-The OTP delivery service must be implemented and tested before authentication endpoints can be considered operational.
+Static code review does not replace runtime testing.
+
+Before production release, perform:
+
+- Full automated test execution.
+- D1 integration testing.
+- Concurrent identity reservation testing.
+- OTP resend and verification race-condition testing.
+- Provider delivery failure testing.
+- Session and authentication security testing.
+- Full API security review.
 
 ## 10. Deployment Restrictions
 
 - V2 is not part of the existing V1 deployment workflow.
-- Do not deploy V2 automatically as part of development or file updates.
-- Do not modify the root deployment configuration or V1 Worker.
-- Deployment must only take place after explicit approval.
-- Production readiness must be assessed separately from successful local tests.
+- The V2 Worker has not yet been created or deployed.
+- Deployment must use `v2/wrangler.jsonc`.
+- Do not deploy V2 through the existing V1 Worker workflow.
+- Do not modify root deployment configuration or V1 files.
+- Do not rerun migrations `0001` through `0004`.
+- Do not deploy without explicit approval.
+
+Production readiness must be assessed separately from successful static review or local tests.
 
 ## 11. Development Workflow
 
-The V2 development workflow follows these steps:
-
-1. Review the existing implementation and approved requirements.
+1. Review existing implementation and approved requirements.
 2. Identify the specific file or database change required.
 3. Prepare complete replacement files rather than partial code fragments.
-4. Review imports, dependencies, paths, and compatibility with the existing V2 structure.
-5. Run relevant automated tests.
-6. Provide complete files for manual upload to the GitHub repository.
-7. Provide database SQL separately when required, clearly identifying commands intended for the Cloudflare D1 Console.
-8. Review test results and database execution results before proceeding.
+4. Review imports, dependencies, paths and compatibility.
+5. Perform static/manual review and available tests.
+6. Provide complete files for manual upload to GitHub.
+7. Verify uploaded files against the actual GitHub branch.
+8. Provide database SQL separately when required, clearly identifying commands intended for Cloudflare D1 Console.
+9. Review test and database execution results before proceeding.
 
 All changes must remain confined to `v2/` unless an explicit decision authorizes otherwise.
 
 ---
 
-**Project rule:** Preserve existing approved decisions. Do not silently change established business rules, database assumptions, security requirements, or project structure.
+**Project rule:** Preserve existing approved decisions. Do not silently change established business rules, database assumptions, security requirements or project structure.
