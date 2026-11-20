@@ -1,9 +1,14 @@
 
+import argon2Wasm from "@shtora/argon2w/wasm";
 import {
+  configureWasm,
   hash,
   verify,
   parsePHC
 } from "@shtora/argon2w";
+
+// Initialize the Argon2 WASM runtime before using hash or verify.
+configureWasm(argon2Wasm);
 
 export const PASSWORD_POLICY = Object.freeze({
   algorithm: "argon2id",
@@ -68,8 +73,6 @@ export function validatePassword(password) {
 /**
  * Check whether a stored PHC string uses an acceptable
  * Argon2id configuration before expensive verification.
- *
- * Rejects malformed, weak or excessively expensive hashes.
  */
 export function isAcceptablePasswordHash(encoded) {
   if (
@@ -99,9 +102,6 @@ export function isAcceptablePasswordHash(encoded) {
 
 /**
  * Generate a PHC-encoded Argon2id password hash.
- *
- * The library generates a cryptographically random salt
- * when no explicit salt is provided.
  */
 export async function hashPassword(password) {
   validatePassword(password);
@@ -122,11 +122,6 @@ export async function hashPassword(password) {
 
 /**
  * Verify a password against a stored PHC-encoded hash.
- *
- * A false result means the password does not match or
- * the stored hash is not acceptable under the current policy.
- *
- * Internal Argon2 execution errors are allowed to propagate.
  */
 export async function verifyPassword(password, encoded) {
   if (
