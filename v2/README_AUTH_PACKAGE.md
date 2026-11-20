@@ -1,167 +1,209 @@
+
 # JuhudManager V2 Authentication
 
-Target branch: `develop`
+Target branch: `develop`  
 Target directory: `v2/`
 
-## 1. Current implementation
+## 1. Implementation Status
 
-The current V2 authentication package includes:
+The V2 authentication backend currently includes:
 
 - Registration draft creation.
 - Disabled account creation pending verification.
-- Identity reservation for NATIONAL_ID, EMAIL and WHATSAPP.
-- Country-scoped NATIONAL_ID identity uniqueness.
-- Global EMAIL and WHATSAPP identity uniqueness.
+- NATIONAL_ID, EMAIL and WHATSAPP identity reservations.
+- Country-scoped NATIONAL_ID and PASSPORT identities.
+- Globally unique EMAIL and WHATSAPP identities.
 - Temporary PENDING identity reservations lasting 15 minutes.
-- Expired reservation cleanup and release.
-- EMAIL and WHATSAPP OTP request and verification.
-- Six-digit cryptographically generated OTP.
-- Five-minute OTP validity.
-- Maximum five verification attempts.
-- Sixty-second resend cooldown.
-- Per-destination request throttling.
-- HMAC-SHA256 identity and OTP hashes.
-- AES-GCM encryption for recoverable identity values.
-- HTTP routes for registration and OTP operations.
-- Unit tests for crypto, identity reservations, registration and HTTP routes.
+- Expired reservation handling.
+- Email and WhatsApp registration OTP verification.
+- Account activation token issuance and verification.
+- Initial password setup using Argon2id.
+- Password login using NATIONAL_ID or PASSPORT.
+- Authenticated password change.
+- Session creation and authentication.
+- Sliding 30-day session inactivity expiry.
+- Logout and logout-all.
+- Active session listing and individual session revocation.
+- Authentication event recording.
+- IP and identity-based rate limiting.
+- Scheduled cleanup of expired rate-limit records.
 
-## 2. Registration lifecycle
+This implementation has undergone static code review. It has not yet completed full production integration testing.
+
+## 2. Registration Lifecycle
 
 1. User submits full name, issuing country, National ID, email and WhatsApp.
 2. System creates a DISABLED user account.
-3. System reserves the three required identities as PENDING.
+3. System reserves NATIONAL_ID, EMAIL and WHATSAPP identities as PENDING.
 4. Each PENDING identity reservation expires after 15 minutes.
 5. User requests email and WhatsApp OTP verification.
 6. Successful OTP verification changes the corresponding identity to VERIFIED.
 7. Verified email is written to `users.email`.
-8. Account remains DISABLED until the remaining account activation and credential setup process is implemented.
+8. NATIONAL_ID/PASSPORT requires a separately authorized verification process.
+9. Account activation is permitted only after all required identities are VERIFIED.
+10. User receives an activation link and establishes an initial password.
+11. Successful credential creation activates the account.
 
-A PENDING identity cannot be claimed by another account while its reservation is valid.
+PENDING identities cannot be claimed by another account while their reservations remain valid.
 
-A VERIFIED identity remains unique until revoked through an authorized process.
+VERIFIED identities remain unique until revoked through an authorized process.
 
-## 3. Current HTTP endpoints
+## 3. OTP Policy
 
-### POST /auth/register/start
+- OTP purpose implemented: REGISTER.
+- OTP length: 6 digits.
+- OTP validity: 5 minutes.
+- Maximum verification attempts: 5.
+- Resend cooldown: 60 seconds.
+- Maximum requests: 5 per destination within 15 minutes.
+- Registration OTP delivery supports EMAIL and WHATSAPP adapters.
+- OTP values are never returned in API responses.
 
-Creates a disabled registration draft.
+LOGIN OTP, password reset OTP and other OTP purposes are not implemented by the registration OTP module.
 
-Required JSON fields:
+## 4. Password and Login
 
-- `fullName`
-- `countryCode`
-- `nationalId`
-- `email`
-- `whatsapp`
+### Password policy
 
-Returns HTTP 201 when successful.
+- Minimum length: 12 characters.
+- Maximum UTF-8 length: 1024 bytes.
+- Password hashing: Argon2id.
+- Argon2id version: 19.
+- Memory cost: 19456 KiB.
+- Time cost: 3.
+- Parallelism: 1.
 
-### POST /auth/otp/request
+### Login
 
-Requests an OTP for a pending EMAIL or WHATSAPP identity.
+Supported login identity types:
 
-Required JSON fields:
+- NATIONAL_ID
+- PASSPORT
 
-- `userId`
-- `identityId`
-- `destinationType`
-- `destination`
+Login requires:
 
-Supported destination types:
+- VERIFIED identity.
+- ACTIVE account.
+- Active password credential.
 
-- `EMAIL`
-- `WHATSAPP`
+Login failures use generic responses to reduce account enumeration.
 
-Returns HTTP 202 when the OTP request is accepted.
+Login OTP is a separate future feature and must not reuse registration OTP.
 
-### POST /auth/otp/verify
+## 5. Session Policy
 
-Verifies a registration OTP.
+- Session token: cryptographically generated random token.
+- Raw token is returned once and retained by the client.
+- D1 stores only the token hash.
+- Inactivity expiry: 30 days.
+- Valid activity extends session expiry.
+- Logout revokes the current session.
+- Logout-all revokes all active sessions.
+- Individual sessions can be revoked by their owner.
+- Password change revokes other active sessions while retaining the current session.
 
-Required JSON fields:
+## 6. Current HTTP Routes
 
-- `userId`
-- `identityId`
-- `destinationType`
-- `destination`
-- `otp`
+### Registration and activation
 
-The OTP must contain exactly six digits.
+- `POST /auth/register/start`
+- `POST /auth/otp/request`
+- `POST /auth/otp/verify`
+- `POST /auth/activation/request`
+- `POST /auth/password/setup`
 
-## 4. Security configuration
+### Password login and account security
 
-Required Worker secrets:
+- `POST /auth/login`
+- `POST /auth/password/change`
+- `GET /auth/me`
+- `POST /auth/logout`
+- `POST /auth/logout-all`
+- `GET /auth/sessions`
+- `POST /auth/sessions/:sessionId/revoke`
 
-- `HMAC_SECRET`: high-entropy secret for identity and destination HMAC.
-- `OTP_HASH_SECRET`: high-entropy secret for OTP HMAC.
-- `ENCRYPTION_KEY`: base64url-encoded 32-byte AES-256 key.
+### Service health
 
-Never put secrets in source files, `wrangler.jsonc`, GitHub, screenshots or chat.
+- `GET /health`
 
-The implementation does not return OTP values in API responses.
+## 7. Database
 
-## 5. OTP delivery integration blocker
+Dedicated V2 D1 database:
 
-The current implementation expects:
+- Database: `juhudmanager-v2-db`
+- Binding: `DB`
+- Migration directory: `v2/migrations/`
 
-`env.OTP_DELIVERY.send({ destinationType, destination, purpose, otp, expiresInMinutes })`
+Migrations:
 
-This is an application-level adapter interface, not a standard Cloudflare Worker binding by itself.
+- `0001_foundation.sql`
+- `0002_authentication.sql`
+- `0003_account_activation.sql`
+- `0004_auth_rate_limits.sql`
 
-A production adapter must be implemented using the selected email and WhatsApp delivery providers. The adapter must expose the expected interface to the authentication module.
+All four migrations have already been applied to the remote V2 database.
 
-Provider selection, credentials, delivery error handling and security review are still required.
+Do not rerun these migrations.
 
-Do not deploy the OTP endpoints as production-ready until this integration is complete.
+Any future schema changes require a new migration file.
 
-## 6. Outstanding authentication work
+## 8. Runtime Configuration
 
-The following specification areas are not yet implemented:
+### Worker variables
 
-- Password creation and login.
-- Argon2id password hashing and verification.
-- Account activation after all required verification steps.
-- Session creation, renewal, expiration and revocation.
-- Logout and logout-all.
-- Device/session management.
-- Password change and password reset.
-- Email and WhatsApp identity change workflows.
-- National ID and Passport authorized verification workflows.
-- Admin-assisted registration and account recovery.
-- Identity revocation and replacement workflows.
-- Authentication event coverage and security audit review.
-- Route-level abuse protection, including registration abuse and IP-based rate limiting.
+- `APP_ENV`
+- `ALLOWED_ORIGIN`
+- `RESEND_FROM_EMAIL`
+- `RESEND_FROM_NAME`
 
-Argon2id must not be replaced with PBKDF2 or bcrypt without an explicit architecture decision. A maintained Argon2id implementation compatible with Cloudflare Workers must be selected and tested before password endpoints are added.
+### Worker secrets
 
-## 7. Testing
+- `HMAC_SECRET`
+- `OTP_HASH_SECRET`
+- `ENCRYPTION_KEY`
+- `RESEND_API_KEY`
+- `WHATSAPP_ACCESS_TOKEN`
+- `WHATSAPP_PHONE_NUMBER_ID`
+- `WHATSAPP_OTP_TEMPLATE_NAME`
+- `WHATSAPP_OTP_TEMPLATE_LANGUAGE`
 
-Test files currently include:
+`ENCRYPTION_KEY` must represent exactly 32 bytes using Base64URL encoding.
 
-- `v2/test/auth-otp.test.js`
-- `v2/test/auth-identity-reservations.test.js`
-- `v2/test/auth-registration.test.js`
-- `v2/test/auth-routes.test.js`
+Email and WhatsApp delivery adapters are implemented, but production provider configuration and end-to-end delivery verification remain outstanding.
 
-The tests cover crypto helpers, reservation rules, registration behavior and HTTP route validation.
+Never commit secrets to GitHub.
 
-Unit tests using mocked D1 do not replace integration testing against the dedicated V2 D1 database.
+## 9. Outstanding Work and Production Blockers
 
-Before production release, perform:
+The following items remain outstanding:
 
-- Full automated test execution.
-- D1 integration tests.
-- Concurrent identity reservation tests.
-- OTP resend and verification race-condition tests.
-- Email uniqueness and atomic verification tests.
-- Provider delivery failure tests.
-- Security and abuse-protection review.
+1. Authorized NATIONAL_ID/PASSPORT verification workflow.
+2. Admin-assisted identity verification and account recovery.
+3. Password reset workflow.
+4. Login OTP workflow, if required.
+5. Identity change and revocation workflows.
+6. Production email and WhatsApp provider configuration.
+7. Provider delivery integration testing.
+8. D1 integration and concurrency testing.
+9. Full authentication security review.
+10. Production Worker configuration and deployment.
 
-## 8. Deployment boundary
+The backend must not be considered production-ready until these items have been assessed and resolved.
 
-This package is for V2 only.
+## 10. Testing and Deployment
 
-- Do not modify V1 files or database.
-- Do not rerun migrations `0001` or `0002`; they have already been applied.
-- Do not deploy until outstanding production blockers are resolved.
-- Use the dedicated JuhudManager V2 D1 database for all V2 testing.
+Automated tests are maintained under `v2/test/`.
+
+Static review does not replace runtime testing.
+
+The V2 Worker has not yet been created or deployed.
+
+Deployment must use the dedicated V2 configuration:
+
+`v2/wrangler.jsonc`
+
+Do not deploy through the existing V1 Worker workflow.
+
+Do not modify V1 files, V1 database or root deployment configuration.
+
+Do not deploy without explicit approval.
