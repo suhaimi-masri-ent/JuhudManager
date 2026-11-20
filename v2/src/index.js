@@ -1,6 +1,7 @@
 
 import { json } from "./lib/http.js";
 import { createResendDelivery } from "./lib/resend-email.js";
+import { createWhatsAppCloudDelivery } from "./lib/whatsapp-cloud.js";
 import { handleAuthRequest } from "./routes/auth.js";
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
@@ -82,10 +83,27 @@ export default {
     } else {
       try {
         const emailDelivery = createResendDelivery(env);
+        const whatsappDelivery = createWhatsAppCloudDelivery(env);
+
+        const otpDelivery = {
+          async send(message) {
+            if (message?.destinationType === "EMAIL") {
+              return emailDelivery.send(message);
+            }
+
+            if (message?.destinationType === "WHATSAPP") {
+              return whatsappDelivery.send(message);
+            }
+
+            throw new Error(
+              "Unsupported OTP destination type."
+            );
+          }
+        };
 
         const authEnv = {
           ...env,
-          OTP_DELIVERY: emailDelivery,
+          OTP_DELIVERY: otpDelivery,
           ACTIVATION_DELIVERY: emailDelivery
         };
 
