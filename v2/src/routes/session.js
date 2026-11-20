@@ -30,51 +30,88 @@ function errorResponse(error) {
   }, status);
 }
 
+async function requireSession(request, env) {
+  const token = getBearerToken(request);
+
+  if (!token) {
+    return {
+      error: json({
+        error: "A valid Bearer token is required."
+      }, 401)
+    };
+  }
+
+  const session = await authenticateSession({
+    db: env.DB,
+    env,
+    token
+  });
+
+  if (!session) {
+    return {
+      error: json({
+        error: "Invalid or expired session."
+      }, 401)
+    };
+  }
+
+  return { session };
+}
+
 /**
  * Handle authenticated session actions.
  *
+ * GET /auth/me
  * POST /auth/logout
  *
  * Header:
  * Authorization: Bearer <accessToken>
  */
 export async function handleSessionRequest(request, env, url) {
-  if (
-    url.pathname !== "/auth/logout" ||
-    request.method !== "POST"
-  ) {
+  const isMeRequest =
+    url.pathname === "/auth/me" &&
+    request.method === "GET";
+
+  const isLogoutRequest =
+    url.pathname === "/auth/logout" &&
+    request.method === "POST";
+
+  if (!isMeRequest && !isLogoutRequest) {
     return null;
   }
 
-  const token = getBearerToken(request);
-
-  if (!token) {
-    return json({
-      error: "A valid Bearer token is required."
-    }, 401);
-  }
-
   try {
-    const session = await authenticateSession({
-      db: env.DB,
-      env,
-      token
-    });
+    const result = await requireSession(request, env);
 
-    if (!session) {
-      return json({
-        error: "Invalid or expired session."
-      }, 401);
+    if (result.error) {
+      return result.error;
     }
 
-    const result = await revokeSession({
+    const session = result.session;
+
+    if (isMeRequest) {
+      return json({
+        ok: true,
+        user: {
+          userId: session.userId
+        },
+        session: {
+          sessionId: session.sessionId,
+          deviceName: session.deviceName,
+          deviceType: session.deviceType,
+          expiresAt: session.expiresAt
+        }
+      });
+    }
+
+    const revoked = await revokeSession({
       db: env.DB,
       sessionId: session.sessionId,
       userId: session.userId,
       reason: "LOGOUT"
     });
 
-    if (!result.revoked) {
+    if (!revoked.revoked) {
       return json({
         error: "Session is no longer active."
       }, 401);
