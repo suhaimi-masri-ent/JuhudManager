@@ -2,6 +2,7 @@
 import { json } from "./lib/http.js";
 import { createResendDelivery } from "./lib/resend-email.js";
 import { handleAuthRequest } from "./routes/auth.js";
+import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
 const ALLOWED_METHODS = "POST, OPTIONS";
 const ALLOWED_HEADERS = "Content-Type, Authorization";
@@ -11,7 +12,6 @@ export default {
     const url = new URL(request.url);
     const origin = request.headers.get("Origin");
 
-    // Reject browser requests from unapproved origins.
     if (origin && origin !== env.ALLOWED_ORIGIN) {
       return json({
         error: "Origin not allowed."
@@ -108,6 +108,27 @@ export default {
     }
 
     return withCors(response, env, origin);
+  },
+
+  async scheduled(controller, env, ctx) {
+    ctx.waitUntil(
+      cleanupExpiredRateLimits({
+        db: env.DB,
+        batchSize: 500
+      })
+        .then(result => {
+          console.log(
+            "Rate limit cleanup completed:",
+            result.deleted
+          );
+        })
+        .catch(error => {
+          console.error(
+            "Rate limit cleanup failed:",
+            error
+          );
+        })
+    );
   }
 };
 
