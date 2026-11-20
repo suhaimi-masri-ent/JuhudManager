@@ -1,5 +1,6 @@
 
 import { json } from "../lib/http.js";
+import { enforceRateLimit } from "../lib/rate-limit.js";
 
 import {
   requestRegistrationOtp,
@@ -20,12 +21,40 @@ import {
 
 const ALLOWED_DESTINATION_TYPES = ["EMAIL", "WHATSAPP"];
 
-async function readJson(request) {
-  try {
-    return await request.json();
-  } catch {
-    return null;
+const MAX_REQUEST_BODY_BYTES = 16 * 1024;
+
+const RATE_LIMITS = {
+  REGISTER: {
+    scope: "REGISTER",
+    limit: 10,
+    windowSeconds: 3600
+  },
+  OTP_REQUEST: {
+    scope: "OTP_REQUEST",
+    limit: 10,
+    windowSeconds: 900
+  },
+  OTP_VERIFY: {
+    scope: "OTP_VERIFY",
+    limit: 20,
+    windowSeconds: 900
+  },
+  ACTIVATION_REQUEST: {
+    scope: "ACTIVATION_REQUEST",
+    limit: 10,
+    windowSeconds: 900
+  },
+  PASSWORD_SETUP: {
+    scope: "PASSWORD_SETUP",
+    limit: 10,
+    windowSeconds: 900
   }
+};
+
+function httpError(message, status) {
+  const error = new Error(message);
+  error.status = status;
+  return error;
 }
 
 function errorResponse(error) {
@@ -38,6 +67,97 @@ function errorResponse(error) {
       ? "Authentication service unavailable."
       : error.message
   }, status);
+}
+
+async function checkRateLimit(request, env, config) {
+  try {
+    const result = await enforceRateLimit({
+      db: env.DB,
+      env,
+      request,
+      scope: config.scope,
+      limit: config.limit,
+      windowSeconds: config.windowSeconds
+    });
+
+    if (!result.allowed) {
+      return new Response(JSON.stringify({
+        error: "Too many requests. Please try again later.",
+        retryAfterSeconds: result.retryAfterSeconds
+      }), {
+        status: 429,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "Cache-Control": "no-store",
+          "Retry-After": String(result.retryAfterSeconds)
+        }
+      });
+    }
+
+    return null;
+  } catch (error) {
+    return errorResponse(error);
+  }
+}
+
+async function readJson(request) {
+  const contentLength = request.headers.get("Content-Length");
+
+  if (contentLength !== null) {
+    const declaredLength = Number(contentLength);
+
+    if (
+      Number.isFinite(declaredLength) &&
+      declaredLength > MAX_REQUEST_BODY_BYTES
+    ) {
+      throw httpError("Request body is too large.", 413);
+    }
+  }
+
+  if (!request.body) {
+    return null;
+  }
+
+  const reader = request.body.getReader();
+  const chunks = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      totalBytes += value.byteLength;
+
+      if (totalBytes > MAX_REQUEST_BODY_BYTES) {
+        await reader.cancel();
+        throw httpError("Request body is too large.", 413);
+      }
+
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const bytes = new Uint8Array(totalBytes);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    bytes.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  try {
+    const text = new TextDecoder("utf-8", {
+      fatal: true
+    }).decode(bytes);
+
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
 }
 
 function validRegistrationIdentity(body) {
@@ -62,7 +182,21 @@ export async function handleAuthRequest(request, env, url) {
     url.pathname === "/auth/register/start" &&
     request.method === "POST"
   ) {
-    const body = await readJson(request);
+    const limited = await checkRateLimit(
+      request,
+      env,
+      RATE_LIMITS.REGISTER
+    );
+
+    if (limited) return limited;
+
+    let body;
+
+    try {
+      body = await readJson(request);
+    } catch (error) {
+      return errorResponse(error);
+    }
 
     if (!body) {
       return json({
@@ -98,7 +232,21 @@ export async function handleAuthRequest(request, env, url) {
     url.pathname === "/auth/otp/request" &&
     request.method === "POST"
   ) {
-    const body = await readJson(request);
+    const limited = await checkRateLimit(
+      request,
+      env,
+      RATE_LIMITS.OTP_REQUEST
+    );
+
+    if (limited) return limited;
+
+    let body;
+
+    try {
+      body = await readJson(request);
+    } catch (error) {
+      return errorResponse(error);
+    }
 
     if (!validRegistrationIdentity(body)) {
       return json({
@@ -133,7 +281,21 @@ export async function handleAuthRequest(request, env, url) {
     url.pathname === "/auth/otp/verify" &&
     request.method === "POST"
   ) {
-    const body = await readJson(request);
+    const limited = await checkRateLimit(
+      request,
+      env,
+      RATE_LIMITS.OTP_VERIFY
+    );
+
+    if (limited) return limited;
+
+    let body;
+
+    try {
+      body = await readJson(request);
+    } catch (error) {
+      return errorResponse(error);
+    }
 
     if (
       !validRegistrationIdentity(body) ||
@@ -173,7 +335,21 @@ export async function handleAuthRequest(request, env, url) {
     url.pathname === "/auth/activation/request" &&
     request.method === "POST"
   ) {
-    const body = await readJson(request);
+    const limited = await checkRateLimit(
+      request,
+      env,
+      RATE_LIMITS.ACTIVATION_REQUEST
+    );
+
+    if (limited) return limited;
+
+    let body;
+
+    try {
+      body = await readJson(request);
+    } catch (error) {
+      return errorResponse(error);
+    }
 
     if (
       !body ||
@@ -220,7 +396,21 @@ export async function handleAuthRequest(request, env, url) {
     url.pathname === "/auth/password/setup" &&
     request.method === "POST"
   ) {
-    const body = await readJson(request);
+    const limited = await checkRateLimit(
+      request,
+      env,
+      RATE_LIMITS.PASSWORD_SETUP
+    );
+
+    if (limited) return limited;
+
+    let body;
+
+    try {
+      body = await readJson(request);
+    } catch (error) {
+      return errorResponse(error);
+    }
 
     if (
       !body ||
