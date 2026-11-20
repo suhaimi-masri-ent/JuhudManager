@@ -17,9 +17,7 @@ export default {
     const origin = request.headers.get("Origin");
 
     if (origin && origin !== env.ALLOWED_ORIGIN) {
-      return json({
-        error: "Origin not allowed."
-      }, 403);
+      return json({ error: "Origin not allowed." }, 403);
     }
 
     if (request.method === "OPTIONS") {
@@ -45,12 +43,11 @@ export default {
           .split(",")
           .map(header => header.trim().toLowerCase());
 
-        const permitted = [
-          "content-type",
-          "authorization"
-        ];
-
-        if (allowed.some(header => !permitted.includes(header))) {
+        if (
+          allowed.some(header =>
+            !["content-type", "authorization"].includes(header)
+          )
+        ) {
           return json({
             error: "Requested headers are not allowed."
           }, 403);
@@ -89,16 +86,12 @@ export default {
           database: "unavailable"
         }, 503);
       }
+    } else if (url.pathname === "/__delivery-test") {
+      response = await handleDeliveryTest(request, env);
     } else {
       try {
-        // Password login.
-        response = await handleLoginRequest(
-          request,
-          env,
-          url
-        );
+        response = await handleLoginRequest(request, env, url);
 
-        // Authenticated password change.
         if (!response) {
           response = await handlePasswordChangeRequest(
             request,
@@ -107,12 +100,6 @@ export default {
           );
         }
 
-        // Authenticated session actions.
-        // GET /auth/me
-        // POST /auth/logout
-        // POST /auth/logout-all
-        // GET /auth/sessions
-        // POST /auth/sessions/:sessionId/revoke
         if (!response) {
           response = await handleSessionRequest(
             request,
@@ -121,7 +108,6 @@ export default {
           );
         }
 
-        // Existing registration and activation routes.
         if (!response) {
           const emailDelivery = createResendDelivery(env);
           const whatsappDelivery = createWhatsAppCloudDelivery(env);
@@ -156,9 +142,7 @@ export default {
         }
 
         if (!response) {
-          response = json({
-            error: "Not found"
-          }, 404);
+          response = json({ error: "Not found" }, 404);
         }
       } catch {
         response = json({
@@ -191,6 +175,116 @@ export default {
     );
   }
 };
+
+async function handleDeliveryTest(request, env) {
+  if (env.DELIVERY_TEST_ENABLED !== "true") {
+    return json({ error: "Not found" }, 404);
+  }
+
+  if (request.method !== "POST") {
+    return json({ error: "Method not allowed." }, 405);
+  }
+
+  const configuredSecret = String(
+    env.DELIVERY_TEST_SECRET ?? ""
+  );
+
+  const suppliedAuthorization = String(
+    request.headers.get("Authorization") ?? ""
+  );
+
+  const suppliedSecret = suppliedAuthorization.startsWith("Bearer ")
+    ? suppliedAuthorization.slice(7)
+    : "";
+
+  if (
+    !configuredSecret ||
+    !constantTimeEqual(suppliedSecret, configuredSecret)
+  ) {
+    return json({ error: "Unauthorized." }, 401);
+  }
+
+  let body;
+
+  try {
+    const rawBody = await request.text();
+
+    if (rawBody.length > 1024) {
+      return json({ error: "Request too large." }, 413);
+    }
+
+    body = JSON.parse(rawBody);
+  } catch {
+    return json({ error: "Invalid JSON body." }, 400);
+  }
+
+  const channel = String(body?.channel ?? "").toUpperCase();
+
+  if (!["EMAIL", "WHATSAPP"].includes(channel)) {
+    return json({
+      error: "Channel must be EMAIL or WHATSAPP."
+    }, 400);
+  }
+
+  const destination = channel === "EMAIL"
+    ? env.DELIVERY_TEST_EMAIL
+    : env.DELIVERY_TEST_WHATSAPP;
+
+  if (!destination) {
+    return json({
+      error: "Test destination is not configured."
+    }, 503);
+  }
+
+  const randomBytes = new Uint32Array(1);
+  crypto.getRandomValues(randomBytes);
+
+  const otp = String(randomBytes[0] % 1000000).padStart(6, "0");
+
+  try {
+    const delivery = channel === "EMAIL"
+      ? createResendDelivery(env)
+      : createWhatsAppCloudDelivery(env);
+
+    const result = await delivery.send({
+      destinationType: channel,
+      destination,
+      purpose: "REGISTER",
+      otp,
+      expiresInMinutes: 5
+    });
+
+    return json({
+      status: "ok",
+      delivered: true,
+      channel,
+      provider: result.provider,
+      messageId: result.messageId
+    });
+  } catch {
+    return json({
+      status: "error",
+      delivered: false,
+      channel,
+      error: "Delivery provider rejected or could not process the test."
+    }, 503);
+  }
+}
+
+function constantTimeEqual(a, b) {
+  const left = new TextEncoder().encode(String(a));
+  const right = new TextEncoder().encode(String(b));
+
+  let difference = left.length ^ right.length;
+  const length = Math.max(left.length, right.length);
+
+  for (let i = 0; i < length; i++) {
+    difference |=
+      (left[i] ?? 0) ^ (right[i] ?? 0);
+  }
+
+  return difference === 0;
+}
 
 function withCors(response, env, origin) {
   const headers = new Headers(response.headers);
