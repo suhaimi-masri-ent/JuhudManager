@@ -7,7 +7,7 @@ import { handleLoginRequest } from "./routes/login.js";
 import { handleSessionRequest } from "./routes/session.js";
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
-const ALLOWED_METHODS = "POST, OPTIONS";
+const ALLOWED_METHODS = "GET, POST, OPTIONS";
 const ALLOWED_HEADERS = "Content-Type, Authorization";
 
 export default {
@@ -26,7 +26,10 @@ export default {
         "Access-Control-Request-Method"
       );
 
-      if (requestedMethod && requestedMethod !== "POST") {
+      if (
+        requestedMethod &&
+        !["GET", "POST"].includes(requestedMethod)
+      ) {
         return json({
           error: "Requested method is not allowed."
         }, 405);
@@ -41,7 +44,10 @@ export default {
           .split(",")
           .map(header => header.trim().toLowerCase());
 
-        const permitted = ["content-type", "authorization"];
+        const permitted = [
+          "content-type",
+          "authorization"
+        ];
 
         if (allowed.some(header => !permitted.includes(header))) {
           return json({
@@ -91,7 +97,9 @@ export default {
           url
         );
 
-        // Authenticated session actions.
+        // Authenticated session actions:
+        // GET /auth/me
+        // POST /auth/logout
         if (!response) {
           response = await handleSessionRequest(
             request,
