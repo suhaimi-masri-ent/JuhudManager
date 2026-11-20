@@ -45,16 +45,6 @@ function validateActivationToken(token) {
   );
 }
 
-/**
- * Issue an account activation token.
- *
- * Requirements:
- * - Account must remain DISABLED.
- * - NATIONAL_ID, EMAIL and WHATSAPP must be VERIFIED.
- * - Token is delivered only to the verified email address.
- * - Only the token HMAC hash is stored in D1.
- * - Previous unused activation tokens are invalidated.
- */
 export async function issueActivationToken({
   db,
   env,
@@ -64,8 +54,10 @@ export async function issueActivationToken({
     throw new Error("Authentication secrets are not configured.");
   }
 
-  if (!env.ACTIVATION_DELIVERY ||
-      typeof env.ACTIVATION_DELIVERY.send !== "function") {
+  if (
+    !env.ACTIVATION_DELIVERY ||
+    typeof env.ACTIVATION_DELIVERY.send !== "function"
+  ) {
     throw httpError(
       "Account activation delivery provider is not configured.",
       503
@@ -128,7 +120,10 @@ export async function issueActivationToken({
   ).bind(normalizedUserId).first();
 
   if (existingCredential) {
-    throw httpError("An active password credential already exists.", 409);
+    throw httpError(
+      "An active password credential already exists.",
+      409
+    );
   }
 
   const currentTime = new Date();
@@ -139,20 +134,6 @@ export async function issueActivationToken({
     ACTIVATION_RATE_WINDOW_MINUTES * 60 * 1000
   ).toISOString();
 
-  const recentRequests = await db.prepare(
-    `SELECT COUNT(*) AS total
-     FROM user_activation_tokens
-     WHERE user_id = ?1
-       AND created_at >= ?2`
-  ).bind(normalizedUserId, windowStart).first();
-
-  if ((recentRequests?.total ?? 0) >= ACTIVATION_RATE_MAX_REQUESTS) {
-    throw httpError(
-      "Too many activation requests. Please try again later.",
-      429
-    );
-  }
-
   const token = generateActivationToken();
 
   const tokenHash = await hashValue(
@@ -161,20 +142,72 @@ export async function issueActivationToken({
   );
 
   const tokenId = crypto.randomUUID();
+
   const expiresAt = plusSeconds(
     currentTime,
     ACTIVATION_TOKEN_LIFETIME_SECONDS
   );
 
-  // Invalidate the previous token and create its replacement atomically.
-  await db.batch([
+  // Both statements apply the same rate-limit and eligibility
+  // conditions inside one D1 transaction.
+  //
+  // If the limit is reached, neither the old token nor the
+  // account's existing activation state is modified.
+  const results = await db.batch([
     db.prepare(
       `UPDATE user_activation_tokens
        SET invalidated_at = ?1
        WHERE user_id = ?2
          AND consumed_at IS NULL
-         AND invalidated_at IS NULL`
-    ).bind(currentIso, normalizedUserId),
+         AND invalidated_at IS NULL
+         AND (
+           SELECT COUNT(*)
+           FROM user_activation_tokens
+           WHERE user_id = ?2
+             AND created_at >= ?3
+         ) < ?4
+         AND EXISTS (
+           SELECT 1
+           FROM users
+           WHERE user_id = ?2
+             AND account_status = 'DISABLED'
+             AND email = ?5
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM user_auth_identities
+           WHERE user_id = ?2
+             AND identity_type = 'NATIONAL_ID'
+             AND verification_status = 'VERIFIED'
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM user_auth_identities
+           WHERE user_id = ?2
+             AND identity_type = 'EMAIL'
+             AND verification_status = 'VERIFIED'
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM user_auth_identities
+           WHERE user_id = ?2
+             AND identity_type = 'WHATSAPP'
+             AND verification_status = 'VERIFIED'
+         )
+         AND NOT EXISTS (
+           SELECT 1
+           FROM user_credentials
+           WHERE user_id = ?2
+             AND credential_type = 'PASSWORD'
+             AND revoked_at IS NULL
+         )`
+    ).bind(
+      currentIso,
+      normalizedUserId,
+      windowStart,
+      ACTIVATION_RATE_MAX_REQUESTS,
+      user.email
+    ),
 
     db.prepare(
       `INSERT INTO user_activation_tokens (
@@ -186,12 +219,18 @@ export async function issueActivationToken({
          created_at
        )
        SELECT ?1, ?2, ?3, 1, ?4, ?5
-       WHERE EXISTS (
+       WHERE (
+         SELECT COUNT(*)
+         FROM user_activation_tokens
+         WHERE user_id = ?2
+           AND created_at >= ?6
+       ) < ?7
+       AND EXISTS (
          SELECT 1
          FROM users
          WHERE user_id = ?2
            AND account_status = 'DISABLED'
-           AND email = ?6
+           AND email = ?8
        )
        AND EXISTS (
          SELECT 1
@@ -227,21 +266,32 @@ export async function issueActivationToken({
       tokenHash,
       expiresAt,
       currentIso,
+      windowStart,
+      ACTIVATION_RATE_MAX_REQUESTS,
       user.email
     )
   ]);
 
-  const storedToken = await db.prepare(
-    `SELECT activation_token_id
-     FROM user_activation_tokens
-     WHERE activation_token_id = ?1
-       AND user_id = ?2
-       AND token_hash = ?3
-       AND consumed_at IS NULL
-       AND invalidated_at IS NULL`
-  ).bind(tokenId, normalizedUserId, tokenHash).first();
+  const inserted = results?.[1]?.meta?.changes ?? 0;
 
-  if (!storedToken) {
+  if (inserted !== 1) {
+    const recentRequests = await db.prepare(
+      `SELECT COUNT(*) AS total
+       FROM user_activation_tokens
+       WHERE user_id = ?1
+         AND created_at >= ?2`
+    ).bind(normalizedUserId, windowStart).first();
+
+    if (
+      (recentRequests?.total ?? 0) >=
+      ACTIVATION_RATE_MAX_REQUESTS
+    ) {
+      throw httpError(
+        "Too many activation requests. Please try again later.",
+        429
+      );
+    }
+
     throw httpError(
       "Account verification state changed. Activation token was not issued.",
       409
@@ -279,13 +329,6 @@ export async function issueActivationToken({
   };
 }
 
-/**
- * Find and validate an activation token without consuming it.
- *
- * The caller must consume the returned token ID in the SAME
- * D1 batch transaction that creates the password credential
- * and activates the account.
- */
 export async function findValidActivationToken({
   db,
   env,
