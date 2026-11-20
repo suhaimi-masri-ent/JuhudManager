@@ -77,7 +77,25 @@ function validateOptions({ scope, limit, windowSeconds, key }) {
   }
 }
 
-export async function enforceRateLimit({
+function validateDependencies({ db, env }) {
+  if (!db || typeof db.prepare !== "function") {
+    throw new Error("D1 database binding is unavailable.");
+  }
+
+  if (!env?.HMAC_SECRET) {
+    throw new Error("Authentication secrets are not configured.");
+  }
+}
+
+function getIdentifier(request, key) {
+  // A supplied logical key is used for account-level limits.
+  // Otherwise, use the request IP for network-level limits.
+  return key === undefined
+    ? `ip:${getClientIp(request)}`
+    : `key:${key}`;
+}
+
+async function getRateLimitContext({
   db,
   env,
   request,
@@ -93,19 +111,9 @@ export async function enforceRateLimit({
     key
   });
 
-  if (!db || typeof db.prepare !== "function") {
-    throw new Error("D1 database binding is unavailable.");
-  }
+  validateDependencies({ db, env });
 
-  if (!env?.HMAC_SECRET) {
-    throw new Error("Authentication secrets are not configured.");
-  }
-
-  // Use a supplied logical key for account-level limits.
-  // Otherwise, use the request IP for network-level limits.
-  const identifier = key === undefined
-    ? `ip:${getClientIp(request)}`
-    : `key:${key}`;
+  const identifier = getIdentifier(request, key);
 
   const rateLimitId = await hashValue(
     env.HMAC_SECRET,
@@ -113,8 +121,93 @@ export async function enforceRateLimit({
   );
 
   const now = new Date();
-  const nowIso = now.toISOString();
   const window = getWindow(now, windowSeconds);
+
+  return {
+    rateLimitId,
+    window,
+    nowIso: now.toISOString()
+  };
+}
+
+/**
+ * Check the current fixed-window counter without incrementing it.
+ *
+ * Use this before authentication when the counter represents
+ * failed attempts only. A successful request must not increase
+ * that counter.
+ */
+export async function checkRateLimit({
+  db,
+  env,
+  request,
+  scope,
+  limit,
+  windowSeconds,
+  key
+}) {
+  const context = await getRateLimitContext({
+    db,
+    env,
+    request,
+    scope,
+    limit,
+    windowSeconds,
+    key
+  });
+
+  const result = await db.prepare(
+    `SELECT request_count
+     FROM auth_rate_limits
+     WHERE rate_limit_scope = ?1
+       AND rate_limit_id = ?2
+       AND window_started_at = ?3
+     LIMIT 1`
+  ).bind(
+    scope,
+    context.rateLimitId,
+    context.window.startedAt
+  ).first();
+
+  const requestCount = result?.request_count ?? 0;
+  const allowed = requestCount < limit;
+
+  return {
+    allowed,
+    scope,
+    limit,
+    remaining: Math.max(0, limit - requestCount),
+    retryAfterSeconds: allowed
+      ? 0
+      : context.window.retryAfterSeconds
+  };
+}
+
+/**
+ * Increment a fixed-window counter atomically.
+ *
+ * Use for requests that should always count, such as IP-level
+ * login request limits, or after a failed authentication when
+ * recording a failed-attempt counter.
+ */
+export async function enforceRateLimit({
+  db,
+  env,
+  request,
+  scope,
+  limit,
+  windowSeconds,
+  key
+}) {
+  const context = await getRateLimitContext({
+    db,
+    env,
+    request,
+    scope,
+    limit,
+    windowSeconds,
+    key
+  });
 
   // Atomic fixed-window counter.
   const result = await db.prepare(
@@ -140,10 +233,10 @@ export async function enforceRateLimit({
      RETURNING request_count`
   ).bind(
     scope,
-    rateLimitId,
-    window.startedAt,
-    window.expiresAt,
-    nowIso,
+    context.rateLimitId,
+    context.window.startedAt,
+    context.window.expiresAt,
+    context.nowIso,
     limit
   ).first();
 
@@ -153,7 +246,7 @@ export async function enforceRateLimit({
       scope,
       limit,
       remaining: 0,
-      retryAfterSeconds: window.retryAfterSeconds
+      retryAfterSeconds: context.window.retryAfterSeconds
     };
   }
 
