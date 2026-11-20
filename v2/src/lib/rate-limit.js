@@ -1,8 +1,6 @@
 
 import { hashValue } from "../auth/crypto.js";
 
-const encoder = new TextEncoder();
-
 function httpError(message, status) {
   const error = new Error(message);
   error.status = status;
@@ -43,7 +41,7 @@ function getWindow(now, windowSeconds) {
   };
 }
 
-function validateOptions({ scope, limit, windowSeconds }) {
+function validateOptions({ scope, limit, windowSeconds, key }) {
   if (
     typeof scope !== "string" ||
     !/^[A-Z0-9_]{2,50}$/.test(scope)
@@ -66,6 +64,17 @@ function validateOptions({ scope, limit, windowSeconds }) {
   ) {
     throw new TypeError("Invalid rate-limit window.");
   }
+
+  if (
+    key !== undefined &&
+    (
+      typeof key !== "string" ||
+      !key.trim() ||
+      key.length > 512
+    )
+  ) {
+    throw new TypeError("Invalid rate-limit key.");
+  }
 }
 
 export async function enforceRateLimit({
@@ -74,12 +83,14 @@ export async function enforceRateLimit({
   request,
   scope,
   limit,
-  windowSeconds
+  windowSeconds,
+  key
 }) {
   validateOptions({
     scope,
     limit,
-    windowSeconds
+    windowSeconds,
+    key
   });
 
   if (!db || typeof db.prepare !== "function") {
@@ -90,21 +101,22 @@ export async function enforceRateLimit({
     throw new Error("Authentication secrets are not configured.");
   }
 
-  const clientIp = getClientIp(request);
+  // Use a supplied logical key for account-level limits.
+  // Otherwise, use the request IP for network-level limits.
+  const identifier = key === undefined
+    ? `ip:${getClientIp(request)}`
+    : `key:${key}`;
 
   const rateLimitId = await hashValue(
     env.HMAC_SECRET,
-    `rate-limit:v1:${clientIp}`
+    `rate-limit:v1:${scope}:${identifier}`
   );
 
   const now = new Date();
   const nowIso = now.toISOString();
-
   const window = getWindow(now, windowSeconds);
 
   // Atomic fixed-window counter.
-  // A request is accepted only when the resulting count
-  // does not exceed the configured limit.
   const result = await db.prepare(
     `INSERT INTO auth_rate_limits (
        rate_limit_scope,
