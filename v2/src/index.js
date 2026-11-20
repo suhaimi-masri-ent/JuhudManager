@@ -4,6 +4,7 @@ import { createResendDelivery } from "./lib/resend-email.js";
 import { createWhatsAppCloudDelivery } from "./lib/whatsapp-cloud.js";
 import { handleAuthRequest } from "./routes/auth.js";
 import { handleLoginRequest } from "./routes/login.js";
+import { handleSessionRequest } from "./routes/session.js";
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
 const ALLOWED_METHODS = "POST, OPTIONS";
@@ -83,12 +84,21 @@ export default {
       }
     } else {
       try {
-        // Password login does not depend on OTP delivery adapters.
+        // Password login.
         response = await handleLoginRequest(
           request,
           env,
           url
         );
+
+        // Authenticated session actions.
+        if (!response) {
+          response = await handleSessionRequest(
+            request,
+            env,
+            url
+          );
+        }
 
         // Existing registration and activation routes.
         if (!response) {
