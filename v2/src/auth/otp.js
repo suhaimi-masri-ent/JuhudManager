@@ -1,3 +1,4 @@
+
 import {
   constantTimeEqual,
   encryptValue,
@@ -55,6 +56,10 @@ export async function requestRegistrationOtp({
     throw httpError("OTP delivery provider is not configured.", 503);
   }
 
+  if (!["EMAIL", "WHATSAPP"].includes(destinationType)) {
+    throw httpError("Unsupported OTP destination type.", 400);
+  }
+
   const normalized = normalizeInput(destinationType, destination);
 
   const identityHash = await hashValue(
@@ -97,35 +102,9 @@ export async function requestRegistrationOtp({
     currentTime.getTime() - RATE_WINDOW_MINUTES * 60000
   ).toISOString();
 
-  const recent = await db.prepare(
-    `SELECT
-       COUNT(*) AS total,
-       MAX(last_sent_at) AS last_sent_at
-     FROM auth_otp_requests
-     WHERE destination_type = ?1
-       AND destination_hash = ?2
-       AND otp_purpose = 'REGISTER'
-       AND created_at >= ?3`
-  ).bind(
-    destinationType,
-    destinationHash,
-    windowStart
-  ).first();
-
-  if ((recent?.total ?? 0) >= RATE_MAX_REQUESTS) {
-    throw httpError("Too many OTP requests. Please try again later.", 429);
-  }
-
-  if (recent?.last_sent_at) {
-    const lastSent = new Date(recent.last_sent_at).getTime();
-
-    if (
-      Number.isFinite(lastSent) &&
-      currentTime.getTime() - lastSent < OTP_RESEND_SECONDS * 1000
-    ) {
-      throw httpError("Please wait before requesting another OTP.", 429);
-    }
-  }
+  const cooldownStart = new Date(
+    currentTime.getTime() - OTP_RESEND_SECONDS * 1000
+  ).toISOString();
 
   const otp = generateOtp();
   const otpRequestId = crypto.randomUUID();
@@ -147,21 +126,9 @@ export async function requestRegistrationOtp({
     OTP_LIFETIME_MINUTES * 60
   );
 
-  await db.batch([
-    db.prepare(
-      `UPDATE auth_otp_requests
-       SET invalidated_at = ?1
-       WHERE destination_type = ?2
-         AND destination_hash = ?3
-         AND otp_purpose = 'REGISTER'
-         AND consumed_at IS NULL
-         AND invalidated_at IS NULL`
-    ).bind(
-      currentIso,
-      destinationType,
-      destinationHash
-    ),
-
+  // D1 performs the rate-limit checks as part of the INSERT.
+  // The previous OTP is invalidated only if this INSERT succeeds.
+  const results = await db.batch([
     db.prepare(
       `INSERT INTO auth_otp_requests (
          otp_request_id,
@@ -179,10 +146,26 @@ export async function requestRegistrationOtp({
          max_attempts,
          last_sent_at
        )
-       VALUES (
+       SELECT
          ?1, ?2, ?3, 'REGISTER', ?4, ?5, ?6, 1,
          ?7, 1, ?8, 0, ?9, ?10
-       )`
+       WHERE
+         (
+           SELECT COUNT(*)
+           FROM auth_otp_requests
+           WHERE destination_type = ?4
+             AND destination_hash = ?5
+             AND otp_purpose = 'REGISTER'
+             AND created_at >= ?11
+         ) < ?12
+         AND NOT EXISTS (
+           SELECT 1
+           FROM auth_otp_requests
+           WHERE destination_type = ?4
+             AND destination_hash = ?5
+             AND otp_purpose = 'REGISTER'
+             AND last_sent_at > ?13
+         )`
     ).bind(
       otpRequestId,
       userId,
@@ -193,9 +176,45 @@ export async function requestRegistrationOtp({
       otpHash,
       expiresAt,
       OTP_MAX_ATTEMPTS,
-      currentIso
+      currentIso,
+      windowStart,
+      RATE_MAX_REQUESTS,
+      cooldownStart
+    ),
+
+    db.prepare(
+      `UPDATE auth_otp_requests
+       SET invalidated_at = ?1
+       WHERE destination_type = ?2
+         AND destination_hash = ?3
+         AND otp_purpose = 'REGISTER'
+         AND otp_request_id != ?4
+         AND consumed_at IS NULL
+         AND invalidated_at IS NULL
+         AND EXISTS (
+           SELECT 1
+           FROM auth_otp_requests
+           WHERE otp_request_id = ?4
+             AND destination_type = ?2
+             AND destination_hash = ?3
+             AND created_at = ?1
+         )`
+    ).bind(
+      currentIso,
+      destinationType,
+      destinationHash,
+      otpRequestId
     )
   ]);
+
+  const inserted = results?.[0]?.meta?.changes ?? 0;
+
+  if (inserted !== 1) {
+    throw httpError(
+      "Too many OTP requests. Please wait before trying again.",
+      429
+    );
+  }
 
   try {
     await env.OTP_DELIVERY.send({
@@ -250,6 +269,10 @@ export async function verifyRegistrationOtp({
 
   if (!/^\d{6}$/.test(String(otp ?? ""))) {
     throw httpError("A six-digit OTP is required.", 400);
+  }
+
+  if (!["EMAIL", "WHATSAPP"].includes(destinationType)) {
+    throw httpError("Unsupported OTP destination type.", 400);
   }
 
   const normalized = normalizeInput(destinationType, destination);
@@ -349,8 +372,6 @@ export async function verifyRegistrationOtp({
     );
   }
 
-  // The OTP can only be consumed if the identity reservation is
-  // still valid. EMAIL verification also requires an eligible user row.
   const emailAccountGuard = destinationType === "EMAIL"
     ? `AND EXISTS (
          SELECT 1
@@ -457,11 +478,6 @@ export async function verifyRegistrationOtp({
     );
   }
 
-  // D1 batch executes these statements in one transaction.
-  // The first statement checks the prerequisites for all subsequent
-  // updates. A SQL constraint error (for example, duplicate email)
-  // causes the batch transaction to fail rather than leaving a
-  // partially verified account.
   const results = await db.batch(statements);
 
   const otpChanges = results?.[0]?.meta?.changes ?? 0;
