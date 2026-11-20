@@ -12,9 +12,15 @@ import {
 
 const MAX_REQUEST_BODY_BYTES = 16 * 1024;
 
-const RATE_LIMIT = {
+const IP_RATE_LIMIT = {
   scope: "PASSWORD_LOGIN",
   limit: 10,
+  windowSeconds: 900
+};
+
+const IDENTITY_RATE_LIMIT = {
+  scope: "PASSWORD_LOGIN_IDENTITY",
+  limit: 5,
   windowSeconds: 900
 };
 
@@ -36,13 +42,13 @@ function errorResponse(error) {
   }, status);
 }
 
-async function checkRateLimit(request, env) {
+async function checkRateLimit(request, env, options) {
   try {
     const result = await enforceRateLimit({
       db: env.DB,
       env,
       request,
-      ...RATE_LIMIT
+      ...options
     });
 
     if (!result.allowed) {
@@ -131,10 +137,19 @@ function validateLoginBody(body) {
     ["NATIONAL_ID", "PASSPORT"].includes(body.identityType) &&
     typeof body.identityValue === "string" &&
     body.identityValue.trim() &&
+    body.identityValue.trim().length <= 100 &&
     typeof body.countryCode === "string" &&
     /^[A-Za-z]{2}$/.test(body.countryCode.trim()) &&
     typeof body.password === "string"
   );
+}
+
+function getIdentityRateLimitKey(body) {
+  const identityType = body.identityType;
+  const countryCode = body.countryCode.trim().toUpperCase();
+  const identityValue = body.identityValue.trim().toUpperCase();
+
+  return `${identityType}:${countryCode}:${identityValue}`;
 }
 
 /**
@@ -160,10 +175,15 @@ export async function handleLoginRequest(request, env, url) {
     return null;
   }
 
-  const limited = await checkRateLimit(request, env);
+  // Layer 1: limit requests from the same IP.
+  const ipLimited = await checkRateLimit(
+    request,
+    env,
+    IP_RATE_LIMIT
+  );
 
-  if (limited) {
-    return limited;
+  if (ipLimited) {
+    return ipLimited;
   }
 
   let body;
@@ -178,6 +198,21 @@ export async function handleLoginRequest(request, env, url) {
     return json({
       error: "A valid identityType, identityValue, countryCode and password are required."
     }, 400);
+  }
+
+  // Layer 2: limit attempts against the same identity.
+  // The key is HMAC-hashed inside enforceRateLimit.
+  const identityLimited = await checkRateLimit(
+    request,
+    env,
+    {
+      ...IDENTITY_RATE_LIMIT,
+      key: getIdentityRateLimitKey(body)
+    }
+  );
+
+  if (identityLimited) {
+    return identityLimited;
   }
 
   try {
