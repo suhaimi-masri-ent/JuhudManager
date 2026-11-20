@@ -1,0 +1,19 @@
+
+{
+  "name": "juhudmanager-v2-api",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "description": "JuhudManager V2 API running on Cloudflare Workers",
+  "scripts": {
+    "dev": "wrangler dev --config wrangler.jsonc",
+    "build": "wrangler deploy --dry-run --config wrangler.jsonc",
+    "deploy": "wrangler deploy --config wrangler.jsonc"
+  },
+  "dependencies": {
+    "@shtora/argon2w": "0.1.0"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
