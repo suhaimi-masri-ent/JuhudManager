@@ -19,8 +19,7 @@ import {
   setInitialPassword
 } from "../auth/credentials.js";
 
-const ALLOWED_DESTINATION_TYPES = ["EMAIL", "WHATSAPP"];
-
+const ALLOWED_DESTINATION_TYPES = ["EMAIL"];
 const MAX_REQUEST_BODY_BYTES = 16 * 1024;
 
 const RATE_LIMITS = {
@@ -185,18 +184,12 @@ function validRegistrationIdentity(body) {
 }
 
 export async function handleAuthRequest(request, env, url) {
-  // =======================================================
-  // REGISTRATION
-  // =======================================================
-
   if (
     url.pathname === "/auth/register/start" &&
     request.method === "POST"
   ) {
     const limited = await checkRateLimit(
-      request,
-      env,
-      RATE_LIMITS.REGISTER
+      request, env, RATE_LIMITS.REGISTER
     );
 
     if (limited) return limited;
@@ -226,27 +219,18 @@ export async function handleAuthRequest(request, env, url) {
         whatsapp: body.whatsapp
       });
 
-      return json({
-        ok: true,
-        ...result
-      }, 201);
+      return json({ ok: true, ...result }, 201);
     } catch (error) {
       return errorResponse(error, "REGISTER_CREATE_DRAFT");
     }
   }
-
-  // =======================================================
-  // REGISTRATION OTP REQUEST
-  // =======================================================
 
   if (
     url.pathname === "/auth/otp/request" &&
     request.method === "POST"
   ) {
     const limited = await checkRateLimit(
-      request,
-      env,
-      RATE_LIMITS.OTP_REQUEST
+      request, env, RATE_LIMITS.OTP_REQUEST
     );
 
     if (limited) return limited;
@@ -261,7 +245,7 @@ export async function handleAuthRequest(request, env, url) {
 
     if (!validRegistrationIdentity(body)) {
       return json({
-        error: "userId, identityId, destinationType and destination are required."
+        error: "Valid userId, identityId, EMAIL destinationType and destination are required."
       }, 400);
     }
 
@@ -275,27 +259,18 @@ export async function handleAuthRequest(request, env, url) {
         destination: body.destination
       });
 
-      return json({
-        ok: true,
-        ...result
-      }, 202);
+      return json({ ok: true, ...result }, 202);
     } catch (error) {
       return errorResponse(error, "OTP_REQUEST_PROCESS");
     }
   }
-
-  // =======================================================
-  // REGISTRATION OTP VERIFICATION
-  // =======================================================
 
   if (
     url.pathname === "/auth/otp/verify" &&
     request.method === "POST"
   ) {
     const limited = await checkRateLimit(
-      request,
-      env,
-      RATE_LIMITS.OTP_VERIFY
+      request, env, RATE_LIMITS.OTP_VERIFY
     );
 
     if (limited) return limited;
@@ -314,7 +289,7 @@ export async function handleAuthRequest(request, env, url) {
       !/^\d{6}$/.test(body.otp.trim())
     ) {
       return json({
-        error: "userId, identityId, destinationType, destination and six-digit otp are required."
+        error: "Valid userId, identityId, EMAIL destinationType, destination and six-digit otp are required."
       }, 400);
     }
 
@@ -329,27 +304,19 @@ export async function handleAuthRequest(request, env, url) {
         otp: body.otp.trim()
       });
 
-      return json({
-        ok: true,
-        ...result
-      });
+      return json({ ok: true, ...result });
     } catch (error) {
       return errorResponse(error, "OTP_VERIFY_PROCESS");
     }
   }
 
-  // =======================================================
-  // ACCOUNT ACTIVATION TOKEN REQUEST
-  // =======================================================
-
+  // Password setup token request after email verification.
   if (
     url.pathname === "/auth/activation/request" &&
     request.method === "POST"
   ) {
     const limited = await checkRateLimit(
-      request,
-      env,
-      RATE_LIMITS.ACTIVATION_REQUEST
+      request, env, RATE_LIMITS.ACTIVATION_REQUEST
     );
 
     if (limited) return limited;
@@ -359,7 +326,7 @@ export async function handleAuthRequest(request, env, url) {
     try {
       body = await readJson(request);
     } catch (error) {
-      return errorResponse(error, "ACTIVATION_READ_BODY");
+      return errorResponse(error, "PASSWORD_TOKEN_READ_BODY");
     }
 
     if (
@@ -373,7 +340,7 @@ export async function handleAuthRequest(request, env, url) {
     }
 
     try {
-      await issueActivationToken({
+      const result = await issueActivationToken({
         db: env.DB,
         env,
         userId: body.userId.trim()
@@ -381,35 +348,27 @@ export async function handleAuthRequest(request, env, url) {
 
       return json({
         ok: true,
-        message: "If the account is eligible, an activation email will be sent."
+        message: "If the account is eligible, a password setup email will be sent.",
+        ...result
       }, 202);
     } catch (error) {
-      if (
-        error?.status === 404 ||
-        error?.status === 409
-      ) {
+      if (error?.status === 404 || error?.status === 409) {
         return json({
           ok: true,
-          message: "If the account is eligible, an activation email will be sent."
+          message: "If the account is eligible, a password setup email will be sent."
         }, 202);
       }
 
-      return errorResponse(error, "ACTIVATION_REQUEST_PROCESS");
+      return errorResponse(error, "PASSWORD_TOKEN_REQUEST");
     }
   }
-
-  // =======================================================
-  // INITIAL PASSWORD SETUP AND ACCOUNT ACTIVATION
-  // =======================================================
 
   if (
     url.pathname === "/auth/password/setup" &&
     request.method === "POST"
   ) {
     const limited = await checkRateLimit(
-      request,
-      env,
-      RATE_LIMITS.PASSWORD_SETUP
+      request, env, RATE_LIMITS.PASSWORD_SETUP
     );
 
     if (limited) return limited;
@@ -424,12 +383,12 @@ export async function handleAuthRequest(request, env, url) {
 
     if (
       !body ||
-      typeof body.activationToken !== "string" ||
-      !/^[A-Za-z0-9_-]{43}$/.test(body.activationToken) ||
+      typeof body.setupToken !== "string" ||
+      !/^[A-Za-z0-9_-]{43}$/.test(body.setupToken) ||
       typeof body.password !== "string"
     ) {
       return json({
-        error: "A valid activationToken and password are required."
+        error: "A valid setupToken and password are required."
       }, 400);
     }
 
@@ -437,14 +396,11 @@ export async function handleAuthRequest(request, env, url) {
       const result = await setInitialPassword({
         db: env.DB,
         env,
-        activationToken: body.activationToken,
+        setupToken: body.setupToken,
         password: body.password
       });
 
-      return json({
-        ok: true,
-        ...result
-      });
+      return json({ ok: true, ...result });
     } catch (error) {
       return errorResponse(error, "PASSWORD_SETUP_PROCESS");
     }
