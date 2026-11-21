@@ -1,5 +1,5 @@
 
-name: Deploy Cloudflare Worker
+name: Deploy JuhudManager V2 Worker
 
 on:
   push:
@@ -7,16 +7,15 @@ on:
       - main
       - develop
     paths:
-      - "worker/**"
-      - "wrangler.jsonc"
-      - "package.json"
-      - "package-lock.json"
+      - "v2/src/**"
+      - "v2/migrations/**"
+      - "v2/wrangler.jsonc"
       - ".github/workflows/deploy-worker.yml"
   workflow_dispatch:
 
 jobs:
   deploy:
-    name: Deploy Production Worker
+    name: Deploy JuhudManager V2 API
     runs-on: ubuntu-latest
 
     steps:
@@ -31,8 +30,8 @@ jobs:
       - name: Install Wrangler
         run: npm install --global wrangler
 
-      - name: Deploy Worker
-        run: wrangler deploy --config wrangler.jsonc
+      - name: Deploy V2 Worker
+        run: wrangler deploy --config v2/wrangler.jsonc
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
