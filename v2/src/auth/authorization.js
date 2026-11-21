@@ -113,10 +113,12 @@ export async function requireAdminRole({ db, session }) {
     userId: session.userId
   });
 
-  const adminRole = roleCodes.find(
-    code => ADMIN_ROLES.includes(code)
-  );
-
+  const adminRole = roleCodes.includes("SUPER_ADMIN")
+    ? "SUPER_ADMIN"
+    : roleCodes.includes("ADMIN")
+      ? "ADMIN"
+      : null;
+  
   if (!adminRole) {
     throw httpError("Administrator access required.", 403);
   }
