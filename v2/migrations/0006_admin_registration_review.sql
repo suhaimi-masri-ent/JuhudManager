@@ -20,8 +20,7 @@ PRAGMA foreign_keys = ON;
 CREATE TRIGGER trg_registration_review_transition_guard
 BEFORE UPDATE OF registration_status
 ON user_registration_reviews
-WHEN OLD.registration_status = 'PENDING_REVIEW'
- AND NEW.registration_status <> OLD.registration_status
+WHEN NEW.registration_status <> OLD.registration_status
 BEGIN
   SELECT CASE
     WHEN NEW.registration_status NOT IN ('APPROVED', 'REJECTED')
