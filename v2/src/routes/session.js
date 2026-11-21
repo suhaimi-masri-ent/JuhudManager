@@ -119,7 +119,10 @@ export async function handleSessionRequest(request, env, url) {
       return json({
         ok: true,
         user: {
-          userId: session.userId
+          userId: session.userId,
+          registrationStatus: session.registrationStatus,
+          accountStatus: session.accountStatus,
+          accessLevel: session.accessLevel
         },
         session: {
           sessionId: session.sessionId,
@@ -129,7 +132,7 @@ export async function handleSessionRequest(request, env, url) {
         }
       });
     }
-
+    
     // POST /auth/logout
     if (isLogoutRequest) {
       const revoked = await revokeSession({
