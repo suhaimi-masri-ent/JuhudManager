@@ -133,20 +133,9 @@ async function cleanupFailedRegistration(db, userId) {
 /**
  * Create a provisional registration.
  *
- * Registration requirements:
- * - Full name
- * - Issuing country
- * - National ID
- * - Email
- * - WhatsApp
- *
- * Identity handling:
- * - Email: temporary 15-minute PENDING reservation.
- * - National ID: durable encrypted UNVERIFIED claim.
- * - WhatsApp: durable encrypted UNVERIFIED claim.
- *
+ * Email uses a temporary 15-minute reservation.
+ * National ID and WhatsApp use durable UNVERIFIED claims.
  * Only email OTP verification is enabled.
- * Account remains DISABLED until Admin approval.
  */
 export async function createRegistrationDraft({
   db,
@@ -197,8 +186,6 @@ export async function createRegistrationDraft({
   });
 
   try {
-    // Create the user, review lifecycle and durable identity
-    // claims together before creating the temporary email claim.
     await db.batch([
       db.prepare(
         `INSERT INTO users (
@@ -268,8 +255,6 @@ export async function createRegistrationDraft({
       )
     ]);
 
-    // Email is the only identity using the temporary
-    // 15-minute reservation mechanism.
     const emailReservation = await reservePendingIdentity({
       db,
       env,
@@ -319,4 +304,167 @@ export async function createRegistrationDraft({
 
     throw error;
   }
+}
+
+/**
+ * Resume an incomplete registration.
+ *
+ * All submitted details must match the original registration.
+ * This function never creates a new user or replaces an email.
+ *
+ * The email must already exist in user_auth_identities for
+ * the same user, with PENDING or EXPIRED status.
+ *
+ * An expired email reservation can be renewed for 15 minutes.
+ * Durable National ID and WhatsApp claims are never released.
+ */
+export async function resumeRegistrationDraft({
+  db,
+  env,
+  fullName,
+  countryCode,
+  nationalId,
+  email,
+  whatsapp
+}) {
+  validateRegistrationInput({
+    fullName,
+    countryCode,
+    nationalId,
+    email,
+    whatsapp
+  });
+
+  if (!env.HMAC_SECRET || !env.ENCRYPTION_KEY) {
+    throw new Error(
+      "Registration security secrets are not configured."
+    );
+  }
+
+  const normalizedCountry = countryCode.trim().toUpperCase();
+  const normalizedName = fullName.trim();
+  const normalizedNationalId = normalizeNationalId(nationalId);
+  const normalizedEmail = normalizeDestination("EMAIL", email);
+  const normalizedWhatsApp = normalizeDestination(
+    "WHATSAPP",
+    whatsapp
+  );
+
+  const nationalIdHash = await hashValue(
+    env.HMAC_SECRET,
+    `NATIONAL_ID:${normalizedCountry}:${normalizedNationalId}`
+  );
+
+  const whatsappHash = await hashValue(
+    env.HMAC_SECRET,
+    `WHATSAPP:GLOBAL:${normalizedWhatsApp}`
+  );
+
+  const emailHash = await hashValue(
+    env.HMAC_SECRET,
+    `EMAIL:GLOBAL:${normalizedEmail}`
+  );
+
+  // Find the original draft only when every submitted identity
+  // belongs to the same user and the review is still awaiting email.
+  const draft = await db.prepare(
+    `SELECT
+       u.user_id
+     FROM users u
+     INNER JOIN user_registration_reviews r
+       ON r.user_id = u.user_id
+     WHERE u.full_name = ?1
+       AND u.account_status = 'DISABLED'
+       AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+
+       AND EXISTS (
+         SELECT 1
+         FROM user_registration_identity_details n
+         WHERE n.user_id = u.user_id
+           AND n.identity_type = 'NATIONAL_ID'
+           AND n.identity_scope = ?2
+           AND n.identity_hash = ?3
+           AND n.identity_status = 'UNVERIFIED'
+       )
+
+       AND EXISTS (
+         SELECT 1
+         FROM user_registration_identity_details w
+         WHERE w.user_id = u.user_id
+           AND w.identity_type = 'WHATSAPP'
+           AND w.identity_scope = 'GLOBAL'
+           AND w.identity_hash = ?4
+           AND w.identity_status = 'UNVERIFIED'
+       )
+
+       AND EXISTS (
+         SELECT 1
+         FROM user_auth_identities e
+         WHERE e.user_id = u.user_id
+           AND e.identity_type = 'EMAIL'
+           AND e.identity_scope = 'GLOBAL'
+           AND e.identity_hash = ?5
+           AND e.verification_status IN ('PENDING', 'EXPIRED')
+       )
+
+     LIMIT 1`
+  ).bind(
+    normalizedName,
+    normalizedCountry,
+    nationalIdHash,
+    whatsappHash,
+    emailHash
+  ).first();
+
+  // Use the same generic response for every non-matching case.
+  // Do not reveal whether any particular identity exists.
+  if (!draft?.user_id) {
+    throw httpError(
+      "Unable to resume this registration. Please check the details or contact Admin.",
+      404
+    );
+  }
+
+  // Reuse an existing valid reservation or create a fresh
+  // 15-minute reservation if the previous one has expired.
+  // No durable identity or registration record is deleted here.
+  let emailReservation;
+
+  try {
+    emailReservation = await reservePendingIdentity({
+      db,
+      env,
+      userId: draft.user_id,
+      identityType: "EMAIL",
+      identityValue: normalizedEmail
+    });
+  } catch {
+    throw httpError(
+      "Unable to resume this registration. Please check the details or contact Admin.",
+      404
+    );
+  }
+
+  if (emailReservation.status !== "PENDING") {
+    throw httpError(
+      "Unable to resume this registration. Please check the details or contact Admin.",
+      404
+    );
+  }
+
+  return {
+    userId: draft.user_id,
+    accountStatus: "DISABLED",
+    registrationStatus: "AWAITING_EMAIL_VERIFICATION",
+    reservationMinutes: REGISTRATION_RESERVATION_MINUTES,
+    identities: {
+      email: {
+        identityId: emailReservation.identityId,
+        status: emailReservation.status,
+        expiresAt: emailReservation.expiresAt
+      }
+    },
+    nextStep: "REQUEST_EMAIL_OTP",
+    resumed: true
+  };
 }
