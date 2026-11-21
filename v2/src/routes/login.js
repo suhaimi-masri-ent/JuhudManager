@@ -1,5 +1,6 @@
 
 import { json } from "../lib/http.js";
+
 import {
   checkRateLimit as checkRateLimitCounter,
   enforceRateLimit
@@ -156,34 +157,26 @@ async function readJson(request) {
 function validateLoginBody(body) {
   return Boolean(
     body &&
-    ["NATIONAL_ID", "PASSPORT"].includes(body.identityType) &&
-    typeof body.identityValue === "string" &&
-    body.identityValue.trim() &&
-    body.identityValue.trim().length <= 100 &&
-    typeof body.countryCode === "string" &&
-    /^[A-Za-z]{2}$/.test(body.countryCode.trim()) &&
+    typeof body.email === "string" &&
+    body.email.trim() &&
+    body.email.trim().length <= 254 &&
+    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(body.email.trim()) &&
     typeof body.password === "string"
   );
 }
 
 function getIdentityRateLimitKey(body) {
-  const identityType = body.identityType;
-  const countryCode = body.countryCode.trim().toUpperCase();
-  const identityValue = body.identityValue.trim().toUpperCase();
-
-  return `${identityType}:${countryCode}:${identityValue}`;
+  return body.email.trim().toLowerCase();
 }
 
 /**
- * Handle password login requests.
+ * Handle email and password login.
  *
  * POST /auth/login/password
  *
  * Request:
  * {
- *   identityType: "NATIONAL_ID" | "PASSPORT",
- *   identityValue: "...",
- *   countryCode: "MY",
+ *   email: "...",
  *   password: "...",
  *   deviceName: "...",
  *   deviceType: "MOBILE" | "TABLET" | "DESKTOP" | "OTHER"
@@ -218,7 +211,7 @@ export async function handleLoginRequest(request, env, url) {
 
   if (!validateLoginBody(body)) {
     return json({
-      error: "A valid identityType, identityValue, countryCode and password are required."
+      error: "A valid email and password are required."
     }, 400);
   }
 
@@ -227,7 +220,7 @@ export async function handleLoginRequest(request, env, url) {
     key: getIdentityRateLimitKey(body)
   };
 
-  // Layer 2: check the failed-attempt counter without incrementing.
+  // Layer 2: check failed-attempt counter without incrementing.
   const identityLimited = await checkIdentityLimit(
     request,
     env,
@@ -244,9 +237,7 @@ export async function handleLoginRequest(request, env, url) {
     authentication = await authenticatePasswordLogin({
       db: env.DB,
       env,
-      identityType: body.identityType,
-      identityValue: body.identityValue,
-      countryCode: body.countryCode,
+      email: body.email,
       password: body.password,
       request
     });
@@ -267,7 +258,6 @@ export async function handleLoginRequest(request, env, url) {
     return errorResponse(error);
   }
 
-  // Successful authentication does not increase the identity counter.
   try {
     const session = await createSession({
       db: env.DB,
@@ -285,7 +275,10 @@ export async function handleLoginRequest(request, env, url) {
       accessToken: session.token,
       tokenType: session.tokenType,
       expiresAt: session.expiresAt,
-      inactivityDays: session.inactivityDays
+      inactivityDays: session.inactivityDays,
+      registrationStatus: authentication.registrationStatus,
+      accountStatus: authentication.accountStatus,
+      accessLevel: authentication.accessLevel
     });
   } catch (error) {
     return errorResponse(error);
