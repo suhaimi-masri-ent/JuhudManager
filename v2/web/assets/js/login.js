@@ -1,3 +1,4 @@
+
 import {
   apiRequest,
   showNotice,
@@ -57,10 +58,6 @@ $("loginForm").addEventListener("submit", async event => {
       throw new Error("Login response did not contain an access token.");
     }
 
-    /*
-     * Temporary frontend integration scaffolding.
-     * Production token-storage review is still required.
-     */
     sessionStorage.setItem("jm_access_token", result.accessToken);
 
     sessionStorage.setItem(
@@ -73,14 +70,8 @@ $("loginForm").addEventListener("submit", async event => {
       })
     );
 
-    showNotice(
-      result.accessLevel === "LIMITED"
-        ? "Login successful. Your account is awaiting Admin review."
-        : "Login successful.",
-      "success"
-    );
+    window.location.replace("./dashboard.html");
 
-    // Dashboard routing will be implemented in the next frontend phase.
   } catch (error) {
     showNotice(error.message, "error");
   } finally {
