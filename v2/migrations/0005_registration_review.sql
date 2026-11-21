@@ -8,6 +8,7 @@
 -- 2. Allow email-verified users to remain pending Admin review.
 -- 3. Store National ID and WhatsApp as durable identity claims.
 -- 4. Preserve rejected registrations for audit.
+-- 5. Enforce atomic completion of registration email verification.
 --
 -- IMPORTANT:
 -- Apply only to the dedicated JuhudManager V2 D1 database.
@@ -216,5 +217,75 @@ CREATE INDEX idx_registration_identity_type
 
 
 -- =========================================================
--- 3. MIGRATION COMPLETE
+-- 3. ATOMIC EMAIL OTP VERIFICATION GUARD
+-- =========================================================
+--
+-- Application execution order inside one db.batch():
+--   1. Verify pending email identity.
+--   2. Store verified email on users.
+--   3. Move registration to PENDING_REVIEW.
+--   4. Consume OTP LAST.
+--
+-- This trigger rejects step 4 unless steps 1-3 have
+-- successfully established the required final state.
+--
+-- RAISE(ABORT) aborts the SQL statement and rolls back
+-- the complete transaction, including earlier batch writes.
+--
+-- IMPORTANT:
+-- The application must update the OTP last and must target
+-- the selected OTP request even if an earlier guarded update
+-- changed zero rows. Do not consume the OTP first.
+
+CREATE TRIGGER trg_registration_otp_completion_guard
+BEFORE UPDATE OF consumed_at ON auth_otp_requests
+WHEN OLD.consumed_at IS NULL
+ AND NEW.consumed_at IS NOT NULL
+BEGIN
+  SELECT CASE
+    WHEN NOT (
+      NEW.otp_purpose = 'REGISTER'
+      AND NEW.destination_type = 'EMAIL'
+      AND NEW.user_id IS NOT NULL
+      AND NEW.identity_id IS NOT NULL
+      AND NEW.invalidated_at IS NULL
+      AND NEW.expires_at > NEW.consumed_at
+      AND NEW.attempt_count < NEW.max_attempts
+      AND EXISTS (
+        SELECT 1
+        FROM user_auth_identities i
+        WHERE i.identity_id = NEW.identity_id
+          AND i.user_id = NEW.user_id
+          AND i.identity_type = 'EMAIL'
+          AND i.identity_scope = 'GLOBAL'
+          AND i.verification_status = 'VERIFIED'
+          AND i.verified_at IS NOT NULL
+          AND i.expires_at IS NULL
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM users u
+        WHERE u.user_id = NEW.user_id
+          AND u.email IS NOT NULL
+          AND u.account_status = 'DISABLED'
+      )
+      AND EXISTS (
+        SELECT 1
+        FROM user_registration_reviews r
+        WHERE r.user_id = NEW.user_id
+          AND r.registration_status = 'PENDING_REVIEW'
+          AND r.reviewed_by IS NULL
+          AND r.reviewed_at IS NULL
+      )
+    )
+    THEN RAISE(
+      ABORT,
+      'Registration OTP completion state is incomplete.'
+    )
+  END;
+END;
+
+
+-- =========================================================
+-- 4. MIGRATION COMPLETE
 -- =========================================================
