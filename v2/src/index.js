@@ -49,7 +49,7 @@ export default {
           )
         ) {
           return json({
-            error: "Requested headers are not allowed."
+            error: "Requested header is not allowed."
           }, 403);
         }
       }
@@ -144,7 +144,13 @@ export default {
         if (!response) {
           response = json({ error: "Not found" }, 404);
         }
-      } catch {
+      } catch (error) {
+        console.error("AUTH_UNHANDLED_ERROR", {
+          name: error?.name ?? "Error",
+          message: error?.message ?? "Unknown error",
+          status: error?.status ?? null
+        });
+
         response = json({
           error: "Authentication service unavailable."
         }, 500);
