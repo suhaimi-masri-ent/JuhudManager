@@ -76,6 +76,58 @@ export async function encryptValue(secret, value) {
   return `${encodeBase64Url(iv)}.${encodeBase64Url(new Uint8Array(ciphertext))}`;
 }
 
+
+export async function decryptValue(secret, encryptedValue) {
+  if (typeof encryptedValue !== "string") {
+    throw new TypeError("A valid encrypted value is required.");
+  }
+
+  const parts = encryptedValue.split(".");
+
+  if (parts.length !== 2 || !parts[0] || !parts[1]) {
+    throw new TypeError("Invalid encrypted value format.");
+  }
+
+  const rawKey = decodeBase64Url(
+    requireSecret(secret, "ENCRYPTION_KEY")
+  );
+
+  if (rawKey.length !== 32) {
+    throw new Error(
+      "ENCRYPTION_KEY must decode to exactly 32 bytes."
+    );
+  }
+
+  const key = await crypto.subtle.importKey(
+    "raw",
+    rawKey,
+    "AES-GCM",
+    false,
+    ["decrypt"]
+  );
+
+  const iv = decodeBase64Url(parts[0]);
+  const ciphertext = decodeBase64Url(parts[1]);
+
+  if (iv.length !== 12 || ciphertext.length < 16) {
+    throw new TypeError("Invalid encrypted value.");
+  }
+
+  const plaintext = await crypto.subtle.decrypt(
+    {
+      name: "AES-GCM",
+      iv
+    },
+    key,
+    ciphertext
+  );
+
+  return new TextDecoder("utf-8", {
+    fatal: true
+  }).decode(plaintext);
+}
+
+
 export function generateOtp() {
   const limit = Math.floor(0x100000000 / 1000000) * 1000000;
   const value = new Uint32Array(1);
