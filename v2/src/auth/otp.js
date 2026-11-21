@@ -51,6 +51,20 @@ function requireOtpSecrets(env) {
   }
 }
 
+async function calculateEmailHashes(env, normalized) {
+  const identityHash = await hashValue(
+    env.HMAC_SECRET,
+    `EMAIL:GLOBAL:${normalized}`
+  );
+
+  const destinationHash = await hashValue(
+    env.HMAC_SECRET,
+    `EMAIL:${normalized}`
+  );
+
+  return { identityHash, destinationHash };
+}
+
 export async function requestRegistrationOtp({
   db,
   env,
@@ -75,16 +89,8 @@ export async function requestRegistrationOtp({
   }
 
   const normalized = normalizeEmail(destination);
-
-  const identityHash = await hashValue(
-    env.HMAC_SECRET,
-    `EMAIL:GLOBAL:${normalized}`
-  );
-
-  const destinationHash = await hashValue(
-    env.HMAC_SECRET,
-    `EMAIL:${normalized}`
-  );
+  const { identityHash, destinationHash } =
+    await calculateEmailHashes(env, normalized);
 
   const currentTime = new Date();
   const currentIso = currentTime.toISOString();
@@ -197,6 +203,7 @@ export async function requestRegistrationOtp({
            WHERE i.identity_id = ?3
              AND i.user_id = ?2
              AND i.identity_type = 'EMAIL'
+             AND i.identity_scope = 'GLOBAL'
              AND i.identity_hash = ?4
              AND i.verification_status = 'PENDING'
              AND i.expires_at > ?14
@@ -308,11 +315,8 @@ export async function verifyRegistrationOtp({
   }
 
   const normalized = normalizeEmail(destination);
-
-  const destinationHash = await hashValue(
-    env.HMAC_SECRET,
-    `EMAIL:${normalized}`
-  );
+  const { identityHash, destinationHash } =
+    await calculateEmailHashes(env, normalized);
 
   const currentTime = nowIso();
 
@@ -404,8 +408,8 @@ export async function verifyRegistrationOtp({
   }
 
   const results = await db.batch([
-    // 1. Consume the OTP only while the email identity
-    // and registration are still eligible.
+    // 1. Consume the OTP only if the supplied email hash
+    // matches the actual pending email identity.
     db.prepare(
       `UPDATE auth_otp_requests
        SET consumed_at = ?1
@@ -430,11 +434,7 @@ export async function verifyRegistrationOtp({
              AND i.user_id = ?3
              AND i.identity_type = 'EMAIL'
              AND i.identity_scope = 'GLOBAL'
-             AND i.identity_hash = (
-               SELECT identity_hash
-               FROM user_auth_identities
-               WHERE identity_id = ?4
-             )
+             AND i.identity_hash = ?6
              AND i.verification_status = 'PENDING'
              AND i.expires_at > ?1
              AND u.account_status = 'DISABLED'
@@ -446,7 +446,8 @@ export async function verifyRegistrationOtp({
       row.otp_request_id,
       userId,
       identityId,
-      destinationHash
+      destinationHash,
+      identityHash
     ),
 
     // 2. Verify the email identity after OTP consumption.
@@ -461,6 +462,7 @@ export async function verifyRegistrationOtp({
          AND user_id = ?3
          AND identity_type = 'EMAIL'
          AND identity_scope = 'GLOBAL'
+         AND identity_hash = ?5
          AND verification_status = 'PENDING'
          AND expires_at > ?1
          AND EXISTS (
@@ -475,7 +477,8 @@ export async function verifyRegistrationOtp({
       currentTime,
       identityId,
       userId,
-      row.otp_request_id
+      row.otp_request_id,
+      identityHash
     ),
 
     // 3. Store the verified email on the user account.
@@ -493,12 +496,13 @@ export async function verifyRegistrationOtp({
            WHERE identity_id = ?4
              AND user_id = ?3
              AND identity_type = 'EMAIL'
+             AND identity_hash = ?5
              AND verification_status = 'VERIFIED'
          )
          AND EXISTS (
            SELECT 1
            FROM auth_otp_requests
-           WHERE otp_request_id = ?5
+           WHERE otp_request_id = ?6
              AND user_id = ?3
              AND consumed_at = ?2
          )`
@@ -507,6 +511,7 @@ export async function verifyRegistrationOtp({
       currentTime,
       userId,
       identityId,
+      identityHash,
       row.otp_request_id
     ),
 
@@ -531,12 +536,13 @@ export async function verifyRegistrationOtp({
            WHERE identity_id = ?4
              AND user_id = ?2
              AND identity_type = 'EMAIL'
+             AND identity_hash = ?5
              AND verification_status = 'VERIFIED'
          )
          AND EXISTS (
            SELECT 1
            FROM auth_otp_requests
-           WHERE otp_request_id = ?5
+           WHERE otp_request_id = ?6
              AND user_id = ?2
              AND consumed_at = ?1
          )`
@@ -545,6 +551,7 @@ export async function verifyRegistrationOtp({
       userId,
       normalized,
       identityId,
+      identityHash,
       row.otp_request_id
     )
   ]);
