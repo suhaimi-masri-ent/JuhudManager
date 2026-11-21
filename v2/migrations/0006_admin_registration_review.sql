@@ -22,6 +22,16 @@ BEFORE UPDATE OF registration_status
 ON user_registration_reviews
 WHEN NEW.registration_status <> OLD.registration_status
 BEGIN
+  -- Only registrations awaiting Admin review can be reviewed.
+  SELECT CASE
+    WHEN OLD.registration_status <> 'PENDING_REVIEW'
+    THEN RAISE(
+      ABORT,
+      'Only pending registrations can be reviewed.'
+    )
+  END;
+
+  -- Only APPROVED or REJECTED are valid review outcomes.
   SELECT CASE
     WHEN NEW.registration_status NOT IN ('APPROVED', 'REJECTED')
     THEN RAISE(
@@ -30,6 +40,7 @@ BEGIN
     )
   END;
 
+  -- Reviewer identity and timestamp are mandatory.
   SELECT CASE
     WHEN NEW.reviewed_by IS NULL
       OR NEW.reviewed_at IS NULL
@@ -39,6 +50,7 @@ BEGIN
     )
   END;
 
+  -- Reviewer must have ADMIN or SUPER_ADMIN role.
   SELECT CASE
     WHEN NOT EXISTS (
       SELECT 1
@@ -54,6 +66,7 @@ BEGIN
     )
   END;
 
+  -- Target account must remain DISABLED before review.
   SELECT CASE
     WHEN NOT EXISTS (
       SELECT 1
@@ -67,6 +80,7 @@ BEGIN
     )
   END;
 
+  -- Rejection requires a non-empty reason.
   SELECT CASE
     WHEN NEW.registration_status = 'REJECTED'
       AND (
@@ -79,6 +93,7 @@ BEGIN
     )
   END;
 
+  -- Approval must not contain a rejection reason.
   SELECT CASE
     WHEN NEW.registration_status = 'APPROVED'
       AND NEW.rejection_reason IS NOT NULL
