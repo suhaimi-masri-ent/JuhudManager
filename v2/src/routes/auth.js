@@ -51,13 +51,24 @@ const RATE_LIMITS = {
   }
 };
 
+function logAuthError(stage, error) {
+  console.error("AUTH_DIAGNOSTIC", {
+    stage,
+    name: error?.name ?? "Error",
+    message: error?.message ?? "Unknown error",
+    status: error?.status ?? null
+  });
+}
+
 function httpError(message, status) {
   const error = new Error(message);
   error.status = status;
   return error;
 }
 
-function errorResponse(error) {
+function errorResponse(error, stage = "UNKNOWN") {
+  logAuthError(stage, error);
+
   const status = Number.isInteger(error?.status)
     ? error.status
     : 500;
@@ -96,7 +107,7 @@ async function checkRateLimit(request, env, config) {
 
     return null;
   } catch (error) {
-    return errorResponse(error);
+    return errorResponse(error, `RATE_LIMIT_${config.scope}`);
   }
 }
 
@@ -195,7 +206,7 @@ export async function handleAuthRequest(request, env, url) {
     try {
       body = await readJson(request);
     } catch (error) {
-      return errorResponse(error);
+      return errorResponse(error, "REGISTER_READ_BODY");
     }
 
     if (!body) {
@@ -220,7 +231,7 @@ export async function handleAuthRequest(request, env, url) {
         ...result
       }, 201);
     } catch (error) {
-      return errorResponse(error);
+      return errorResponse(error, "REGISTER_CREATE_DRAFT");
     }
   }
 
@@ -245,7 +256,7 @@ export async function handleAuthRequest(request, env, url) {
     try {
       body = await readJson(request);
     } catch (error) {
-      return errorResponse(error);
+      return errorResponse(error, "OTP_REQUEST_READ_BODY");
     }
 
     if (!validRegistrationIdentity(body)) {
@@ -269,7 +280,7 @@ export async function handleAuthRequest(request, env, url) {
         ...result
       }, 202);
     } catch (error) {
-      return errorResponse(error);
+      return errorResponse(error, "OTP_REQUEST_PROCESS");
     }
   }
 
@@ -294,7 +305,7 @@ export async function handleAuthRequest(request, env, url) {
     try {
       body = await readJson(request);
     } catch (error) {
-      return errorResponse(error);
+      return errorResponse(error, "OTP_VERIFY_READ_BODY");
     }
 
     if (
@@ -323,7 +334,7 @@ export async function handleAuthRequest(request, env, url) {
         ...result
       });
     } catch (error) {
-      return errorResponse(error);
+      return errorResponse(error, "OTP_VERIFY_PROCESS");
     }
   }
 
@@ -348,7 +359,7 @@ export async function handleAuthRequest(request, env, url) {
     try {
       body = await readJson(request);
     } catch (error) {
-      return errorResponse(error);
+      return errorResponse(error, "ACTIVATION_READ_BODY");
     }
 
     if (
@@ -373,7 +384,6 @@ export async function handleAuthRequest(request, env, url) {
         message: "If the account is eligible, an activation email will be sent."
       }, 202);
     } catch (error) {
-      // Avoid exposing whether an account exists or is eligible.
       if (
         error?.status === 404 ||
         error?.status === 409
@@ -384,7 +394,7 @@ export async function handleAuthRequest(request, env, url) {
         }, 202);
       }
 
-      return errorResponse(error);
+      return errorResponse(error, "ACTIVATION_REQUEST_PROCESS");
     }
   }
 
@@ -409,7 +419,7 @@ export async function handleAuthRequest(request, env, url) {
     try {
       body = await readJson(request);
     } catch (error) {
-      return errorResponse(error);
+      return errorResponse(error, "PASSWORD_SETUP_READ_BODY");
     }
 
     if (
@@ -436,7 +446,7 @@ export async function handleAuthRequest(request, env, url) {
         ...result
       });
     } catch (error) {
-      return errorResponse(error);
+      return errorResponse(error, "PASSWORD_SETUP_PROCESS");
     }
   }
 
