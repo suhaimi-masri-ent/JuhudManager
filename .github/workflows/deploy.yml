@@ -38,7 +38,7 @@ jobs:
           cp -R v2/web/. _site/v2/web/
 
       - name: Upload public folder
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 
