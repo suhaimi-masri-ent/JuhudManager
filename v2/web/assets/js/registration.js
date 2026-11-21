@@ -1,4 +1,3 @@
-
 import {
   apiRequest,
   showNotice,
@@ -61,6 +60,32 @@ function showOtpView() {
   $("dot2").classList.add("active");
 }
 
+/*
+ * Convert selected registration fields to uppercase
+ * while the user types or pastes text.
+ */
+function enforceUppercaseInput(elementId) {
+  const input = $(elementId);
+
+  input.addEventListener("input", () => {
+    const start = input.selectionStart;
+    const end = input.selectionEnd;
+    const uppercaseValue = input.value.toUpperCase();
+
+    if (input.value !== uppercaseValue) {
+      input.value = uppercaseValue;
+
+      if (start !== null && end !== null) {
+        input.setSelectionRange(start, end);
+      }
+    }
+  });
+}
+
+enforceUppercaseInput("fullName");
+enforceUppercaseInput("countryCode");
+enforceUppercaseInput("nationalId");
+
 function setRegistrationMode(mode) {
   state.registrationMode = mode;
 
@@ -72,7 +97,7 @@ function setRegistrationMode(mode) {
     submitButton.textContent = "Resume registration";
     modeButton.textContent = "Start a new registration";
     modeNote.textContent =
-      "Enter exactly the same details used in your previous registration. " +
+      "Enter the same details used in your previous registration. " +
       "Your original email address and identity details must match.";
   } else {
     submitButton.textContent = "Continue";
@@ -211,9 +236,9 @@ $("registrationForm").addEventListener("submit", async event => {
     }
 
     const registrationData = {
-      fullName: $("fullName").value.trim(),
+      fullName: $("fullName").value.trim().toUpperCase(),
       countryCode: country,
-      nationalId: $("nationalId").value.trim(),
+      nationalId: $("nationalId").value.trim().toUpperCase(),
       email: $("registerEmail").value.trim(),
       whatsapp: $("whatsapp").value.trim()
     };
@@ -237,13 +262,6 @@ $("registrationForm").addEventListener("submit", async event => {
       );
     }
 
-    /*
-     * Both new registration and resumed registration use
-     * the same email OTP verification flow.
-     *
-     * Show OTP view before requesting the OTP so the user
-     * can retry if OTP delivery/request fails.
-     */
     showOtpView();
 
     try {
@@ -320,10 +338,6 @@ $("otpForm").addEventListener("submit", async event => {
       throw new Error("Email verification was not completed.");
     }
 
-    /*
-     * OTP has been verified and consumed.
-     * A password setup email failure must not require OTP again.
-     */
     state.registrationStep = "COMPLETE";
     stopOtpResendCountdown();
 
