@@ -5,7 +5,7 @@ import {
 } from "../auth/sessions.js";
 
 import {
-  requireAdminRole
+  requireSuperAdminRole
 } from "../auth/authorization.js";
 
 import {
@@ -104,7 +104,7 @@ async function requireAdminSession(request, env) {
     );
   }
 
-  const administrator = await requireAdminRole({
+  const administrator = await requireSuperAdminRole({
     db: env.DB,
     session
   });
