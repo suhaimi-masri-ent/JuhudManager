@@ -12,7 +12,8 @@ const state = {
   userId: null,
   emailIdentityId: null,
   email: null,
-  registrationStep: "FORM"
+  registrationStep: "FORM",
+  registrationMode: "START"
 };
 
 let otpResendInterval = null;
@@ -59,6 +60,60 @@ function showOtpView() {
   $("otpDestination").textContent = state.email;
   $("dot2").classList.add("active");
 }
+
+function setRegistrationMode(mode) {
+  state.registrationMode = mode;
+
+  const submitButton = $("registerButton");
+  const modeButton = $("resumeRegistrationButton");
+  const modeNote = $("registrationModeNote");
+
+  if (mode === "RESUME") {
+    submitButton.textContent = "Resume registration";
+    modeButton.textContent = "Start a new registration";
+    modeNote.textContent =
+      "Enter exactly the same details used in your previous registration. " +
+      "Your original email address and identity details must match.";
+  } else {
+    submitButton.textContent = "Continue";
+    modeButton.textContent = "Resume an incomplete registration";
+    modeNote.textContent =
+      "Already started registration but did not complete email verification? " +
+      "Choose Resume to continue without creating another account.";
+  }
+
+  clearNotice();
+}
+
+function createResumeControls() {
+  const form = $("registrationForm");
+
+  const button = document.createElement("button");
+  button.type = "button";
+  button.id = "resumeRegistrationButton";
+  button.className = "primary secondary";
+  button.textContent = "Resume an incomplete registration";
+
+  const note = document.createElement("p");
+  note.id = "registrationModeNote";
+  note.className = "small-note";
+  note.textContent =
+    "Already started registration but did not complete email verification? " +
+    "Choose Resume to continue without creating another account.";
+
+  form.insertAdjacentElement("afterend", button);
+  button.insertAdjacentElement("afterend", note);
+
+  button.addEventListener("click", () => {
+    const nextMode = state.registrationMode === "START"
+      ? "RESUME"
+      : "START";
+
+    setRegistrationMode(nextMode);
+  });
+}
+
+createResumeControls();
 
 async function resendRegistrationOtp() {
   const button = $("resendOtpButton");
@@ -155,22 +210,26 @@ $("registrationForm").addEventListener("submit", async event => {
       );
     }
 
-    const email = $("registerEmail").value.trim();
+    const registrationData = {
+      fullName: $("fullName").value.trim(),
+      countryCode: country,
+      nationalId: $("nationalId").value.trim(),
+      email: $("registerEmail").value.trim(),
+      whatsapp: $("whatsapp").value.trim()
+    };
+
+    const endpoint = state.registrationMode === "RESUME"
+      ? "/auth/register/resume"
+      : "/auth/register/start";
 
     const result = await apiRequest(
-      "/auth/register/start",
-      {
-        fullName: $("fullName").value.trim(),
-        countryCode: country,
-        nationalId: $("nationalId").value.trim(),
-        email,
-        whatsapp: $("whatsapp").value.trim()
-      }
+      endpoint,
+      registrationData
     );
 
     state.userId = result.userId;
     state.emailIdentityId = result.identities?.email?.identityId;
-    state.email = email;
+    state.email = registrationData.email;
 
     if (!state.userId || !state.emailIdentityId) {
       throw new Error(
@@ -179,10 +238,11 @@ $("registrationForm").addEventListener("submit", async event => {
     }
 
     /*
-     * The registration draft now exists.
-     * Move to OTP view before requesting the first OTP.
-     * If OTP delivery/request fails, the user can retry
-     * without creating another registration draft.
+     * Both new registration and resumed registration use
+     * the same email OTP verification flow.
+     *
+     * Show OTP view before requesting the OTP so the user
+     * can retry if OTP delivery/request fails.
      */
     showOtpView();
 
@@ -202,7 +262,9 @@ $("registrationForm").addEventListener("submit", async event => {
       );
 
       showNotice(
-        "Verification code requested. Please check your email.",
+        state.registrationMode === "RESUME"
+          ? "Your previous registration has been resumed. Please check your email for the verification code."
+          : "Verification code requested. Please check your email.",
         "success"
       );
     } catch (otpError) {
@@ -212,7 +274,7 @@ $("registrationForm").addEventListener("submit", async event => {
       resendButton.textContent = "Resend verification code";
 
       showNotice(
-        "Your registration has been saved, but the verification code " +
+        "Your registration is saved, but the verification code " +
         "could not be requested. Use Resend verification code to try again. " +
         otpError.message,
         "error"
@@ -222,6 +284,9 @@ $("registrationForm").addEventListener("submit", async event => {
     showNotice(error.message, "error");
   } finally {
     setLoading(button, false);
+    button.textContent = state.registrationMode === "RESUME"
+      ? "Resume registration"
+      : "Continue";
   }
 });
 
@@ -268,7 +333,6 @@ $("otpForm").addEventListener("submit", async event => {
 
     showNotice("Email verified successfully.", "success");
 
-    // This helper handles its own error and leaves retry available.
     await sendPasswordSetupEmail();
   } catch (error) {
     showNotice(error.message, "error");
@@ -291,6 +355,8 @@ $("backToLogin").addEventListener("click", () => {
   state.emailIdentityId = null;
   state.email = null;
   state.registrationStep = "FORM";
+
+  setRegistrationMode("START");
 
   $("dot2").classList.remove("active");
   $("dot3").classList.remove("active");
