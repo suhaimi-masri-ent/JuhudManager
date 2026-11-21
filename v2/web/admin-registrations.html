@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174b38">
+  <meta name="referrer" content="no-referrer">
+  <title>Admin Registration Recovery · JuhudManager V2</title>
+  <link rel="stylesheet" href="./assets/css/app.css">
+  <link rel="stylesheet" href="./assets/css/dashboard.css">
+  <link rel="stylesheet" href="./assets/css/admin-registrations.css">
+  <script type="module" src="./assets/js/admin-registrations.js"></script>
+</head>
+<body>
+  <div class="dashboard-page">
+    <header class="dashboard-header">
+      <a class="dashboard-brand" href="./dashboard.html">
+        <span class="brand-icon">✦</span>
+        <span>JuhudManager</span>
+      </a>
+      <div class="dashboard-header-actions">
+        <span class="access-label">Admin</span>
+        <button id="logoutButton" class="logout-button" type="button">Log Out</button>
+      </div>
+    </header>
+
+    <main class="dashboard-main admin-main">
+      <section class="dashboard-welcome">
+        <div>
+          <p class="dashboard-eyebrow">ADMINISTRATION</p>
+          <h1>Registration recovery</h1>
+          <p class="dashboard-subtitle">
+            Correct National ID or WhatsApp details for registrations awaiting email verification.
+          </p>
+        </div>
+      </section>
+
+      <div id="pageNotice" class="dashboard-notice hidden" role="status" aria-live="polite"></div>
+
+      <section class="dashboard-section">
+        <div class="section-heading">
+          <h2>Awaiting email verification</h2>
+          <button id="refreshButton" class="admin-secondary-button" type="button">Refresh</button>
+        </div>
+        <div id="registrationList" class="registration-list">
+          <p class="muted">Loading registrations…</p>
+        </div>
+      </section>
+
+      <section id="detailPanel" class="dashboard-section detail-panel hidden">
+        <h2>Selected registration</h2>
+        <div class="selected-summary">
+          <div><span>Name</span><strong id="selectedName">—</strong></div>
+          <div><span>Email</span><strong id="selectedEmail">—</strong></div>
+          <div><span>Registration status</span><strong id="selectedStatus">—</strong></div>
+        </div>
+
+        <h3>Stored identity records</h3>
+        <p class="muted">
+          Values are intentionally hidden. The previous record will be retained as REVOKED history.
+        </p>
+        <div id="identityList" class="identity-list"></div>
+
+        <form id="recoveryForm" class="recovery-form">
+          <h3>Correct identity details</h3>
+          <p class="muted">
+            Leave an identity field empty if it does not need correction. WhatsApp must use international E.164 format.
+          </p>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="countryCode">National ID issuing country (ISO 2-letter code)</label>
+              <input id="countryCode" name="countryCode" maxlength="2" placeholder="MY" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="nationalId">Correct National ID</label>
+              <input id="nationalId" name="nationalId" maxlength="100" placeholder="Enter corrected National ID" autocomplete="off">
+            </div>
+            <div class="field full-width">
+              <label for="whatsapp">Correct WhatsApp number (E.164)</label>
+              <input id="whatsapp" name="whatsapp" type="tel" maxlength="16" placeholder="+60123456789" autocomplete="off">
+            </div>
+          </div>
+
+          <div class="field">
+            <label for="verificationMethod">How was the owner independently verified?</label>
+            <select id="verificationMethod" name="verificationMethod" required>
+              <option value="">Select verification method</option>
+              <option value="ORIGINAL_DOCUMENT_CHECK">Original identity document checked</option>
+              <option value="DIRECT_CONTACT">Confirmed through a trusted direct contact channel</option>
+              <option value="OTHER">Other approved method</option>
+            </select>
+          </div>
+
+          <div class="field">
+            <label for="reason">Recovery reason / verification notes</label>
+            <textarea id="reason" name="reason" rows="3" maxlength="1000" required placeholder="Record why correction is required and how ownership was confirmed. Do not enter the full identity number here."></textarea>
+          </div>
+
+          <label class="confirmation-check">
+            <input id="ownerVerified" type="checkbox" required>
+            <span>I confirm that I independently verified the registration owner using the selected method before changing these identity details.</span>
+          </label>
+
+          <div class="form-actions">
+            <button id="submitRecoveryButton" class="primary" type="submit">Save identity correction</button>
+            <button id="cancelSelectionButton" class="admin-secondary-button" type="button">Close</button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <footer class="dashboard-footer">JuhudManager V2 · Secure Administration</footer>
+  </div>
+</body>
+</html>
