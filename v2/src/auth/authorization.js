@@ -112,11 +112,13 @@ export async function requireAdminRole({ db, session }) {
     throw httpError("Authentication required.", 401);
   }
 
+  requireAccessLevel(session, "FULL");
+
   const roleCodes = await getUserRoleCodes({
     db,
     userId: session.userId
   });
-
+  
   const adminRole = roleCodes.find(
     code => ADMIN_ROLES.includes(code)
   );
