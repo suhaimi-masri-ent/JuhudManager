@@ -22,6 +22,7 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,10 +30,17 @@ jobs:
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
+      - name: Prepare GitHub Pages site
+        run: |
+          mkdir -p _site
+          cp -R public/. _site/
+          mkdir -p _site/v2/web
+          cp -R v2/web/. _site/v2/web/
+
       - name: Upload public folder
         uses: actions/upload-pages-artifact@v3
         with:
-          path: public
+          path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
