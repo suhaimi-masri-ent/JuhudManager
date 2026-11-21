@@ -28,11 +28,26 @@ function httpError(message, status) {
   return error;
 }
 
-function normalizeInput(destinationType, destination) {
+function normalizeEmail(destination) {
   try {
-    return normalizeDestination(destinationType, destination);
+    return normalizeDestination("EMAIL", destination);
   } catch (error) {
     throw httpError(error.message, 400);
+  }
+}
+
+function requireEmailDestination(destinationType) {
+  if (destinationType !== "EMAIL") {
+    throw httpError(
+      "Only email OTP verification is currently supported.",
+      400
+    );
+  }
+}
+
+function requireOtpSecrets(env) {
+  if (!env.HMAC_SECRET || !env.OTP_HASH_SECRET) {
+    throw new Error("Authentication secrets are not configured.");
   }
 }
 
@@ -44,8 +59,11 @@ export async function requestRegistrationOtp({
   destinationType,
   destination
 }) {
-  if (!env.HMAC_SECRET || !env.OTP_HASH_SECRET || !env.ENCRYPTION_KEY) {
-    throw new Error("Authentication secrets are not configured.");
+  requireOtpSecrets(env);
+  requireEmailDestination(destinationType);
+
+  if (!env.ENCRYPTION_KEY) {
+    throw new Error("Encryption secret is not configured.");
   }
 
   if (!userId || !identityId) {
@@ -56,46 +74,51 @@ export async function requestRegistrationOtp({
     throw httpError("OTP delivery provider is not configured.", 503);
   }
 
-  if (!["EMAIL", "WHATSAPP"].includes(destinationType)) {
-    throw httpError("Unsupported OTP destination type.", 400);
-  }
-
-  const normalized = normalizeInput(destinationType, destination);
+  const normalized = normalizeEmail(destination);
 
   const identityHash = await hashValue(
     env.HMAC_SECRET,
-    `${destinationType}:GLOBAL:${normalized}`
+    `EMAIL:GLOBAL:${normalized}`
   );
 
   const destinationHash = await hashValue(
     env.HMAC_SECRET,
-    `${destinationType}:${normalized}`
+    `EMAIL:${normalized}`
   );
 
   const currentTime = new Date();
   const currentIso = currentTime.toISOString();
 
   const identity = await db.prepare(
-    `SELECT identity_id
-     FROM user_auth_identities
-     WHERE identity_id = ?1
-       AND user_id = ?2
-       AND identity_type = ?3
-       AND identity_scope = 'GLOBAL'
-       AND identity_hash = ?4
-       AND verification_status = 'PENDING'
-       AND expires_at > ?5
+    `SELECT i.identity_id
+     FROM user_auth_identities i
+     INNER JOIN users u
+       ON u.user_id = i.user_id
+     INNER JOIN user_registration_reviews r
+       ON r.user_id = u.user_id
+     WHERE i.identity_id = ?1
+       AND i.user_id = ?2
+       AND i.identity_type = 'EMAIL'
+       AND i.identity_scope = 'GLOBAL'
+       AND i.identity_hash = ?3
+       AND i.verification_status = 'PENDING'
+       AND i.expires_at > ?4
+       AND u.account_status = 'DISABLED'
+       AND u.email IS NULL
+       AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
      LIMIT 1`
   ).bind(
     identityId,
     userId,
-    destinationType,
     identityHash,
     currentIso
   ).first();
 
   if (!identity) {
-    throw httpError("Identity reservation is invalid or expired.", 409);
+    throw httpError(
+      "Email reservation is invalid, expired or no longer eligible.",
+      409
+    );
   }
 
   const windowStart = new Date(
@@ -126,8 +149,6 @@ export async function requestRegistrationOtp({
     OTP_LIFETIME_MINUTES * 60
   );
 
-  // D1 performs the rate-limit checks as part of the INSERT.
-  // The previous OTP is invalidated only if this INSERT succeeds.
   const results = await db.batch([
     db.prepare(
       `INSERT INTO auth_otp_requests (
@@ -147,13 +168,13 @@ export async function requestRegistrationOtp({
          last_sent_at
        )
        SELECT
-         ?1, ?2, ?3, 'REGISTER', ?4, ?5, ?6, 1,
+         ?1, ?2, ?3, 'REGISTER', 'EMAIL', ?5, ?6, 1,
          ?7, 1, ?8, 0, ?9, ?10
        WHERE
          (
            SELECT COUNT(*)
            FROM auth_otp_requests
-           WHERE destination_type = ?4
+           WHERE destination_type = 'EMAIL'
              AND destination_hash = ?5
              AND otp_purpose = 'REGISTER'
              AND created_at >= ?11
@@ -161,16 +182,33 @@ export async function requestRegistrationOtp({
          AND NOT EXISTS (
            SELECT 1
            FROM auth_otp_requests
-           WHERE destination_type = ?4
+           WHERE destination_type = 'EMAIL'
              AND destination_hash = ?5
              AND otp_purpose = 'REGISTER'
              AND last_sent_at > ?13
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM user_auth_identities i
+           INNER JOIN users u
+             ON u.user_id = i.user_id
+           INNER JOIN user_registration_reviews r
+             ON r.user_id = u.user_id
+           WHERE i.identity_id = ?3
+             AND i.user_id = ?2
+             AND i.identity_type = 'EMAIL'
+             AND i.identity_hash = ?4
+             AND i.verification_status = 'PENDING'
+             AND i.expires_at > ?14
+             AND u.account_status = 'DISABLED'
+             AND u.email IS NULL
+             AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
          )`
     ).bind(
       otpRequestId,
       userId,
       identityId,
-      destinationType,
+      identityHash,
       destinationHash,
       encryptedDestination,
       otpHash,
@@ -179,28 +217,28 @@ export async function requestRegistrationOtp({
       currentIso,
       windowStart,
       RATE_MAX_REQUESTS,
-      cooldownStart
+      cooldownStart,
+      currentIso
     ),
 
     db.prepare(
       `UPDATE auth_otp_requests
        SET invalidated_at = ?1
-       WHERE destination_type = ?2
-         AND destination_hash = ?3
+       WHERE destination_type = 'EMAIL'
+         AND destination_hash = ?2
          AND otp_purpose = 'REGISTER'
-         AND otp_request_id != ?4
+         AND otp_request_id != ?3
          AND consumed_at IS NULL
          AND invalidated_at IS NULL
          AND EXISTS (
-          SELECT 1
-          FROM auth_otp_requests
-          WHERE otp_request_id = ?4
-            AND destination_type = ?2
-            AND destination_hash = ?3
+           SELECT 1
+           FROM auth_otp_requests
+           WHERE otp_request_id = ?3
+             AND destination_type = 'EMAIL'
+             AND destination_hash = ?2
          )`
     ).bind(
       currentIso,
-      destinationType,
       destinationHash,
       otpRequestId
     )
@@ -210,14 +248,14 @@ export async function requestRegistrationOtp({
 
   if (inserted !== 1) {
     throw httpError(
-      "Too many OTP requests. Please wait before trying again.",
+      "Too many OTP requests or registration is no longer eligible. Please wait before trying again.",
       429
     );
   }
 
   try {
     await env.OTP_DELIVERY.send({
-      destinationType,
+      destinationType: "EMAIL",
       destination: normalized,
       purpose: "REGISTER",
       otp,
@@ -243,7 +281,7 @@ export async function requestRegistrationOtp({
 
   return {
     requestId: otpRequestId,
-    destinationType,
+    destinationType: "EMAIL",
     expiresAt,
     resendAfterSeconds: OTP_RESEND_SECONDS
   };
@@ -258,9 +296,8 @@ export async function verifyRegistrationOtp({
   destination,
   otp
 }) {
-  if (!env.HMAC_SECRET || !env.OTP_HASH_SECRET) {
-    throw new Error("Authentication secrets are not configured.");
-  }
+  requireOtpSecrets(env);
+  requireEmailDestination(destinationType);
 
   if (!userId || !identityId) {
     throw httpError("User ID and identity ID are required.", 400);
@@ -270,15 +307,11 @@ export async function verifyRegistrationOtp({
     throw httpError("A six-digit OTP is required.", 400);
   }
 
-  if (!["EMAIL", "WHATSAPP"].includes(destinationType)) {
-    throw httpError("Unsupported OTP destination type.", 400);
-  }
-
-  const normalized = normalizeInput(destinationType, destination);
+  const normalized = normalizeEmail(destination);
 
   const destinationHash = await hashValue(
     env.HMAC_SECRET,
-    `${destinationType}:${normalized}`
+    `EMAIL:${normalized}`
   );
 
   const currentTime = nowIso();
@@ -295,8 +328,8 @@ export async function verifyRegistrationOtp({
      FROM auth_otp_requests
      WHERE user_id = ?1
        AND identity_id = ?2
-       AND destination_type = ?3
-       AND destination_hash = ?4
+       AND destination_type = 'EMAIL'
+       AND destination_hash = ?3
        AND otp_purpose = 'REGISTER'
        AND consumed_at IS NULL
        AND invalidated_at IS NULL
@@ -305,7 +338,6 @@ export async function verifyRegistrationOtp({
   ).bind(
     userId,
     identityId,
-    destinationType,
     destinationHash
   ).first();
 
@@ -371,55 +403,53 @@ export async function verifyRegistrationOtp({
     );
   }
 
-  const emailAccountGuard = destinationType === "EMAIL"
-    ? `AND EXISTS (
-         SELECT 1
-         FROM users
-         WHERE user_id = ?7
-           AND account_status = 'DISABLED'
-           AND email IS NULL
-       )`
-    : "";
-
-  const consumeBindings = [
-    currentTime,
-    row.otp_request_id,
-    userId,
-    identityId,
-    destinationType,
-    destinationHash
-  ];
-
-  if (destinationType === "EMAIL") {
-    consumeBindings.push(userId);
-  }
-
-  const statements = [
+  const results = await db.batch([
+    // 1. Consume the OTP only while the email identity
+    // and registration are still eligible.
     db.prepare(
       `UPDATE auth_otp_requests
        SET consumed_at = ?1
        WHERE otp_request_id = ?2
          AND user_id = ?3
          AND identity_id = ?4
-         AND destination_type = ?5
-         AND destination_hash = ?6
+         AND destination_type = 'EMAIL'
+         AND destination_hash = ?5
+         AND otp_purpose = 'REGISTER'
          AND consumed_at IS NULL
          AND invalidated_at IS NULL
          AND expires_at > ?1
          AND attempt_count < max_attempts
          AND EXISTS (
            SELECT 1
-           FROM user_auth_identities
-           WHERE identity_id = ?4
-             AND user_id = ?3
-             AND identity_type = ?5
-             AND identity_scope = 'GLOBAL'
-             AND verification_status = 'PENDING'
-             AND expires_at > ?1
-         )
-         ${emailAccountGuard}`
-    ).bind(...consumeBindings),
+           FROM user_auth_identities i
+           INNER JOIN users u
+             ON u.user_id = i.user_id
+           INNER JOIN user_registration_reviews r
+             ON r.user_id = u.user_id
+           WHERE i.identity_id = ?4
+             AND i.user_id = ?3
+             AND i.identity_type = 'EMAIL'
+             AND i.identity_scope = 'GLOBAL'
+             AND i.identity_hash = (
+               SELECT identity_hash
+               FROM user_auth_identities
+               WHERE identity_id = ?4
+             )
+             AND i.verification_status = 'PENDING'
+             AND i.expires_at > ?1
+             AND u.account_status = 'DISABLED'
+             AND u.email IS NULL
+             AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+         )`
+    ).bind(
+      currentTime,
+      row.otp_request_id,
+      userId,
+      identityId,
+      destinationHash
+    ),
 
+    // 2. Verify the email identity after OTP consumption.
     db.prepare(
       `UPDATE user_auth_identities
        SET
@@ -429,14 +459,14 @@ export async function verifyRegistrationOtp({
          updated_at = ?1
        WHERE identity_id = ?2
          AND user_id = ?3
-         AND identity_type = ?4
+         AND identity_type = 'EMAIL'
          AND identity_scope = 'GLOBAL'
          AND verification_status = 'PENDING'
          AND expires_at > ?1
          AND EXISTS (
            SELECT 1
            FROM auth_otp_requests
-           WHERE otp_request_id = ?5
+           WHERE otp_request_id = ?4
              AND user_id = ?3
              AND identity_id = ?2
              AND consumed_at = ?1
@@ -445,62 +475,104 @@ export async function verifyRegistrationOtp({
       currentTime,
       identityId,
       userId,
-      destinationType,
+      row.otp_request_id
+    ),
+
+    // 3. Store the verified email on the user account.
+    db.prepare(
+      `UPDATE users
+       SET
+         email = ?1,
+         updated_at = ?2
+       WHERE user_id = ?3
+         AND account_status = 'DISABLED'
+         AND email IS NULL
+         AND EXISTS (
+           SELECT 1
+           FROM user_auth_identities
+           WHERE identity_id = ?4
+             AND user_id = ?3
+             AND identity_type = 'EMAIL'
+             AND verification_status = 'VERIFIED'
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM auth_otp_requests
+           WHERE otp_request_id = ?5
+             AND user_id = ?3
+             AND consumed_at = ?2
+         )`
+    ).bind(
+      normalized,
+      currentTime,
+      userId,
+      identityId,
+      row.otp_request_id
+    ),
+
+    // 4. Move the registration into Admin review.
+    db.prepare(
+      `UPDATE user_registration_reviews
+       SET
+         registration_status = 'PENDING_REVIEW',
+         updated_at = ?1
+       WHERE user_id = ?2
+         AND registration_status = 'AWAITING_EMAIL_VERIFICATION'
+         AND EXISTS (
+           SELECT 1
+           FROM users
+           WHERE user_id = ?2
+             AND email = ?3
+             AND account_status = 'DISABLED'
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM user_auth_identities
+           WHERE identity_id = ?4
+             AND user_id = ?2
+             AND identity_type = 'EMAIL'
+             AND verification_status = 'VERIFIED'
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM auth_otp_requests
+           WHERE otp_request_id = ?5
+             AND user_id = ?2
+             AND consumed_at = ?1
+         )`
+    ).bind(
+      currentTime,
+      userId,
+      normalized,
+      identityId,
       row.otp_request_id
     )
-  ];
-
-  if (destinationType === "EMAIL") {
-    statements.push(
-      db.prepare(
-        `UPDATE users
-         SET
-           email = ?1,
-           updated_at = ?2
-         WHERE user_id = ?3
-           AND account_status = 'DISABLED'
-           AND email IS NULL
-           AND EXISTS (
-             SELECT 1
-             FROM user_auth_identities
-             WHERE identity_id = ?4
-               AND user_id = ?3
-               AND identity_type = 'EMAIL'
-               AND verification_status = 'VERIFIED'
-           )`
-      ).bind(
-        normalized,
-        currentTime,
-        userId,
-        identityId
-      )
-    );
-  }
-
-  const results = await db.batch(statements);
+  ]);
 
   const otpChanges = results?.[0]?.meta?.changes ?? 0;
   const identityChanges = results?.[1]?.meta?.changes ?? 0;
-  const emailChanges = destinationType === "EMAIL"
-    ? results?.[2]?.meta?.changes ?? 0
-    : null;
+  const userChanges = results?.[2]?.meta?.changes ?? 0;
+  const reviewChanges = results?.[3]?.meta?.changes ?? 0;
 
   if (
     otpChanges !== 1 ||
     identityChanges !== 1 ||
-    (destinationType === "EMAIL" && emailChanges !== 1)
+    userChanges !== 1 ||
+    reviewChanges !== 1
   ) {
     throw httpError(
-      "OTP or identity reservation is invalid, expired or already linked.",
+      "OTP verification or registration update could not be completed. Please check the registration status.",
       409
     );
   }
 
   return {
     verified: true,
-    destinationType,
+    destinationType: "EMAIL",
     identityId,
     identityStatus: "VERIFIED",
-    emailUpdated: destinationType === "EMAIL"
+    emailUpdated: true,
+    registrationStatus: "PENDING_REVIEW",
+    nextStep: "SET_PASSWORD"
   };
 }
