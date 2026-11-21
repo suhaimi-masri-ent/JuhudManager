@@ -241,6 +241,7 @@ CREATE TRIGGER trg_registration_otp_completion_guard
 BEFORE UPDATE OF consumed_at ON auth_otp_requests
 WHEN OLD.consumed_at IS NULL
  AND NEW.consumed_at IS NOT NULL
+ AND NEW.otp_purpose = 'REGISTER'
 BEGIN
   SELECT CASE
     WHEN NOT (
