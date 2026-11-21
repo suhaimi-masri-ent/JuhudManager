@@ -1,4 +1,3 @@
-
 import {
   hashPassword,
   validatePassword
@@ -21,30 +20,31 @@ function isUniqueConstraintError(error) {
 }
 
 /**
- * Set the initial password and activate a registered account.
+ * Set the initial password after email verification.
  *
- * Requires a valid, unused activation token.
+ * The supplied token is a short-lived registration password
+ * setup grant. It does NOT activate the account.
  *
  * The following operations are committed together:
- * 1. Consume activation token.
- * 2. Create password credential.
- * 3. Activate user account.
- * 4. Record successful activation event.
+ * 1. Consume the password setup token.
+ * 2. Create the initial Argon2id password credential.
+ * 3. Record the successful password setup event.
+ *
+ * Account remains DISABLED until Admin approval.
  */
 export async function setInitialPassword({
   db,
   env,
-  activationToken,
+  setupToken,
   password
 }) {
   validatePassword(password);
 
-  // Validate token before performing expensive password hashing.
-  // The token is not consumed at this stage.
-  const activation = await findValidActivationToken({
+  // Validate the one-time setup token before expensive hashing.
+  const setup = await findValidActivationToken({
     db,
     env,
-    token: activationToken
+    token: setupToken
   });
 
   const passwordHash = await hashPassword(password);
@@ -55,9 +55,8 @@ export async function setInitialPassword({
 
   try {
     const results = await db.batch([
-      // 1. Consume the activation token.
-      // All account prerequisites are checked again inside
-      // the transaction to prevent stale validation.
+      // 1. Consume the setup token.
+      // Eligibility is checked again inside the transaction.
       db.prepare(
         `UPDATE user_activation_tokens
          SET consumed_at = ?1
@@ -75,10 +74,11 @@ export async function setInitialPassword({
            )
            AND EXISTS (
              SELECT 1
-             FROM user_auth_identities
+             FROM user_registration_reviews
              WHERE user_id = ?3
-               AND identity_type = 'NATIONAL_ID'
-               AND verification_status = 'VERIFIED'
+               AND registration_status = 'PENDING_REVIEW'
+               AND reviewed_by IS NULL
+               AND reviewed_at IS NULL
            )
            AND EXISTS (
              SELECT 1
@@ -86,13 +86,8 @@ export async function setInitialPassword({
              WHERE user_id = ?3
                AND identity_type = 'EMAIL'
                AND verification_status = 'VERIFIED'
-           )
-           AND EXISTS (
-             SELECT 1
-             FROM user_auth_identities
-             WHERE user_id = ?3
-               AND identity_type = 'WHATSAPP'
-               AND verification_status = 'VERIFIED'
+               AND verified_at IS NOT NULL
+               AND expires_at IS NULL
            )
            AND NOT EXISTS (
              SELECT 1
@@ -103,13 +98,15 @@ export async function setInitialPassword({
            )`
       ).bind(
         now,
-        activation.activationTokenId,
-        activation.userId
+        setup.activationTokenId,
+        setup.userId
       ),
 
-      // 2. Create the initial password credential.
-      // This only succeeds when the activation token was
-      // consumed successfully in the preceding statement.
+      // 2. Create the password credential.
+      //
+      // If token consumption or eligibility failed, the
+      // NULL password_hash deliberately violates NOT NULL.
+      // This aborts the batch and rolls back all prior writes.
       db.prepare(
         `INSERT INTO user_credentials (
            credential_id,
@@ -123,92 +120,61 @@ export async function setInitialPassword({
            ?1,
            ?2,
            'PASSWORD',
-           ?3,
+           CASE
+             WHEN EXISTS (
+               SELECT 1
+               FROM user_activation_tokens
+               WHERE activation_token_id = ?3
+                 AND user_id = ?2
+                 AND consumed_at = ?4
+                 AND invalidated_at IS NULL
+             )
+             AND EXISTS (
+               SELECT 1
+               FROM users
+               WHERE user_id = ?2
+                 AND account_status = 'DISABLED'
+                 AND email IS NOT NULL
+             )
+             AND EXISTS (
+               SELECT 1
+               FROM user_registration_reviews
+               WHERE user_id = ?2
+                 AND registration_status = 'PENDING_REVIEW'
+                 AND reviewed_by IS NULL
+                 AND reviewed_at IS NULL
+             )
+             AND EXISTS (
+               SELECT 1
+               FROM user_auth_identities
+               WHERE user_id = ?2
+                 AND identity_type = 'EMAIL'
+                 AND verification_status = 'VERIFIED'
+                 AND verified_at IS NOT NULL
+                 AND expires_at IS NULL
+             )
+             AND NOT EXISTS (
+               SELECT 1
+               FROM user_credentials
+               WHERE user_id = ?2
+                 AND credential_type = 'PASSWORD'
+                 AND revoked_at IS NULL
+             )
+             THEN ?5
+             ELSE NULL
+           END,
            ?4,
-           ?4
-         WHERE EXISTS (
-           SELECT 1
-           FROM user_activation_tokens
-           WHERE activation_token_id = ?5
-             AND user_id = ?2
-             AND consumed_at = ?4
-             AND invalidated_at IS NULL
-         )
-         AND EXISTS (
-           SELECT 1
-           FROM users
-           WHERE user_id = ?2
-             AND account_status = 'DISABLED'
-             AND email IS NOT NULL
-         )
-         AND NOT EXISTS (
-           SELECT 1
-           FROM user_credentials
-           WHERE user_id = ?2
-             AND credential_type = 'PASSWORD'
-             AND revoked_at IS NULL
-         )`
+           ?4`
       ).bind(
         credentialId,
-        activation.userId,
-        passwordHash,
+        setup.userId,
+        setup.activationTokenId,
         now,
-        activation.activationTokenId
+        passwordHash
       ),
 
-      // 3. Activate the account only after the credential exists.
-      db.prepare(
-        `UPDATE users
-         SET
-           account_status = 'ACTIVE',
-           updated_at = ?1
-         WHERE user_id = ?2
-           AND account_status = 'DISABLED'
-           AND EXISTS (
-             SELECT 1
-             FROM user_credentials
-             WHERE user_id = ?2
-               AND credential_id = ?3
-               AND credential_type = 'PASSWORD'
-               AND revoked_at IS NULL
-           )
-           AND EXISTS (
-             SELECT 1
-             FROM user_activation_tokens
-             WHERE activation_token_id = ?4
-               AND user_id = ?2
-               AND consumed_at = ?1
-               AND invalidated_at IS NULL
-           )
-           AND EXISTS (
-             SELECT 1
-             FROM user_auth_identities
-             WHERE user_id = ?2
-               AND identity_type = 'NATIONAL_ID'
-               AND verification_status = 'VERIFIED'
-           )
-           AND EXISTS (
-             SELECT 1
-             FROM user_auth_identities
-             WHERE user_id = ?2
-               AND identity_type = 'EMAIL'
-               AND verification_status = 'VERIFIED'
-           )
-           AND EXISTS (
-             SELECT 1
-             FROM user_auth_identities
-             WHERE user_id = ?2
-               AND identity_type = 'WHATSAPP'
-               AND verification_status = 'VERIFIED'
-           )`
-      ).bind(
-        now,
-        activation.userId,
-        credentialId,
-        activation.activationTokenId
-      ),
-
-      // 4. Record account activation in the authentication audit log.
+      // 3. Record password setup.
+      // The event is inserted only if the credential exists.
       db.prepare(
         `INSERT INTO auth_events (
            event_id,
@@ -223,30 +189,31 @@ export async function setInitialPassword({
            ?1,
            ?2,
            NULL,
-           'ACCOUNT_ACTIVATED',
+           'PASSWORD_SETUP',
            'SUCCESS',
            ?3,
            ?4
          WHERE EXISTS (
-           SELECT 1
-           FROM users
-           WHERE user_id = ?2
-             AND account_status = 'ACTIVE'
-         )
-         AND EXISTS (
            SELECT 1
            FROM user_credentials
            WHERE credential_id = ?5
              AND user_id = ?2
              AND credential_type = 'PASSWORD'
              AND revoked_at IS NULL
+         )
+         AND EXISTS (
+           SELECT 1
+           FROM user_registration_reviews
+           WHERE user_id = ?2
+             AND registration_status = 'PENDING_REVIEW'
          )`
       ).bind(
         eventId,
-        activation.userId,
+        setup.userId,
         JSON.stringify({
-          activationMethod: "EMAIL_TOKEN",
-          credentialType: "PASSWORD"
+          setupMethod: "EMAIL_VERIFICATION",
+          credentialType: "PASSWORD",
+          accountActivated: false
         }),
         now,
         credentialId
@@ -255,17 +222,15 @@ export async function setInitialPassword({
 
     const tokenChanges = results?.[0]?.meta?.changes ?? 0;
     const credentialChanges = results?.[1]?.meta?.changes ?? 0;
-    const accountChanges = results?.[2]?.meta?.changes ?? 0;
-    const auditChanges = results?.[3]?.meta?.changes ?? 0;
+    const eventChanges = results?.[2]?.meta?.changes ?? 0;
 
     if (
       tokenChanges !== 1 ||
       credentialChanges !== 1 ||
-      accountChanges !== 1 ||
-      auditChanges !== 1
+      eventChanges !== 1
     ) {
       throw httpError(
-        "Account activation could not be completed.",
+        "Password setup could not be completed.",
         409
       );
     }
@@ -276,7 +241,7 @@ export async function setInitialPassword({
 
     if (isUniqueConstraintError(error)) {
       throw httpError(
-        "Activation token is invalid, expired or already used.",
+        "Password setup token is invalid, expired or already used.",
         409
       );
     }
@@ -285,10 +250,12 @@ export async function setInitialPassword({
   }
 
   return {
-    activated: true,
-    userId: activation.userId,
+    passwordSet: true,
+    userId: setup.userId,
     credentialId,
-    accountStatus: "ACTIVE",
-    credentialType: "PASSWORD"
+    credentialType: "PASSWORD",
+    accountStatus: "DISABLED",
+    registrationStatus: "PENDING_REVIEW",
+    nextStep: "LOGIN_LIMITED_ACCESS"
   };
 }
