@@ -4,16 +4,10 @@ import {
 } from "./crypto.js";
 
 import {
-  hashPassword,
   verifyPassword,
   isAcceptablePasswordHash,
   PASSWORD_POLICY
 } from "./password.js";
-
-const LOGIN_IDENTITY_TYPES = new Set([
-  "NATIONAL_ID",
-  "PASSPORT"
-]);
 
 const encoder = new TextEncoder();
 
@@ -25,44 +19,24 @@ function httpError(message, status) {
   return error;
 }
 
-function normalizeLoginIdentity({
-  identityType,
-  identityValue,
-  countryCode
-}) {
-  if (!LOGIN_IDENTITY_TYPES.has(identityType)) {
-    throw httpError(
-      "Unsupported login identity type.",
-      400
-    );
+function normalizeEmail(email) {
+  if (
+    typeof email !== "string" ||
+    !email.trim() ||
+    email.trim().length > 254
+  ) {
+    throw httpError("A valid email address is required.", 400);
   }
+
+  const normalized = email.trim().toLowerCase();
 
   if (
-    typeof identityValue !== "string" ||
-    !identityValue.trim() ||
-    identityValue.trim().length > 100
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
   ) {
-    throw httpError(
-      "A valid identity value is required.",
-      400
-    );
+    throw httpError("A valid email address is required.", 400);
   }
 
-  if (
-    typeof countryCode !== "string" ||
-    !/^[A-Za-z]{2}$/.test(countryCode.trim())
-  ) {
-    throw httpError(
-      "A valid two-letter issuing country code is required.",
-      400
-    );
-  }
-
-  return {
-    identityType,
-    identityValue: identityValue.trim().toUpperCase(),
-    countryCode: countryCode.trim().toUpperCase()
-  };
+  return normalized;
 }
 
 function requireLoginSecrets(env) {
@@ -77,7 +51,6 @@ function getRequestMetadata(request) {
   return {
     ipAddress:
       request?.headers?.get("CF-Connecting-IP") || null,
-
     userAgent:
       request?.headers?.get("User-Agent") || null
   };
@@ -85,6 +58,8 @@ function getRequestMetadata(request) {
 
 async function getDummyPasswordHash() {
   if (!dummyPasswordHashPromise) {
+    const { hashPassword } = await import("./password.js");
+
     dummyPasswordHashPromise = hashPassword(
       "JuhudManager-Invalid-Login-Check-2026"
     );
@@ -93,31 +68,16 @@ async function getDummyPasswordHash() {
   return dummyPasswordHashPromise;
 }
 
-/**
- * Perform a dummy Argon2id verification when no usable
- * account credential is available.
- *
- * This reduces the timing difference between an unknown
- * identity and an existing account with an invalid password.
- */
 async function performDummyVerification(password) {
   const dummyHash = await getDummyPasswordHash();
-
   await verifyPassword(password, dummyHash);
 }
 
-/**
- * Record a password login attempt.
- *
- * No identity value, password or password hash is stored
- * in the event details.
- */
 async function recordPasswordLoginEvent({
   db,
   userId,
   eventStatus,
-  request,
-  identityType
+  request
 }) {
   const metadata = getRequestMetadata(request);
 
@@ -130,10 +90,11 @@ async function recordPasswordLoginEvent({
        event_status,
        ip_address,
        user_agent,
-       event_details
+       event_details,
+       created_at
      )
      VALUES (
-       ?1, ?2, NULL, 'PASSWORD_LOGIN', ?3, ?4, ?5, ?6
+       ?1, ?2, NULL, 'PASSWORD_LOGIN', ?3, ?4, ?5, ?6, ?7
      )`
   ).bind(
     crypto.randomUUID(),
@@ -142,98 +103,92 @@ async function recordPasswordLoginEvent({
     metadata.ipAddress,
     metadata.userAgent,
     JSON.stringify({
-      identityType
-    })
+      loginMethod: "EMAIL_PASSWORD"
+    }),
+    new Date().toISOString()
   ).run();
 }
 
 /**
- * Authenticate a user using a verified National ID or
- * Passport and their password.
+ * Authenticate with verified email and password.
  *
- * Requirements:
- * - Identity must be VERIFIED.
- * - Identity must match its issuing country.
- * - Account must be ACTIVE.
- * - An active PASSWORD credential must exist.
+ * PENDING_REVIEW:
+ *   Allows login with limited access.
  *
- * Returns:
- * {
- *   userId
- * }
+ * APPROVED + ACTIVE:
+ *   Allows login with full access.
  *
- * Throws:
- * - 400 for invalid request input.
- * - 401 for any authentication failure.
+ * REJECTED / CANCELLED / SUSPENDED:
+ *   Login denied.
  *
  * This function does not create a session.
- * The route must create a session only after this function
- * succeeds.
  */
 export async function authenticatePasswordLogin({
   db,
   env,
-  identityType,
-  identityValue,
-  countryCode,
+  email,
   password,
   request
 }) {
-  const identity = normalizeLoginIdentity({
-    identityType,
-    identityValue,
-    countryCode
-  });
+  const normalizedEmail = normalizeEmail(email);
 
   if (
     typeof password !== "string" ||
     encoder.encode(password).length >
       PASSWORD_POLICY.maximumUtf8Bytes
   ) {
-    throw httpError(
-      "Invalid login credentials.",
-      401
-    );
+    throw httpError("Invalid login credentials.", 401);
   }
 
   requireLoginSecrets(env);
 
-  const identityScope = identity.countryCode;
-
-  const identityHash = await hashValue(
+  const emailHash = await hashValue(
     env.HMAC_SECRET,
-    `${identity.identityType}:${identityScope}:${identity.identityValue}`
+    `EMAIL:GLOBAL:${normalizedEmail}`
   );
 
   const account = await db.prepare(
     `SELECT
        u.user_id,
        u.account_status,
+       r.registration_status,
        c.password_hash
      FROM user_auth_identities i
      INNER JOIN users u
        ON u.user_id = i.user_id
+     INNER JOIN user_registration_reviews r
+       ON r.user_id = u.user_id
      LEFT JOIN user_credentials c
        ON c.user_id = u.user_id
        AND c.credential_type = 'PASSWORD'
        AND c.revoked_at IS NULL
-     WHERE i.identity_type = ?1
-       AND i.identity_scope = ?2
-       AND i.country_code = ?2
-       AND i.identity_hash = ?3
+     WHERE i.identity_type = 'EMAIL'
+       AND i.identity_scope = 'GLOBAL'
+       AND i.identity_hash = ?1
        AND i.verification_status = 'VERIFIED'
+       AND i.verified_at IS NOT NULL
+       AND i.expires_at IS NULL
      LIMIT 1`
-  ).bind(
-    identity.identityType,
-    identityScope,
-    identityHash
-  ).first();
+  ).bind(emailHash).first();
+
+  const loginAllowed = Boolean(
+    account &&
+    (
+      (
+        account.registration_status === "PENDING_REVIEW" &&
+        account.account_status === "DISABLED"
+      ) ||
+      (
+        account.registration_status === "APPROVED" &&
+        account.account_status === "ACTIVE"
+      )
+    )
+  );
 
   let authenticated = false;
 
   if (
-    account &&
-    account.account_status === "ACTIVE" &&
+    loginAllowed &&
     isAcceptablePasswordHash(account.password_hash)
   ) {
     authenticated = await verifyPassword(
@@ -249,25 +204,26 @@ export async function authenticatePasswordLogin({
       db,
       userId: account?.user_id || null,
       eventStatus: "FAILED",
-      request,
-      identityType: identity.identityType
+      request
     });
 
-    throw httpError(
-      "Invalid login credentials.",
-      401
-    );
+    throw httpError("Invalid login credentials.", 401);
   }
 
   await recordPasswordLoginEvent({
     db,
     userId: account.user_id,
     eventStatus: "SUCCESS",
-    request,
-    identityType: identity.identityType
+    request
   });
 
   return {
-    userId: account.user_id
+    userId: account.user_id,
+    registrationStatus: account.registration_status,
+    accountStatus: account.account_status,
+    accessLevel:
+      account.registration_status === "APPROVED"
+        ? "FULL"
+        : "LIMITED"
   };
 }
