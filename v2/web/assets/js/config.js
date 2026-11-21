@@ -1,7 +1,7 @@
+
 /*
- * Frontend configuration.
+ * JuhudManager V2 API configuration.
  *
- * Keep this value empty until the V2 Worker URL is confirmed.
- * Do not place API secrets, HMAC keys or encryption keys here.
+ * Never place API secrets, HMAC keys or encryption keys here.
  */
-export const API_BASE = "";
+export const API_BASE = "https://juhudmanager-v2-api.bitsuhami.workers.dev";
