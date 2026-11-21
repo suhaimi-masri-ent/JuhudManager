@@ -1,4 +1,3 @@
-
 function httpError(message, status) {
   const error = new Error(message);
   error.status = status;
@@ -15,19 +14,47 @@ const ADMIN_ROLES = [
   "SUPER_ADMIN"
 ];
 
-/**
- * Enforce the required access level for a session.
- *
- * Example:
- * requireAccessLevel(session, "FULL");
- */
-export function requireAccessLevel(session, requiredLevel) {
+function validateDatabase(db) {
+  if (!db || typeof db.prepare !== "function") {
+    throw new Error("D1 database binding is unavailable.");
+  }
+}
+
+function validateUserId(userId) {
+  if (
+    typeof userId !== "string" ||
+    !userId.trim()
+  ) {
+    throw httpError("A valid user ID is required.", 400);
+  }
+
+  return userId.trim();
+}
+
+function validateCountryId(countryId) {
+  if (
+    typeof countryId !== "string" ||
+    !/^[A-Z]{2}$/.test(countryId.trim())
+  ) {
+    throw httpError("A valid country ID is required.", 400);
+  }
+
+  return countryId.trim();
+}
+
+function requireAuthenticatedSession(session) {
   if (
     !session ||
     session.authenticated !== true
   ) {
     throw httpError("Authentication required.", 401);
   }
+
+  return true;
+}
+
+export function requireAccessLevel(session, requiredLevel) {
+  requireAuthenticatedSession(session);
 
   if (!ACCESS_LEVELS.includes(requiredLevel)) {
     throw httpError("Invalid access policy.", 500);
@@ -40,19 +67,8 @@ export function requireAccessLevel(session, requiredLevel) {
   return true;
 }
 
-/**
- * Enforce one of the allowed access levels.
- *
- * Example:
- * requireAnyAccessLevel(session, ["LIMITED", "FULL"]);
- */
 export function requireAnyAccessLevel(session, allowedLevels) {
-  if (
-    !session ||
-    session.authenticated !== true
-  ) {
-    throw httpError("Authentication required.", 401);
-  }
+  requireAuthenticatedSession(session);
 
   if (
     !Array.isArray(allowedLevels) ||
@@ -69,21 +85,10 @@ export function requireAnyAccessLevel(session, allowedLevels) {
   return true;
 }
 
-/**
- * Retrieve roles assigned to a user from the database.
- * Never trust role information supplied by the client.
- */
 export async function getUserRoleCodes({ db, userId }) {
-  if (!db || typeof db.prepare !== "function") {
-    throw new Error("D1 database binding is unavailable.");
-  }
+  validateDatabase(db);
 
-  if (
-    typeof userId !== "string" ||
-    !userId.trim()
-  ) {
-    throw httpError("A valid user ID is required.", 400);
-  }
+  const normalizedUserId = validateUserId(userId);
 
   const result = await db.prepare(
     `SELECT r.role_code
@@ -92,33 +97,22 @@ export async function getUserRoleCodes({ db, userId }) {
        ON r.role_id = ur.role_id
      WHERE ur.user_id = ?1
      ORDER BY r.role_code`
-  ).bind(userId.trim()).all();
+  ).bind(normalizedUserId).all();
 
   return (result?.results ?? [])
     .map(row => row.role_code)
     .filter(code => typeof code === "string");
 }
 
-/**
- * Require ADMIN or SUPER_ADMIN role.
- *
- * Role assignment is always checked against D1.
- */
 export async function requireAdminRole({ db, session }) {
-  if (
-    !session ||
-    session.authenticated !== true
-  ) {
-    throw httpError("Authentication required.", 401);
-  }
-
+  requireAuthenticatedSession(session);
   requireAccessLevel(session, "FULL");
 
   const roleCodes = await getUserRoleCodes({
     db,
     userId: session.userId
   });
-  
+
   const adminRole = roleCodes.find(
     code => ADMIN_ROLES.includes(code)
   );
@@ -130,5 +124,115 @@ export async function requireAdminRole({ db, session }) {
   return {
     userId: session.userId,
     roleCode: adminRole
+  };
+}
+
+export async function requireSuperAdminRole({ db, session }) {
+  requireAuthenticatedSession(session);
+  requireAccessLevel(session, "FULL");
+
+  const roleCodes = await getUserRoleCodes({
+    db,
+    userId: session.userId
+  });
+
+  if (!roleCodes.includes("SUPER_ADMIN")) {
+    throw httpError("Super Admin access required.", 403);
+  }
+
+  return {
+    userId: session.userId,
+    roleCode: "SUPER_ADMIN",
+    isGlobal: true
+  };
+}
+
+export async function getUserCountryScope({ db, session }) {
+  requireAuthenticatedSession(session);
+  requireAccessLevel(session, "FULL");
+  validateDatabase(db);
+
+  const roleCodes = await getUserRoleCodes({
+    db,
+    userId: session.userId
+  });
+
+  if (roleCodes.includes("SUPER_ADMIN")) {
+    return {
+      userId: session.userId,
+      roleCode: "SUPER_ADMIN",
+      isGlobal: true,
+      countryIds: null
+    };
+  }
+
+  if (!roleCodes.includes("ADMIN")) {
+    throw httpError("Administrator access required.", 403);
+  }
+
+  const result = await db.prepare(
+    `SELECT
+       uca.country_id
+     FROM user_country_assignments uca
+     INNER JOIN countries c
+       ON c.country_id = uca.country_id
+     WHERE uca.user_id = ?1
+       AND uca.assignment_role_code = 'ADMIN'
+       AND uca.assignment_status = 'ACTIVE'
+       AND c.country_status = 'ACTIVE'
+     ORDER BY uca.country_id`
+  ).bind(session.userId).all();
+
+  return {
+    userId: session.userId,
+    roleCode: "ADMIN",
+    isGlobal: false,
+    countryIds: (result?.results ?? [])
+      .map(row => row.country_id)
+  };
+}
+
+export async function requireCountryAccess({
+  db,
+  session,
+  countryId
+}) {
+  const normalizedCountryId = validateCountryId(countryId);
+
+  const scope = await getUserCountryScope({
+    db,
+    session
+  });
+
+  const country = await db.prepare(
+    `SELECT country_id
+     FROM countries
+     WHERE country_id = ?1
+       AND country_status = 'ACTIVE'
+     LIMIT 1`
+  ).bind(normalizedCountryId).first();
+
+  if (!country) {
+    throw httpError("Country not found or inactive.", 404);
+  }
+
+  if (scope.isGlobal) {
+    return {
+      userId: scope.userId,
+      roleCode: scope.roleCode,
+      countryId: normalizedCountryId,
+      isGlobal: true
+    };
+  }
+
+  if (!scope.countryIds.includes(normalizedCountryId)) {
+    throw httpError("Access to this country is not permitted.", 403);
+  }
+
+  return {
+    userId: scope.userId,
+    roleCode: scope.roleCode,
+    countryId: normalizedCountryId,
+    isGlobal: false
   };
 }
