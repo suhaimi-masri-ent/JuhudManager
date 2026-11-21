@@ -1,3 +1,4 @@
+
 import {
   apiRequest,
   showNotice,
@@ -50,6 +51,15 @@ function startOtpResendCountdown(seconds = 60) {
   }
 }
 
+function showOtpView() {
+  state.registrationStep = "OTP";
+
+  $("registrationFormView").classList.add("hidden");
+  $("otpView").classList.remove("hidden");
+  $("otpDestination").textContent = state.email;
+  $("dot2").classList.add("active");
+}
+
 async function resendRegistrationOtp() {
   const button = $("resendOtpButton");
 
@@ -83,7 +93,10 @@ async function resendRegistrationOtp() {
   }
 }
 
-$("resendOtpButton").addEventListener("click", resendRegistrationOtp);
+$("resendOtpButton").addEventListener(
+  "click",
+  resendRegistrationOtp
+);
 
 async function sendPasswordSetupEmail() {
   const button = $("requestSetupEmailButton");
@@ -165,29 +178,46 @@ $("registrationForm").addEventListener("submit", async event => {
       );
     }
 
-    const otpResult = await apiRequest(
-      "/auth/otp/request",
-      {
-        userId: state.userId,
-        identityId: state.emailIdentityId,
-        destinationType: "EMAIL",
-        destination: state.email
-      }
-    );
+    /*
+     * The registration draft now exists.
+     * Move to OTP view before requesting the first OTP.
+     * If OTP delivery/request fails, the user can retry
+     * without creating another registration draft.
+     */
+    showOtpView();
 
-    state.registrationStep = "OTP";
+    try {
+      const otpResult = await apiRequest(
+        "/auth/otp/request",
+        {
+          userId: state.userId,
+          identityId: state.emailIdentityId,
+          destinationType: "EMAIL",
+          destination: state.email
+        }
+      );
 
-    $("registrationFormView").classList.add("hidden");
-    $("otpView").classList.remove("hidden");
-    $("otpDestination").textContent = state.email;
-    $("dot2").classList.add("active");
+      startOtpResendCountdown(
+        otpResult.resendAfterSeconds || 60
+      );
 
-    startOtpResendCountdown(otpResult.resendAfterSeconds || 60);
+      showNotice(
+        "Verification code requested. Please check your email.",
+        "success"
+      );
+    } catch (otpError) {
+      const resendButton = $("resendOtpButton");
 
-    showNotice(
-      "Verification code requested. Please check your email.",
-      "success"
-    );
+      resendButton.disabled = false;
+      resendButton.textContent = "Resend verification code";
+
+      showNotice(
+        "Your registration has been saved, but the verification code " +
+        "could not be requested. Use Resend verification code to try again. " +
+        otpError.message,
+        "error"
+      );
+    }
   } catch (error) {
     showNotice(error.message, "error");
   } finally {
