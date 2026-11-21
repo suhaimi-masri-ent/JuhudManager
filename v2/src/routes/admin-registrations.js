@@ -1,4 +1,4 @@
- 
+
 import { json } from "../lib/http.js";
 
 import {
@@ -114,7 +114,10 @@ async function readJson(request) {
 
   const raw = await request.text();
 
-  if (raw.length > MAX_BODY_BYTES) {
+  // Measure actual UTF-8 byte size, not JS character count.
+  const actualBytes = new TextEncoder().encode(raw).byteLength;
+
+  if (actualBytes > MAX_BODY_BYTES) {
     throw httpError("Request body is too large.", 413);
   }
 
@@ -256,10 +259,13 @@ async function getRegistrationDetails({ db, env, userId }) {
   const identities = [];
 
   for (const item of identityResult?.results ?? []) {
-    const value = await decryptValue(
-      env.ENCRYPTION_KEY,
-      item.encrypted_value
-    );
+    // Never decrypt or expose values belonging to revoked identities.
+    const value = item.identity_status === "REVOKED"
+      ? null
+      : await decryptValue(
+          env.ENCRYPTION_KEY,
+          item.encrypted_value
+        );
 
     identities.push({
       detailId: item.detail_id,
