@@ -8,7 +8,8 @@ import {
 } from "../auth/otp.js";
 
 import {
-  createRegistrationDraft
+  createRegistrationDraft,
+  resumeRegistrationDraft
 } from "../auth/registrations.js";
 
 import {
@@ -27,6 +28,11 @@ const RATE_LIMITS = {
     scope: "REGISTER",
     limit: 10,
     windowSeconds: 3600
+  },
+  REGISTER_RESUME: {
+    scope: "REGISTER_RESUME",
+    limit: 5,
+    windowSeconds: 900
   },
   OTP_REQUEST: {
     scope: "OTP_REQUEST",
@@ -183,6 +189,22 @@ function validRegistrationIdentity(body) {
   );
 }
 
+function validResumeRegistration(body) {
+  return Boolean(
+    body &&
+    typeof body.fullName === "string" &&
+    body.fullName.trim() &&
+    typeof body.countryCode === "string" &&
+    /^[A-Za-z]{2}$/.test(body.countryCode.trim()) &&
+    typeof body.nationalId === "string" &&
+    body.nationalId.trim() &&
+    typeof body.email === "string" &&
+    body.email.trim() &&
+    typeof body.whatsapp === "string" &&
+    body.whatsapp.trim()
+  );
+}
+
 export async function handleAuthRequest(request, env, url) {
   if (
     url.pathname === "/auth/register/start" &&
@@ -222,6 +244,52 @@ export async function handleAuthRequest(request, env, url) {
       return json({ ok: true, ...result }, 201);
     } catch (error) {
       return errorResponse(error, "REGISTER_CREATE_DRAFT");
+    }
+  }
+
+  // Resume an incomplete registration.
+  // All submitted details must match the original draft.
+  if (
+    url.pathname === "/auth/register/resume" &&
+    request.method === "POST"
+  ) {
+    const limited = await checkRateLimit(
+      request, env, RATE_LIMITS.REGISTER_RESUME
+    );
+
+    if (limited) return limited;
+
+    let body;
+
+    try {
+      body = await readJson(request);
+    } catch (error) {
+      return errorResponse(error, "REGISTER_RESUME_READ_BODY");
+    }
+
+    if (!validResumeRegistration(body)) {
+      return json({
+        error: "All registration details are required."
+      }, 400);
+    }
+
+    try {
+      const result = await resumeRegistrationDraft({
+        db: env.DB,
+        env,
+        fullName: body.fullName,
+        countryCode: body.countryCode,
+        nationalId: body.nationalId,
+        email: body.email,
+        whatsapp: body.whatsapp
+      });
+
+      return json({
+        ok: true,
+        ...result
+      }, 200);
+    } catch (error) {
+      return errorResponse(error, "REGISTER_RESUME_PROCESS");
     }
   }
 
