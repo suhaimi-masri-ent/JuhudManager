@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#174b38">
   <title>JuhudManager V2</title>
+
   <style>
     :root {
       --forest: #174b38;
@@ -31,7 +32,7 @@
         "Segoe UI", sans-serif;
     }
 
-    button, input, select { font: inherit; }
+    button, input { font: inherit; }
 
     .page {
       min-height: 100vh;
@@ -149,7 +150,7 @@
       margin-bottom: 8px;
     }
 
-    input, select {
+    input {
       width: 100%;
       padding: 13px 14px;
       border: 1px solid var(--border);
@@ -160,7 +161,7 @@
       min-height: 47px;
     }
 
-    input:focus, select:focus {
+    input:focus {
       border-color: var(--emerald);
       box-shadow: 0 0 0 3px #21845b18;
     }
@@ -198,7 +199,11 @@
     }
 
     .primary:hover { background: #205c43; }
-    .primary:disabled { opacity: .55; cursor: wait; }
+
+    .primary:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
 
     .secondary {
       background: white;
@@ -262,11 +267,13 @@
     @media (max-width: 760px) {
       .page { display: block; }
       .hero { display: none; }
+
       .main {
         min-height: 100vh;
         align-items: flex-start;
         padding: 28px 21px;
       }
+
       .mobile-brand {
         display: flex;
         align-items: center;
@@ -275,15 +282,19 @@
         font-weight: 750;
         color: var(--forest);
       }
+
       .mobile-brand .brand-icon {
         background: var(--mint);
       }
+
       h2 { font-size: 25px; }
     }
   </style>
 </head>
+
 <body>
   <div class="page">
+
     <aside class="hero">
       <div class="brand">
         <div class="brand-icon">✦</div>
@@ -305,6 +316,7 @@
 
     <main class="main">
       <div class="auth-card">
+
         <div class="mobile-brand">
           <div class="brand-icon">✦</div>
           <span>JuhudManager</span>
@@ -360,12 +372,14 @@
 
         <!-- REGISTRATION -->
         <section id="registerView" class="hidden">
+
           <div class="step-indicator">
             <div class="step-dot active" id="dot1"></div>
             <div class="step-dot" id="dot2"></div>
             <div class="step-dot" id="dot3"></div>
           </div>
 
+          <!-- REGISTRATION FORM -->
           <div id="registrationFormView">
             <h2>Create an account</h2>
             <p class="subtitle">
@@ -373,6 +387,7 @@
             </p>
 
             <form id="registrationForm">
+
               <div class="field">
                 <label for="fullName">Full name</label>
                 <input id="fullName" maxlength="150"
@@ -382,18 +397,23 @@
 
               <div class="field">
                 <label for="countryCode">
-                  National ID issuing country
+                  National ID issuing country (ISO 2-letter code)
                 </label>
-                <select id="countryCode" required>
-                  <option value="">Select country</option>
-                  <option value="MY">Malaysia</option>
-                  <option value="JP">Japan</option>
-                  <option value="SG">Singapore</option>
-                  <option value="ID">Indonesia</option>
-                  <option value="BN">Brunei</option>
-                  <option value="TH">Thailand</option>
-                  <option value="OTHER">Other</option>
-                </select>
+                <input
+                  id="countryCode"
+                  type="text"
+                  maxlength="2"
+                  minlength="2"
+                  pattern="[A-Za-z]{2}"
+                  autocapitalize="characters"
+                  autocomplete="country"
+                  required
+                  placeholder="MY"
+                >
+                <p class="small-note">
+                  Enter the two-letter country code,
+                  e.g. MY, JP, SG or ID.
+                </p>
               </div>
 
               <div class="field">
@@ -430,9 +450,10 @@
             </p>
           </div>
 
-          <!-- OTP -->
+          <!-- OTP VERIFICATION -->
           <div id="otpView" class="hidden">
             <h2>Verify your email</h2>
+
             <p class="subtitle">
               Enter the six-digit verification code sent to
               <strong id="otpDestination"></strong>.
@@ -453,31 +474,55 @@
               </button>
             </form>
 
-            <p class="small-note">
+            <button
+              class="primary secondary"
+              id="resendOtpButton"
+              type="button"
+              disabled
+            >
+              Resend code (60s)
+            </button>
+
+            <p class="small-note" id="otpResendNote">
               The code expires after five minutes.
-              A resend cooldown applies.
             </p>
           </div>
 
-          <!-- COMPLETED -->
+          <!-- EMAIL VERIFIED / PASSWORD SETUP -->
           <div id="completeView" class="hidden">
             <h2>Email verified</h2>
+
             <p class="subtitle">
-              Your registration has moved to the next stage.
+              Your registration has moved to Admin review.
             </p>
-            <div class="notice success show">
-              Your email has been verified successfully.
-              A password setup email will be requested next.
-            </div>
-            <button class="primary" id="backToLogin" type="button">
+
+            <p class="small-note" id="setupEmailStatus">
+              Your email is verified. Request your password setup email.
+            </p>
+
+            <button
+              class="primary"
+              id="requestSetupEmailButton"
+              type="button"
+            >
+              Send password setup email
+            </button>
+
+            <button
+              class="primary secondary"
+              id="backToLogin"
+              type="button"
+            >
               Go to Login
             </button>
           </div>
+
         </section>
 
         <div class="footer-note">
           JuhudManager V2 · Secure Access
         </div>
+
       </div>
     </main>
   </div>
@@ -485,7 +530,9 @@
   <script>
     /*
       Set this to the deployed V2 Worker URL when available.
-      Example: https://your-worker.workers.dev
+
+      Example:
+      const API_BASE = "https://your-worker.workers.dev";
 
       Do not put API secrets or private keys here.
     */
@@ -500,6 +547,12 @@
 
     const $ = (id) => document.getElementById(id);
 
+    let otpResendInterval = null;
+
+    // ----------------------------------------
+    // NOTICE AND LOADING
+    // ----------------------------------------
+
     function showNotice(message, type = "info") {
       const box = $("notice");
       box.textContent = message;
@@ -513,6 +566,7 @@
 
     function setLoading(button, loading, text) {
       button.disabled = loading;
+
       if (loading) {
         button.dataset.originalText = button.textContent;
         button.textContent = text || "Please wait...";
@@ -521,6 +575,10 @@
           button.dataset.originalText || button.textContent;
       }
     }
+
+    // ----------------------------------------
+    // API REQUEST
+    // ----------------------------------------
 
     async function apiRequest(path, body, token) {
       if (!API_BASE) {
@@ -551,7 +609,9 @@
       try {
         result = await response.json();
       } catch {
-        throw new Error("Invalid response from authentication service.");
+        throw new Error(
+          "Invalid response from authentication service."
+        );
       }
 
       if (!response.ok) {
@@ -562,6 +622,10 @@
 
       return result;
     }
+
+    // ----------------------------------------
+    // TAB SWITCHING
+    // ----------------------------------------
 
     function switchTab(tab) {
       clearNotice();
@@ -576,24 +640,37 @@
       $("registerTab").classList.toggle("active", !login);
     }
 
-    $("loginTab").addEventListener("click", () => switchTab("login"));
-    $("registerTab").addEventListener("click", () => switchTab("register"));
+    $("loginTab").addEventListener("click", () => {
+      switchTab("login");
+    });
+
+    $("registerTab").addEventListener("click", () => {
+      switchTab("register");
+    });
+
+    // ----------------------------------------
+    // PASSWORD VISIBILITY
+    // ----------------------------------------
 
     document.querySelectorAll("[data-toggle]").forEach(button => {
       button.addEventListener("click", () => {
         const input = $(button.dataset.toggle);
         const visible = input.type === "text";
+
         input.type = visible ? "password" : "text";
         button.textContent = visible ? "Show" : "Hide";
       });
     });
+
+    // ----------------------------------------
+    // LOGIN
+    // ----------------------------------------
 
     $("loginForm").addEventListener("submit", async event => {
       event.preventDefault();
       clearNotice();
 
       const button = $("loginButton");
-
       setLoading(button, true, "Signing in...");
 
       try {
@@ -603,16 +680,21 @@
             email: $("loginEmail").value.trim(),
             password: $("loginPassword").value,
             deviceName: navigator.userAgent.slice(0, 120),
-            deviceType: /Android|iPhone|Mobile/i.test(navigator.userAgent)
-              ? "MOBILE"
-              : "DESKTOP"
+            deviceType: /Android|iPhone|Mobile/i.test(
+              navigator.userAgent
+            ) ? "MOBILE" : "DESKTOP"
           }
         );
 
+        if (!result.accessToken) {
+          throw new Error(
+            "Login response did not contain an access token."
+          );
+        }
+
         /*
-          The session token is retained in sessionStorage.
-          This is temporary frontend integration scaffolding.
-          A production token-storage review is required.
+          Temporary frontend integration scaffolding.
+          Production token-storage review is still required.
         */
         sessionStorage.setItem(
           "jm_access_token",
@@ -637,9 +719,10 @@
         );
 
         /*
-          Dashboard routing will be implemented in the
-          next frontend phase.
+          Dashboard routing will be implemented
+          in the next frontend phase.
         */
+
       } catch (error) {
         showNotice(error.message, "error");
       } finally {
@@ -647,46 +730,58 @@
       }
     });
 
-    $("registrationForm").addEventListener("submit", async event => {
-      event.preventDefault();
+    // ----------------------------------------
+    // OTP RESEND COUNTDOWN
+    // ----------------------------------------
+
+    function startOtpResendCountdown(seconds = 60) {
+      if (otpResendInterval) {
+        clearInterval(otpResendInterval);
+        otpResendInterval = null;
+      }
+
+      const button = $("resendOtpButton");
+      let remaining = Math.max(0, Number(seconds) || 60);
+
+      function update() {
+        button.disabled = remaining > 0;
+
+        button.textContent = remaining > 0
+          ? `Resend code (${remaining}s)`
+          : "Resend verification code";
+
+        if (remaining <= 0 && otpResendInterval) {
+          clearInterval(otpResendInterval);
+          otpResendInterval = null;
+        }
+      }
+
+      update();
+
+      if (remaining > 0) {
+        otpResendInterval = setInterval(() => {
+          remaining -= 1;
+          update();
+        }, 1000);
+      }
+    }
+
+    // ----------------------------------------
+    // OTP RESEND REQUEST
+    // ----------------------------------------
+
+    async function resendRegistrationOtp() {
+      const button = $("resendOtpButton");
+
+      if (button.disabled) return;
+
       clearNotice();
 
-      const button = $("registerButton");
-      setLoading(button, true, "Submitting...");
+      button.disabled = true;
+      button.textContent = "Sending...";
 
       try {
-        const country = $("countryCode").value;
-
-        if (country === "OTHER") {
-          throw new Error(
-            "Please contact the administrator to confirm your issuing country code."
-          );
-        }
-
-        const email = $("registerEmail").value.trim();
-
         const result = await apiRequest(
-          "/auth/register/start",
-          {
-            fullName: $("fullName").value.trim(),
-            countryCode: country,
-            nationalId: $("nationalId").value.trim(),
-            email,
-            whatsapp: $("whatsapp").value.trim()
-          }
-        );
-
-        state.userId = result.userId;
-        state.emailIdentityId = result.identities?.email?.identityId;
-        state.email = email;
-
-        if (!state.userId || !state.emailIdentityId) {
-          throw new Error(
-            "Registration response is incomplete. Please contact support."
-          );
-        }
-
-        const otpResult = await apiRequest(
           "/auth/otp/request",
           {
             userId: state.userId,
@@ -696,24 +791,165 @@
           }
         );
 
-        state.registrationStep = "OTP";
-
-        $("registrationFormView").classList.add("hidden");
-        $("otpView").classList.remove("hidden");
-        $("otpDestination").textContent = state.email;
-
-        $("dot2").classList.add("active");
+        startOtpResendCountdown(
+          result.resendAfterSeconds || 60
+        );
 
         showNotice(
-          `Verification code requested. Please check your email. Resend is available after ${otpResult.resendAfterSeconds || 60} seconds.`,
+          "A new verification code has been requested. Please check your email.",
           "success"
         );
+
       } catch (error) {
+        button.disabled = false;
+        button.textContent = "Resend verification code";
         showNotice(error.message, "error");
-      } finally {
-        setLoading(button, false);
       }
-    });
+    }
+
+    $("resendOtpButton").addEventListener(
+      "click",
+      resendRegistrationOtp
+    );
+
+    // ----------------------------------------
+    // REGISTRATION START
+    // ----------------------------------------
+
+    $("registrationForm").addEventListener(
+      "submit",
+      async event => {
+        event.preventDefault();
+        clearNotice();
+
+        const button = $("registerButton");
+
+        setLoading(button, true, "Submitting...");
+
+        try {
+          const country = $("countryCode")
+            .value.trim().toUpperCase();
+
+          if (!/^[A-Z]{2}$/.test(country)) {
+            throw new Error(
+              "Enter a valid two-letter issuing country code."
+            );
+          }
+
+          const email = $("registerEmail").value.trim();
+
+          const result = await apiRequest(
+            "/auth/register/start",
+            {
+              fullName: $("fullName").value.trim(),
+              countryCode: country,
+              nationalId: $("nationalId").value.trim(),
+              email,
+              whatsapp: $("whatsapp").value.trim()
+            }
+          );
+
+          state.userId = result.userId;
+
+          state.emailIdentityId =
+            result.identities?.email?.identityId;
+
+          state.email = email;
+
+          if (!state.userId || !state.emailIdentityId) {
+            throw new Error(
+              "Registration response is incomplete. Please contact support."
+            );
+          }
+
+          const otpResult = await apiRequest(
+            "/auth/otp/request",
+            {
+              userId: state.userId,
+              identityId: state.emailIdentityId,
+              destinationType: "EMAIL",
+              destination: state.email
+            }
+          );
+
+          state.registrationStep = "OTP";
+
+          $("registrationFormView").classList.add("hidden");
+          $("otpView").classList.remove("hidden");
+          $("otpDestination").textContent = state.email;
+
+          $("dot2").classList.add("active");
+
+          startOtpResendCountdown(
+            otpResult.resendAfterSeconds || 60
+          );
+
+          showNotice(
+            "Verification code requested. Please check your email.",
+            "success"
+          );
+
+        } catch (error) {
+          showNotice(error.message, "error");
+        } finally {
+          setLoading(button, false);
+        }
+      }
+    );
+
+    // ----------------------------------------
+    // PASSWORD SETUP EMAIL REQUEST
+    // ----------------------------------------
+
+    async function sendPasswordSetupEmail() {
+      const button = $("requestSetupEmailButton");
+      const status = $("setupEmailStatus");
+
+      button.disabled = true;
+      button.textContent = "Requesting email...";
+
+      try {
+        await apiRequest(
+          "/auth/activation/request",
+          {
+            userId: state.userId
+          }
+        );
+
+        status.textContent =
+          "Password setup email request accepted. " +
+          "If your account is eligible, an email will be sent. " +
+          "Please check your inbox and spam folder.";
+
+        button.textContent = "Resend password setup email";
+
+        showNotice(
+          "Password setup email request accepted.",
+          "success"
+        );
+
+      } catch (error) {
+        status.textContent =
+          "Your email is verified, but the password setup email " +
+          "request could not be completed. You can try again.";
+
+        button.textContent = "Try again";
+
+        showNotice(error.message, "error");
+
+      } finally {
+        button.disabled = false;
+      }
+    }
+
+    $("requestSetupEmailButton").addEventListener(
+      "click",
+      sendPasswordSetupEmail
+    );
+
+    // ----------------------------------------
+    // OTP VERIFICATION
+    // ----------------------------------------
 
     $("otpForm").addEventListener("submit", async event => {
       event.preventDefault();
@@ -723,7 +959,10 @@
       const otp = $("otpCode").value.trim();
 
       if (!/^\d{6}$/.test(otp)) {
-        showNotice("Enter a valid six-digit code.", "error");
+        showNotice(
+          "Enter a valid six-digit code.",
+          "error"
+        );
         return;
       }
 
@@ -742,38 +981,61 @@
         );
 
         if (!result.verified) {
-          throw new Error("Email verification was not completed.");
+          throw new Error(
+            "Email verification was not completed."
+          );
         }
 
         /*
-          Ask the backend to send the password setup email.
-          The actual setup page will be implemented separately.
+          OTP is now verified and consumed.
+          Do not require OTP verification again if
+          the password setup email request fails.
         */
-        await apiRequest(
-          "/auth/activation/request",
-          { userId: state.userId }
-        );
 
         state.registrationStep = "COMPLETE";
+
+        if (otpResendInterval) {
+          clearInterval(otpResendInterval);
+          otpResendInterval = null;
+        }
 
         $("otpView").classList.add("hidden");
         $("completeView").classList.remove("hidden");
         $("dot3").classList.add("active");
 
         showNotice(
-          "Email verified. Please check your inbox for the password setup link.",
+          "Email verified successfully.",
           "success"
         );
+
+        /*
+          This function handles its own error.
+          A failed email request does not undo OTP verification.
+        */
+        await sendPasswordSetupEmail();
+
       } catch (error) {
         showNotice(error.message, "error");
+
       } finally {
         setLoading(button, false);
       }
     });
 
+    // ----------------------------------------
+    // BACK TO LOGIN
+    // ----------------------------------------
+
     $("backToLogin").addEventListener("click", () => {
+
+      if (otpResendInterval) {
+        clearInterval(otpResendInterval);
+        otpResendInterval = null;
+      }
+
       $("completeView").classList.add("hidden");
       $("otpView").classList.add("hidden");
+
       $("registrationFormView").classList.remove("hidden");
 
       $("registrationForm").reset();
@@ -787,8 +1049,22 @@
       $("dot2").classList.remove("active");
       $("dot3").classList.remove("active");
 
+      $("resendOtpButton").disabled = true;
+      $("resendOtpButton").textContent = "Resend code (60s)";
+
+      $("setupEmailStatus").textContent =
+        "Your email is verified. Request your password setup email.";
+
+      $("requestSetupEmailButton").disabled = false;
+      $("requestSetupEmailButton").textContent =
+        "Send password setup email";
+
       switchTab("login");
     });
+
+    // ----------------------------------------
+    // FORGOT PASSWORD
+    // ----------------------------------------
 
     $("forgotPassword").addEventListener("click", () => {
       showNotice(
@@ -796,6 +1072,7 @@
         "info"
       );
     });
+
   </script>
 </body>
 </html>
