@@ -207,9 +207,12 @@ export async function createSession({
        )
        SELECT
          ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, ?9
-       WHERE EXISTS (
-         ${SESSION_ELIGIBILITY_SQL}
-       )`
+      WHERE EXISTS (
+        ${SESSION_ELIGIBILITY_SQL.replace(
+          "u.user_id = ?1",
+          "u.user_id = ?10"
+        )}
+      )`
     ).bind(
       sessionId,
       normalizedUserId,
