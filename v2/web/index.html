@@ -1,0 +1,801 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174b38">
+  <title>JuhudManager V2</title>
+  <style>
+    :root {
+      --forest: #174b38;
+      --emerald: #21845b;
+      --mint: #e8f4ed;
+      --bg: #f5f8f5;
+      --text: #20342a;
+      --muted: #718078;
+      --border: #dfe8e1;
+      --danger: #b42318;
+      --success: #18794e;
+      --white: #fff;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--bg);
+      color: var(--text);
+      font-family: Inter, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+    }
+
+    button, input, select { font: inherit; }
+
+    .page {
+      min-height: 100vh;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+
+    .hero {
+      background: var(--forest);
+      color: white;
+      padding: 56px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      min-height: 100vh;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 13px;
+      font-weight: 700;
+      font-size: 21px;
+    }
+
+    .brand-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: 13px;
+      display: grid;
+      place-items: center;
+      background: #ffffff20;
+      font-size: 23px;
+    }
+
+    .hero-content { max-width: 480px; }
+
+    .hero h1 {
+      font-size: clamp(36px, 4vw, 54px);
+      line-height: 1.12;
+      margin: 0 0 20px;
+      letter-spacing: -1.5px;
+    }
+
+    .hero p {
+      color: #d1e5d8;
+      line-height: 1.8;
+      font-size: 16px;
+    }
+
+    .hero-footer {
+      color: #b9d2c2;
+      font-size: 12px;
+    }
+
+    .main {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 42px 24px;
+    }
+
+    .auth-card {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .mobile-brand { display: none; }
+
+    .tabs {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 5px;
+      padding: 5px;
+      border-radius: 11px;
+      background: #eaf0eb;
+      margin-bottom: 30px;
+    }
+
+    .tab {
+      border: 0;
+      border-radius: 8px;
+      padding: 12px;
+      background: transparent;
+      color: var(--muted);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .tab.active {
+      background: white;
+      color: var(--forest);
+      box-shadow: 0 1px 4px #00000012;
+    }
+
+    h2 {
+      font-size: 27px;
+      margin: 0 0 8px;
+      letter-spacing: -.5px;
+    }
+
+    .subtitle {
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.6;
+      margin: 0 0 26px;
+    }
+
+    .field { margin-bottom: 17px; }
+
+    label {
+      display: block;
+      font-size: 13px;
+      font-weight: 650;
+      margin-bottom: 8px;
+    }
+
+    input, select {
+      width: 100%;
+      padding: 13px 14px;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: white;
+      color: var(--text);
+      outline: none;
+      min-height: 47px;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--emerald);
+      box-shadow: 0 0 0 3px #21845b18;
+    }
+
+    input::placeholder { color: #a0aaa3; }
+
+    .password-wrap { position: relative; }
+
+    .password-wrap input { padding-right: 75px; }
+
+    .toggle-password {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      border: 0;
+      background: transparent;
+      color: var(--emerald);
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 650;
+    }
+
+    .primary {
+      width: 100%;
+      border: 0;
+      background: var(--forest);
+      color: white;
+      padding: 14px;
+      min-height: 49px;
+      border-radius: 9px;
+      font-weight: 650;
+      cursor: pointer;
+      margin-top: 7px;
+    }
+
+    .primary:hover { background: #205c43; }
+    .primary:disabled { opacity: .55; cursor: wait; }
+
+    .secondary {
+      background: white;
+      color: var(--forest);
+      border: 1px solid var(--border);
+    }
+
+    .helper {
+      text-align: center;
+      color: var(--emerald);
+      font-size: 13px;
+      margin-top: 19px;
+      cursor: pointer;
+    }
+
+    .notice {
+      display: none;
+      padding: 12px 14px;
+      border-radius: 9px;
+      font-size: 13px;
+      line-height: 1.6;
+      margin-bottom: 18px;
+    }
+
+    .notice.show { display: block; }
+    .notice.error { background: #fff0ef; color: var(--danger); }
+    .notice.success { background: #e9f6ee; color: var(--success); }
+    .notice.info { background: #edf4f8; color: #315d78; }
+
+    .step-indicator {
+      display: flex;
+      gap: 7px;
+      margin-bottom: 23px;
+    }
+
+    .step-dot {
+      height: 4px;
+      flex: 1;
+      border-radius: 5px;
+      background: #dce6de;
+    }
+
+    .step-dot.active { background: var(--emerald); }
+
+    .small-note {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.7;
+      margin-top: 15px;
+    }
+
+    .footer-note {
+      text-align: center;
+      color: #9aa69d;
+      font-size: 11px;
+      margin-top: 35px;
+    }
+
+    .hidden { display: none !important; }
+
+    @media (max-width: 760px) {
+      .page { display: block; }
+      .hero { display: none; }
+      .main {
+        min-height: 100vh;
+        align-items: flex-start;
+        padding: 28px 21px;
+      }
+      .mobile-brand {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 35px;
+        font-weight: 750;
+        color: var(--forest);
+      }
+      .mobile-brand .brand-icon {
+        background: var(--mint);
+      }
+      h2 { font-size: 25px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <aside class="hero">
+      <div class="brand">
+        <div class="brand-icon">✦</div>
+        <span>JuhudManager</span>
+      </div>
+
+      <div class="hero-content">
+        <h1>Working together.<br>Moving forward.</h1>
+        <p>
+          A dedicated platform for managing Jemaah,
+          Takaza and collective Juhud activities.
+        </p>
+      </div>
+
+      <div class="hero-footer">
+        JuhudManager V2 · Community Management Platform
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="auth-card">
+        <div class="mobile-brand">
+          <div class="brand-icon">✦</div>
+          <span>JuhudManager</span>
+        </div>
+
+        <div class="tabs" id="tabs">
+          <button class="tab active" id="loginTab" type="button">
+            Log In
+          </button>
+          <button class="tab" id="registerTab" type="button">
+            Register
+          </button>
+        </div>
+
+        <div id="notice" class="notice" role="status"
+          aria-live="polite"></div>
+
+        <!-- LOGIN -->
+        <section id="loginView">
+          <h2>Welcome back</h2>
+          <p class="subtitle">
+            Sign in using your registered email address.
+          </p>
+
+          <form id="loginForm">
+            <div class="field">
+              <label for="loginEmail">Email address</label>
+              <input id="loginEmail" type="email"
+                autocomplete="email" required
+                placeholder="name@example.com">
+            </div>
+
+            <div class="field">
+              <label for="loginPassword">Password</label>
+              <div class="password-wrap">
+                <input id="loginPassword" type="password"
+                  autocomplete="current-password" required
+                  placeholder="Enter your password">
+                <button class="toggle-password" type="button"
+                  data-toggle="loginPassword">Show</button>
+              </div>
+            </div>
+
+            <button class="primary" type="submit" id="loginButton">
+              Sign In
+            </button>
+          </form>
+
+          <p class="helper" id="forgotPassword">
+            Forgot your password?
+          </p>
+        </section>
+
+        <!-- REGISTRATION -->
+        <section id="registerView" class="hidden">
+          <div class="step-indicator">
+            <div class="step-dot active" id="dot1"></div>
+            <div class="step-dot" id="dot2"></div>
+            <div class="step-dot" id="dot3"></div>
+          </div>
+
+          <div id="registrationFormView">
+            <h2>Create an account</h2>
+            <p class="subtitle">
+              Enter your details to begin registration.
+            </p>
+
+            <form id="registrationForm">
+              <div class="field">
+                <label for="fullName">Full name</label>
+                <input id="fullName" maxlength="150"
+                  autocomplete="name" required
+                  placeholder="Your full name">
+              </div>
+
+              <div class="field">
+                <label for="countryCode">
+                  National ID issuing country
+                </label>
+                <select id="countryCode" required>
+                  <option value="">Select country</option>
+                  <option value="MY">Malaysia</option>
+                  <option value="JP">Japan</option>
+                  <option value="SG">Singapore</option>
+                  <option value="ID">Indonesia</option>
+                  <option value="BN">Brunei</option>
+                  <option value="TH">Thailand</option>
+                  <option value="OTHER">Other</option>
+                </select>
+              </div>
+
+              <div class="field">
+                <label for="nationalId">National ID</label>
+                <input id="nationalId" maxlength="100"
+                  autocomplete="off" required
+                  placeholder="National identification number">
+              </div>
+
+              <div class="field">
+                <label for="registerEmail">Email address</label>
+                <input id="registerEmail" type="email"
+                  maxlength="254" autocomplete="email"
+                  required placeholder="name@example.com">
+              </div>
+
+              <div class="field">
+                <label for="whatsapp">WhatsApp number</label>
+                <input id="whatsapp" type="tel"
+                  autocomplete="tel" required
+                  placeholder="+60123456789">
+              </div>
+
+              <button class="primary" type="submit"
+                id="registerButton">
+                Continue
+              </button>
+            </form>
+
+            <p class="small-note">
+              All fields are required. Email is the only identity
+              used for OTP verification and login at this stage.
+              National ID and WhatsApp are not login methods.
+            </p>
+          </div>
+
+          <!-- OTP -->
+          <div id="otpView" class="hidden">
+            <h2>Verify your email</h2>
+            <p class="subtitle">
+              Enter the six-digit verification code sent to
+              <strong id="otpDestination"></strong>.
+            </p>
+
+            <form id="otpForm">
+              <div class="field">
+                <label for="otpCode">Verification code</label>
+                <input id="otpCode" inputmode="numeric"
+                  autocomplete="one-time-code"
+                  maxlength="6" pattern="[0-9]{6}"
+                  required placeholder="000000">
+              </div>
+
+              <button class="primary" type="submit"
+                id="verifyButton">
+                Verify Email
+              </button>
+            </form>
+
+            <p class="small-note">
+              The code expires after five minutes.
+              A resend cooldown applies.
+            </p>
+          </div>
+
+          <!-- COMPLETED -->
+          <div id="completeView" class="hidden">
+            <h2>Email verified</h2>
+            <p class="subtitle">
+              Your registration has moved to the next stage.
+            </p>
+            <div class="notice success show">
+              Your email has been verified successfully.
+              A password setup email will be requested next.
+            </div>
+            <button class="primary" id="backToLogin" type="button">
+              Go to Login
+            </button>
+          </div>
+        </section>
+
+        <div class="footer-note">
+          JuhudManager V2 · Secure Access
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    /*
+      Set this to the deployed V2 Worker URL when available.
+      Example: https://your-worker.workers.dev
+
+      Do not put API secrets or private keys here.
+    */
+    const API_BASE = "";
+
+    const state = {
+      userId: null,
+      emailIdentityId: null,
+      email: null,
+      registrationStep: "FORM"
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    function showNotice(message, type = "info") {
+      const box = $("notice");
+      box.textContent = message;
+      box.className = `notice show ${type}`;
+    }
+
+    function clearNotice() {
+      $("notice").className = "notice";
+      $("notice").textContent = "";
+    }
+
+    function setLoading(button, loading, text) {
+      button.disabled = loading;
+      if (loading) {
+        button.dataset.originalText = button.textContent;
+        button.textContent = text || "Please wait...";
+      } else {
+        button.textContent =
+          button.dataset.originalText || button.textContent;
+      }
+    }
+
+    async function apiRequest(path, body, token) {
+      if (!API_BASE) {
+        throw new Error(
+          "API is not connected yet. Configure the V2 Worker URL first."
+        );
+      }
+
+      const headers = {
+        "Content-Type": "application/json"
+      };
+
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
+      const response = await fetch(
+        `${API_BASE.replace(/\/$/, "")}${path}`,
+        {
+          method: body ? "POST" : "GET",
+          headers,
+          body: body ? JSON.stringify(body) : undefined
+        }
+      );
+
+      let result = {};
+
+      try {
+        result = await response.json();
+      } catch {
+        throw new Error("Invalid response from authentication service.");
+      }
+
+      if (!response.ok) {
+        throw new Error(
+          result.error || "The request could not be completed."
+        );
+      }
+
+      return result;
+    }
+
+    function switchTab(tab) {
+      clearNotice();
+
+      const login = tab === "login";
+
+      $("loginView").classList.toggle("hidden", !login);
+      $("registerView").classList.toggle("hidden", login);
+      $("tabs").classList.remove("hidden");
+
+      $("loginTab").classList.toggle("active", login);
+      $("registerTab").classList.toggle("active", !login);
+    }
+
+    $("loginTab").addEventListener("click", () => switchTab("login"));
+    $("registerTab").addEventListener("click", () => switchTab("register"));
+
+    document.querySelectorAll("[data-toggle]").forEach(button => {
+      button.addEventListener("click", () => {
+        const input = $(button.dataset.toggle);
+        const visible = input.type === "text";
+        input.type = visible ? "password" : "text";
+        button.textContent = visible ? "Show" : "Hide";
+      });
+    });
+
+    $("loginForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      clearNotice();
+
+      const button = $("loginButton");
+
+      setLoading(button, true, "Signing in...");
+
+      try {
+        const result = await apiRequest(
+          "/auth/login/password",
+          {
+            email: $("loginEmail").value.trim(),
+            password: $("loginPassword").value,
+            deviceName: navigator.userAgent.slice(0, 120),
+            deviceType: /Android|iPhone|Mobile/i.test(navigator.userAgent)
+              ? "MOBILE"
+              : "DESKTOP"
+          }
+        );
+
+        /*
+          The session token is retained in sessionStorage.
+          This is temporary frontend integration scaffolding.
+          A production token-storage review is required.
+        */
+        sessionStorage.setItem(
+          "jm_access_token",
+          result.accessToken
+        );
+
+        sessionStorage.setItem(
+          "jm_user",
+          JSON.stringify({
+            userId: result.userId,
+            registrationStatus: result.registrationStatus,
+            accountStatus: result.accountStatus,
+            accessLevel: result.accessLevel
+          })
+        );
+
+        showNotice(
+          result.accessLevel === "LIMITED"
+            ? "Login successful. Your account is awaiting Admin review."
+            : "Login successful.",
+          "success"
+        );
+
+        /*
+          Dashboard routing will be implemented in the
+          next frontend phase.
+        */
+      } catch (error) {
+        showNotice(error.message, "error");
+      } finally {
+        setLoading(button, false);
+      }
+    });
+
+    $("registrationForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      clearNotice();
+
+      const button = $("registerButton");
+      setLoading(button, true, "Submitting...");
+
+      try {
+        const country = $("countryCode").value;
+
+        if (country === "OTHER") {
+          throw new Error(
+            "Please contact the administrator to confirm your issuing country code."
+          );
+        }
+
+        const email = $("registerEmail").value.trim();
+
+        const result = await apiRequest(
+          "/auth/register/start",
+          {
+            fullName: $("fullName").value.trim(),
+            countryCode: country,
+            nationalId: $("nationalId").value.trim(),
+            email,
+            whatsapp: $("whatsapp").value.trim()
+          }
+        );
+
+        state.userId = result.userId;
+        state.emailIdentityId = result.identities?.email?.identityId;
+        state.email = email;
+
+        if (!state.userId || !state.emailIdentityId) {
+          throw new Error(
+            "Registration response is incomplete. Please contact support."
+          );
+        }
+
+        const otpResult = await apiRequest(
+          "/auth/otp/request",
+          {
+            userId: state.userId,
+            identityId: state.emailIdentityId,
+            destinationType: "EMAIL",
+            destination: state.email
+          }
+        );
+
+        state.registrationStep = "OTP";
+
+        $("registrationFormView").classList.add("hidden");
+        $("otpView").classList.remove("hidden");
+        $("otpDestination").textContent = state.email;
+
+        $("dot2").classList.add("active");
+
+        showNotice(
+          `Verification code requested. Please check your email. Resend is available after ${otpResult.resendAfterSeconds || 60} seconds.`,
+          "success"
+        );
+      } catch (error) {
+        showNotice(error.message, "error");
+      } finally {
+        setLoading(button, false);
+      }
+    });
+
+    $("otpForm").addEventListener("submit", async event => {
+      event.preventDefault();
+      clearNotice();
+
+      const button = $("verifyButton");
+      const otp = $("otpCode").value.trim();
+
+      if (!/^\d{6}$/.test(otp)) {
+        showNotice("Enter a valid six-digit code.", "error");
+        return;
+      }
+
+      setLoading(button, true, "Verifying...");
+
+      try {
+        const result = await apiRequest(
+          "/auth/otp/verify",
+          {
+            userId: state.userId,
+            identityId: state.emailIdentityId,
+            destinationType: "EMAIL",
+            destination: state.email,
+            otp
+          }
+        );
+
+        if (!result.verified) {
+          throw new Error("Email verification was not completed.");
+        }
+
+        /*
+          Ask the backend to send the password setup email.
+          The actual setup page will be implemented separately.
+        */
+        await apiRequest(
+          "/auth/activation/request",
+          { userId: state.userId }
+        );
+
+        state.registrationStep = "COMPLETE";
+
+        $("otpView").classList.add("hidden");
+        $("completeView").classList.remove("hidden");
+        $("dot3").classList.add("active");
+
+        showNotice(
+          "Email verified. Please check your inbox for the password setup link.",
+          "success"
+        );
+      } catch (error) {
+        showNotice(error.message, "error");
+      } finally {
+        setLoading(button, false);
+      }
+    });
+
+    $("backToLogin").addEventListener("click", () => {
+      $("completeView").classList.add("hidden");
+      $("otpView").classList.add("hidden");
+      $("registrationFormView").classList.remove("hidden");
+
+      $("registrationForm").reset();
+      $("otpForm").reset();
+
+      state.userId = null;
+      state.emailIdentityId = null;
+      state.email = null;
+      state.registrationStep = "FORM";
+
+      $("dot2").classList.remove("active");
+      $("dot3").classList.remove("active");
+
+      switchTab("login");
+    });
+
+    $("forgotPassword").addEventListener("click", () => {
+      showNotice(
+        "Password reset is not implemented yet. Please contact the administrator.",
+        "info"
+      );
+    });
+  </script>
+</body>
+</html>
