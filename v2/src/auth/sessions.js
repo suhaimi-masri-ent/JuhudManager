@@ -97,6 +97,40 @@ function getRequestMetadata(request) {
 }
 
 /**
+ * A user may create a session only when:
+ *
+ * PENDING_REVIEW + DISABLED
+ *   Limited access.
+ *
+ * APPROVED + ACTIVE
+ *   Full access.
+ *
+ * All other combinations are denied.
+ */
+const SESSION_ELIGIBILITY_SQL = `
+  SELECT
+    u.user_id,
+    u.account_status,
+    r.registration_status
+  FROM users u
+  INNER JOIN user_registration_reviews r
+    ON r.user_id = u.user_id
+  WHERE u.user_id = ?1
+    AND (
+      (
+        r.registration_status = 'PENDING_REVIEW'
+        AND u.account_status = 'DISABLED'
+      )
+      OR
+      (
+        r.registration_status = 'APPROVED'
+        AND u.account_status = 'ACTIVE'
+      )
+    )
+  LIMIT 1
+`;
+
+/**
  * Create a new authenticated session.
  *
  * The raw token is returned once.
@@ -131,21 +165,16 @@ export async function createSession({
 
   const normalizedUserId = userId.trim();
 
-  const user = await db.prepare(
-    `SELECT user_id
-     FROM users
-     WHERE user_id = ?1
-       AND account_status = 'ACTIVE'
-     LIMIT 1`
+  const account = await db.prepare(
+    SESSION_ELIGIBILITY_SQL
   ).bind(normalizedUserId).first();
 
-  if (!user) {
+  if (!account) {
     throw httpError("Account is not available.", 403);
   }
 
   const sessionId = crypto.randomUUID();
   const eventId = crypto.randomUUID();
-
   const token = generateSessionToken();
 
   const tokenHash = await hashValue(
@@ -155,7 +184,6 @@ export async function createSession({
 
   const now = nowIso();
   const expiresAt = addSessionDays(now);
-
   const metadata = getRequestMetadata(request);
 
   const normalizedDeviceName = normalizeOptionalText(
@@ -180,10 +208,7 @@ export async function createSession({
        SELECT
          ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, ?9
        WHERE EXISTS (
-         SELECT 1
-         FROM users
-         WHERE user_id = ?2
-           AND account_status = 'ACTIVE'
+         ${SESSION_ELIGIBILITY_SQL}
        )`
     ).bind(
       sessionId,
@@ -194,7 +219,8 @@ export async function createSession({
       metadata.ipAddress,
       metadata.userAgent,
       now,
-      expiresAt
+      expiresAt,
+      normalizedUserId
     ),
 
     db.prepare(
@@ -227,7 +253,8 @@ export async function createSession({
       sessionId,
       JSON.stringify({
         deviceType,
-        deviceName: normalizedDeviceName
+        deviceName: normalizedDeviceName,
+        registrationStatus: account.registration_status
       }),
       now
     )
@@ -255,15 +282,22 @@ export async function createSession({
     token,
     tokenType: "Bearer",
     expiresAt,
-    inactivityDays: SESSION_INACTIVITY_DAYS
+    inactivityDays: SESSION_INACTIVITY_DAYS,
+    registrationStatus: account.registration_status,
+    accountStatus: account.account_status,
+    accessLevel:
+      account.registration_status === "APPROVED"
+        ? "FULL"
+        : "LIMITED"
   };
 }
 
 /**
- * Authenticate a session and extend its inactivity expiry.
+ * Authenticate a session and extend inactivity expiry.
  *
- * Returns null when the token is invalid, expired,
- * revoked or associated with an inactive account.
+ * Account eligibility is checked on every request.
+ * A rejected, cancelled, suspended or otherwise
+ * ineligible account cannot continue using its session.
  */
 export async function authenticateSession({
   db,
@@ -299,9 +333,21 @@ export async function authenticateSession({
        AND expires_at > ?1
        AND EXISTS (
          SELECT 1
-         FROM users
-         WHERE users.user_id = user_sessions.user_id
-           AND users.account_status = 'ACTIVE'
+         FROM users u
+         INNER JOIN user_registration_reviews r
+           ON r.user_id = u.user_id
+         WHERE u.user_id = user_sessions.user_id
+           AND (
+             (
+               r.registration_status = 'PENDING_REVIEW'
+               AND u.account_status = 'DISABLED'
+             )
+             OR
+             (
+               r.registration_status = 'APPROVED'
+               AND u.account_status = 'ACTIVE'
+             )
+           )
        )
      RETURNING
        session_id,
@@ -319,13 +365,44 @@ export async function authenticateSession({
     return null;
   }
 
+  // Read the current access status after validating the session.
+  const account = await db.prepare(
+    `SELECT
+       u.account_status,
+       r.registration_status
+     FROM users u
+     INNER JOIN user_registration_reviews r
+       ON r.user_id = u.user_id
+     WHERE u.user_id = ?1
+     LIMIT 1`
+  ).bind(result.user_id).first();
+
+  if (!account) {
+    return null;
+  }
+
+  const isLimited =
+    account.registration_status === "PENDING_REVIEW" &&
+    account.account_status === "DISABLED";
+
+  const isFull =
+    account.registration_status === "APPROVED" &&
+    account.account_status === "ACTIVE";
+
+  if (!isLimited && !isFull) {
+    return null;
+  }
+
   return {
     authenticated: true,
     sessionId: result.session_id,
     userId: result.user_id,
     deviceName: result.device_name,
     deviceType: result.device_type,
-    expiresAt: result.expires_at
+    expiresAt: result.expires_at,
+    registrationStatus: account.registration_status,
+    accountStatus: account.account_status,
+    accessLevel: isFull ? "FULL" : "LIMITED"
   };
 }
 
