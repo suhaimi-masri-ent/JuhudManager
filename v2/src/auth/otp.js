@@ -65,6 +65,29 @@ async function calculateEmailHashes(env, normalized) {
   return { identityHash, destinationHash };
 }
 
+function registrationEligibilitySql() {
+  return `
+    EXISTS (
+      SELECT 1
+      FROM user_auth_identities i
+      INNER JOIN users u
+        ON u.user_id = i.user_id
+      INNER JOIN user_registration_reviews r
+        ON r.user_id = u.user_id
+      WHERE i.identity_id = ?3
+        AND i.user_id = ?2
+        AND i.identity_type = 'EMAIL'
+        AND i.identity_scope = 'GLOBAL'
+        AND i.identity_hash = ?4
+        AND i.verification_status = 'PENDING'
+        AND i.expires_at > ?14
+        AND u.account_status = 'DISABLED'
+        AND u.email IS NULL
+        AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+    )
+  `;
+}
+
 export async function requestRegistrationOtp({
   db,
   env,
@@ -84,7 +107,8 @@ export async function requestRegistrationOtp({
     throw httpError("User ID and identity ID are required.", 400);
   }
 
-  if (!env.OTP_DELIVERY || typeof env.OTP_DELIVERY.send !== "function") {
+  if (!env.OTP_DELIVERY ||
+      typeof env.OTP_DELIVERY.send !== "function") {
     throw httpError("OTP delivery provider is not configured.", 503);
   }
 
@@ -155,7 +179,72 @@ export async function requestRegistrationOtp({
     OTP_LIFETIME_MINUTES * 60
   );
 
+  // Invalidate the previous OTP only when a new request
+  // is eligible under the same rate and cooldown rules.
+  //
+  // This must happen before INSERT because the database
+  // permits only one active OTP per destination and purpose.
+  const eligibility = `
+    (
+      SELECT COUNT(*)
+      FROM auth_otp_requests
+      WHERE destination_type = 'EMAIL'
+        AND destination_hash = ?2
+        AND otp_purpose = 'REGISTER'
+        AND created_at >= ?3
+    ) < ?4
+    AND NOT EXISTS (
+      SELECT 1
+      FROM auth_otp_requests
+      WHERE destination_type = 'EMAIL'
+        AND destination_hash = ?2
+        AND otp_purpose = 'REGISTER'
+        AND last_sent_at > ?5
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM user_auth_identities i
+      INNER JOIN users u
+        ON u.user_id = i.user_id
+      INNER JOIN user_registration_reviews r
+        ON r.user_id = u.user_id
+      WHERE i.identity_id = ?6
+        AND i.user_id = ?7
+        AND i.identity_type = 'EMAIL'
+        AND i.identity_scope = 'GLOBAL'
+        AND i.identity_hash = ?8
+        AND i.verification_status = 'PENDING'
+        AND i.expires_at > ?9
+        AND u.account_status = 'DISABLED'
+        AND u.email IS NULL
+        AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+    )
+  `;
+
   const results = await db.batch([
+    // 1. Invalidate the previous active OTP, if eligible.
+    db.prepare(
+      `UPDATE auth_otp_requests
+       SET invalidated_at = ?1
+       WHERE destination_type = 'EMAIL'
+         AND destination_hash = ?2
+         AND otp_purpose = 'REGISTER'
+         AND consumed_at IS NULL
+         AND invalidated_at IS NULL
+         AND ${eligibility}`
+    ).bind(
+      currentIso,
+      destinationHash,
+      windowStart,
+      RATE_MAX_REQUESTS,
+      cooldownStart,
+      identityId,
+      userId,
+      identityHash,
+      currentIso
+    ),
+
+    // 2. Insert the replacement OTP.
     db.prepare(
       `INSERT INTO auth_otp_requests (
          otp_request_id,
@@ -174,24 +263,24 @@ export async function requestRegistrationOtp({
          last_sent_at
        )
        SELECT
-         ?1, ?2, ?3, 'REGISTER', 'EMAIL', ?5, ?6, 1,
-         ?7, 1, ?8, 0, ?9, ?10
+         ?1, ?2, ?3, 'REGISTER', 'EMAIL', ?4, ?5, 1,
+         ?6, 1, ?7, 0, ?8, ?9
        WHERE
          (
            SELECT COUNT(*)
            FROM auth_otp_requests
            WHERE destination_type = 'EMAIL'
-             AND destination_hash = ?5
+             AND destination_hash = ?4
              AND otp_purpose = 'REGISTER'
-             AND created_at >= ?11
-         ) < ?12
+             AND created_at >= ?10
+         ) < ?11
          AND NOT EXISTS (
            SELECT 1
            FROM auth_otp_requests
            WHERE destination_type = 'EMAIL'
-             AND destination_hash = ?5
+             AND destination_hash = ?4
              AND otp_purpose = 'REGISTER'
-             AND last_sent_at > ?13
+             AND last_sent_at > ?12
          )
          AND EXISTS (
            SELECT 1
@@ -204,7 +293,7 @@ export async function requestRegistrationOtp({
              AND i.user_id = ?2
              AND i.identity_type = 'EMAIL'
              AND i.identity_scope = 'GLOBAL'
-             AND i.identity_hash = ?4
+             AND i.identity_hash = ?13
              AND i.verification_status = 'PENDING'
              AND i.expires_at > ?14
              AND u.account_status = 'DISABLED'
@@ -215,7 +304,6 @@ export async function requestRegistrationOtp({
       otpRequestId,
       userId,
       identityId,
-      identityHash,
       destinationHash,
       encryptedDestination,
       otpHash,
@@ -225,33 +313,12 @@ export async function requestRegistrationOtp({
       windowStart,
       RATE_MAX_REQUESTS,
       cooldownStart,
+      identityHash,
       currentIso
-    ),
-
-    db.prepare(
-      `UPDATE auth_otp_requests
-       SET invalidated_at = ?1
-       WHERE destination_type = 'EMAIL'
-         AND destination_hash = ?2
-         AND otp_purpose = 'REGISTER'
-         AND otp_request_id != ?3
-         AND consumed_at IS NULL
-         AND invalidated_at IS NULL
-         AND EXISTS (
-           SELECT 1
-           FROM auth_otp_requests
-           WHERE otp_request_id = ?3
-             AND destination_type = 'EMAIL'
-             AND destination_hash = ?2
-         )`
-    ).bind(
-      currentIso,
-      destinationHash,
-      otpRequestId
     )
   ]);
 
-  const inserted = results?.[0]?.meta?.changes ?? 0;
+  const inserted = results?.[1]?.meta?.changes ?? 0;
 
   if (inserted !== 1) {
     throw httpError(
@@ -315,6 +382,7 @@ export async function verifyRegistrationOtp({
   }
 
   const normalized = normalizeEmail(destination);
+
   const { identityHash, destinationHash } =
     await calculateEmailHashes(env, normalized);
 
@@ -407,50 +475,17 @@ export async function verifyRegistrationOtp({
     );
   }
 
-  const results = await db.batch([
-    // 1. Consume the OTP only if the supplied email hash
-    // matches the actual pending email identity.
-    db.prepare(
-      `UPDATE auth_otp_requests
-       SET consumed_at = ?1
-       WHERE otp_request_id = ?2
-         AND user_id = ?3
-         AND identity_id = ?4
-         AND destination_type = 'EMAIL'
-         AND destination_hash = ?5
-         AND otp_purpose = 'REGISTER'
-         AND consumed_at IS NULL
-         AND invalidated_at IS NULL
-         AND expires_at > ?1
-         AND attempt_count < max_attempts
-         AND EXISTS (
-           SELECT 1
-           FROM user_auth_identities i
-           INNER JOIN users u
-             ON u.user_id = i.user_id
-           INNER JOIN user_registration_reviews r
-             ON r.user_id = u.user_id
-           WHERE i.identity_id = ?4
-             AND i.user_id = ?3
-             AND i.identity_type = 'EMAIL'
-             AND i.identity_scope = 'GLOBAL'
-             AND i.identity_hash = ?6
-             AND i.verification_status = 'PENDING'
-             AND i.expires_at > ?1
-             AND u.account_status = 'DISABLED'
-             AND u.email IS NULL
-             AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
-         )`
-    ).bind(
-      currentTime,
-      row.otp_request_id,
-      userId,
-      identityId,
-      destinationHash,
-      identityHash
-    ),
+  // IMPORTANT:
+  // All four statements execute in one D1 batch.
+  //
+  // The first three establish the verified registration state.
+  // The final statement consumes the OTP.
+  //
+  // The migration trigger rejects the final statement if
+  // the required state has not been established.
 
-    // 2. Verify the email identity after OTP consumption.
+  const results = await db.batch([
+    // 1. Verify the email identity.
     db.prepare(
       `UPDATE user_auth_identities
        SET
@@ -462,26 +497,33 @@ export async function verifyRegistrationOtp({
          AND user_id = ?3
          AND identity_type = 'EMAIL'
          AND identity_scope = 'GLOBAL'
-         AND identity_hash = ?5
+         AND identity_hash = ?4
          AND verification_status = 'PENDING'
          AND expires_at > ?1
          AND EXISTS (
            SELECT 1
            FROM auth_otp_requests
-           WHERE otp_request_id = ?4
+           WHERE otp_request_id = ?5
              AND user_id = ?3
              AND identity_id = ?2
-             AND consumed_at = ?1
+             AND destination_type = 'EMAIL'
+             AND destination_hash = ?6
+             AND otp_purpose = 'REGISTER'
+             AND consumed_at IS NULL
+             AND invalidated_at IS NULL
+             AND expires_at > ?1
+             AND attempt_count < max_attempts
          )`
     ).bind(
       currentTime,
       identityId,
       userId,
+      identityHash,
       row.otp_request_id,
-      identityHash
+      destinationHash
     ),
 
-    // 3. Store the verified email on the user account.
+    // 2. Store the normalized email on the user account.
     db.prepare(
       `UPDATE users
        SET
@@ -504,7 +546,12 @@ export async function verifyRegistrationOtp({
            FROM auth_otp_requests
            WHERE otp_request_id = ?6
              AND user_id = ?3
-             AND consumed_at = ?2
+             AND identity_id = ?4
+             AND destination_hash = ?7
+             AND consumed_at IS NULL
+             AND invalidated_at IS NULL
+             AND expires_at > ?2
+             AND attempt_count < max_attempts
          )`
     ).bind(
       normalized,
@@ -512,10 +559,11 @@ export async function verifyRegistrationOtp({
       userId,
       identityId,
       identityHash,
-      row.otp_request_id
+      row.otp_request_id,
+      destinationHash
     ),
 
-    // 4. Move the registration into Admin review.
+    // 3. Move registration into Admin review.
     db.prepare(
       `UPDATE user_registration_reviews
        SET
@@ -523,6 +571,8 @@ export async function verifyRegistrationOtp({
          updated_at = ?1
        WHERE user_id = ?2
          AND registration_status = 'AWAITING_EMAIL_VERIFICATION'
+         AND reviewed_by IS NULL
+         AND reviewed_at IS NULL
          AND EXISTS (
            SELECT 1
            FROM users
@@ -544,7 +594,12 @@ export async function verifyRegistrationOtp({
            FROM auth_otp_requests
            WHERE otp_request_id = ?6
              AND user_id = ?2
-             AND consumed_at = ?1
+             AND identity_id = ?4
+             AND destination_hash = ?7
+             AND consumed_at IS NULL
+             AND invalidated_at IS NULL
+             AND expires_at > ?1
+             AND attempt_count < max_attempts
          )`
     ).bind(
       currentTime,
@@ -552,20 +607,45 @@ export async function verifyRegistrationOtp({
       normalized,
       identityId,
       identityHash,
-      row.otp_request_id
+      row.otp_request_id,
+      destinationHash
+    ),
+
+    // 4. Consume the OTP LAST.
+    //
+    // Do not add conditions here that silently allow a zero-row
+    // update after earlier statements have changed the database.
+    // The trigger validates the resulting registration state.
+    db.prepare(
+      `UPDATE auth_otp_requests
+       SET consumed_at = ?1
+       WHERE otp_request_id = ?2
+         AND user_id = ?3
+         AND identity_id = ?4
+         AND destination_type = 'EMAIL'
+         AND destination_hash = ?5
+         AND otp_purpose = 'REGISTER'
+         AND consumed_at IS NULL
+         AND invalidated_at IS NULL`
+    ).bind(
+      currentTime,
+      row.otp_request_id,
+      userId,
+      identityId,
+      destinationHash
     )
   ]);
 
-  const otpChanges = results?.[0]?.meta?.changes ?? 0;
-  const identityChanges = results?.[1]?.meta?.changes ?? 0;
-  const userChanges = results?.[2]?.meta?.changes ?? 0;
-  const reviewChanges = results?.[3]?.meta?.changes ?? 0;
+  const identityChanges = results?.[0]?.meta?.changes ?? 0;
+  const userChanges = results?.[1]?.meta?.changes ?? 0;
+  const reviewChanges = results?.[2]?.meta?.changes ?? 0;
+  const otpChanges = results?.[3]?.meta?.changes ?? 0;
 
   if (
-    otpChanges !== 1 ||
     identityChanges !== 1 ||
     userChanges !== 1 ||
-    reviewChanges !== 1
+    reviewChanges !== 1 ||
+    otpChanges !== 1
   ) {
     throw httpError(
       "OTP verification or registration update could not be completed. Please check the registration status.",
