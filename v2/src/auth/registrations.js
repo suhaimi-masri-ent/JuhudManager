@@ -27,6 +27,10 @@ function normalizeNationalId(value) {
   return normalized;
 }
 
+function normalizeFullName(value) {
+  return String(value ?? "").trim().toUpperCase();
+}
+
 function validateRegistrationInput({
   fullName,
   countryCode,
@@ -161,6 +165,7 @@ export async function createRegistrationDraft({
   }
 
   const userId = crypto.randomUUID();
+  const normalizedName = normalizeFullName(fullName);
   const normalizedCountry = countryCode.trim().toUpperCase();
   const normalizedEmail = normalizeDestination("EMAIL", email);
   const normalizedWhatsApp = normalizeDestination(
@@ -197,7 +202,7 @@ export async function createRegistrationDraft({
          VALUES (?1, ?2, NULL, 'DISABLED')`
       ).bind(
         userId,
-        fullName.trim()
+        normalizedName
       ),
 
       db.prepare(
@@ -342,7 +347,7 @@ export async function resumeRegistrationDraft({
   }
 
   const normalizedCountry = countryCode.trim().toUpperCase();
-  const normalizedName = fullName.trim();
+  const normalizedName = normalizeFullName(fullName);
   const normalizedNationalId = normalizeNationalId(nationalId);
   const normalizedEmail = normalizeDestination("EMAIL", email);
   const normalizedWhatsApp = normalizeDestination(
@@ -367,13 +372,16 @@ export async function resumeRegistrationDraft({
 
   // Find the original draft only when every submitted identity
   // belongs to the same user and the review is still awaiting email.
+  //
+  // Name comparison is case-insensitive to support older drafts
+  // whose names were saved before uppercase normalization.
   const draft = await db.prepare(
     `SELECT
        u.user_id
      FROM users u
      INNER JOIN user_registration_reviews r
        ON r.user_id = u.user_id
-     WHERE u.full_name = ?1
+     WHERE LOWER(TRIM(u.full_name)) = LOWER(TRIM(?1))
        AND u.account_status = 'DISABLED'
        AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
 
