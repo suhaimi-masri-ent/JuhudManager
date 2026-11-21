@@ -1,0 +1,179 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174b38">
+  <meta name="referrer" content="no-referrer">
+  <title>Dashboard · JuhudManager V2</title>
+  <link rel="stylesheet" href="./assets/css/app.css">
+  <link rel="stylesheet" href="./assets/css/dashboard.css">
+  <script type="module" src="./assets/js/dashboard.js"></script>
+</head>
+<body>
+  <div class="dashboard-page">
+
+    <header class="dashboard-header">
+      <a class="dashboard-brand" href="./dashboard.html">
+        <span class="brand-icon">✦</span>
+        <span>JuhudManager</span>
+      </a>
+
+      <div class="dashboard-header-actions">
+        <span id="accountAccessLabel" class="access-label">
+          Checking account...
+        </span>
+
+        <button
+          id="logoutButton"
+          class="logout-button"
+          type="button"
+        >
+          Log Out
+        </button>
+      </div>
+    </header>
+
+    <main class="dashboard-main">
+
+      <section class="dashboard-welcome">
+        <div>
+          <p class="dashboard-eyebrow">JUHUDMANAGER V2</p>
+          <h1>Dashboard</h1>
+          <p class="dashboard-subtitle">
+            Your Jemaah and Takaza workspace.
+          </p>
+        </div>
+      </section>
+
+      <div
+        id="dashboardNotice"
+        class="dashboard-notice hidden"
+        role="status"
+        aria-live="polite"
+      ></div>
+
+      <section
+        id="limitedAccessPanel"
+        class="access-panel limited-panel hidden"
+      >
+        <div class="access-panel-icon">⌛</div>
+
+        <div>
+          <h2>Registration under review</h2>
+          <p>
+            Your email has been verified and your account is active
+            for limited access. An Admin will review your registration.
+          </p>
+          <p class="access-panel-note">
+            Full JuhudManager functions will become available
+            after your registration is approved.
+          </p>
+        </div>
+      </section>
+
+      <section
+        id="fullAccessPanel"
+        class="access-panel full-panel hidden"
+      >
+        <div class="access-panel-icon">✓</div>
+
+        <div>
+          <h2>Full access enabled</h2>
+          <p>
+            Your registration has been approved.
+            You can access the available JuhudManager functions.
+          </p>
+        </div>
+      </section>
+
+      <section class="dashboard-section">
+        <h2>Account overview</h2>
+
+        <div class="overview-grid">
+
+          <article class="overview-card">
+            <span class="overview-label">Registration status</span>
+            <strong id="registrationStatus">—</strong>
+          </article>
+
+          <article class="overview-card">
+            <span class="overview-label">Account status</span>
+            <strong id="accountStatus">—</strong>
+          </article>
+
+          <article class="overview-card">
+            <span class="overview-label">Access level</span>
+            <strong id="accessLevel">—</strong>
+          </article>
+
+        </div>
+      </section>
+
+      <section class="dashboard-section">
+        <h2>Workspace</h2>
+
+        <div class="workspace-grid">
+
+          <article class="workspace-card">
+            <div class="workspace-card-icon">◈</div>
+            <h3>My Profile</h3>
+            <p>
+              View and manage your personal account information.
+            </p>
+            <span class="workspace-coming-soon">
+              Coming in next phase
+            </span>
+          </article>
+
+          <article class="workspace-card">
+            <div class="workspace-card-icon">◎</div>
+            <h3>My Jemaah</h3>
+            <p>
+              View your Jemaah membership and related information.
+            </p>
+            <span class="workspace-coming-soon">
+              Coming in next phase
+            </span>
+          </article>
+
+          <article class="workspace-card">
+            <div class="workspace-card-icon">◇</div>
+            <h3>My Takaza</h3>
+            <p>
+              View your Takaza participation and activities.
+            </p>
+            <span class="workspace-coming-soon">
+              Coming in next phase
+            </span>
+          </article>
+
+        </div>
+      </section>
+
+      <section class="dashboard-section">
+        <h2>Session information</h2>
+
+        <div class="session-card">
+          <div class="session-row">
+            <span>Session ID</span>
+            <strong id="sessionId">—</strong>
+          </div>
+
+          <div class="session-row">
+            <span>Session expires</span>
+            <strong id="sessionExpires">—</strong>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <footer class="dashboard-footer">
+      JuhudManager V2 · Community Management Platform
+    </footer>
+
+  </div>
+</body>
+</html>
