@@ -1,4 +1,3 @@
-
 import {
   hashValue
 } from "./crypto.js";
@@ -118,6 +117,9 @@ async function recordPasswordLoginEvent({
  * APPROVED + ACTIVE:
  *   Allows login with full access.
  *
+ * SUPER_ADMIN bootstrap COMPLETE + ACTIVE:
+ *   Allows login with full access without a registration review.
+ *
  * REJECTED / CANCELLED / SUSPENDED:
  *   Login denied.
  *
@@ -152,12 +154,25 @@ export async function authenticatePasswordLogin({
        u.user_id,
        u.account_status,
        r.registration_status,
-       c.password_hash
+       c.password_hash,
+       s.bootstrap_status,
+       CASE
+         WHEN EXISTS (
+           SELECT 1
+           FROM user_roles ur
+           WHERE ur.user_id = u.user_id
+             AND ur.role_id = 'role-super-admin'
+         )
+         THEN 1
+         ELSE 0
+       END AS is_super_admin
      FROM user_auth_identities i
      INNER JOIN users u
        ON u.user_id = i.user_id
-     INNER JOIN user_registration_reviews r
+     LEFT JOIN user_registration_reviews r
        ON r.user_id = u.user_id
+     LEFT JOIN super_admin_bootstrap_state s
+       ON s.user_id = u.user_id
      LEFT JOIN user_credentials c
        ON c.user_id = u.user_id
        AND c.credential_type = 'PASSWORD'
@@ -171,7 +186,14 @@ export async function authenticatePasswordLogin({
      LIMIT 1`
   ).bind(emailHash).first();
 
-  const loginAllowed = Boolean(
+  const bootstrapLoginAllowed = Boolean(
+    account &&
+    account.bootstrap_status === "COMPLETE" &&
+    account.account_status === "ACTIVE" &&
+    account.is_super_admin === 1
+  );
+
+  const registrationLoginAllowed = Boolean(
     account &&
     (
       (
@@ -184,6 +206,9 @@ export async function authenticatePasswordLogin({
       )
     )
   );
+
+  const loginAllowed =
+    bootstrapLoginAllowed || registrationLoginAllowed;
 
   let authenticated = false;
 
@@ -219,9 +244,12 @@ export async function authenticatePasswordLogin({
 
   return {
     userId: account.user_id,
-    registrationStatus: account.registration_status,
+    registrationStatus: bootstrapLoginAllowed
+      ? null
+      : account.registration_status,
     accountStatus: account.account_status,
     accessLevel:
+      bootstrapLoginAllowed ||
       account.registration_status === "APPROVED"
         ? "FULL"
         : "LIMITED"
