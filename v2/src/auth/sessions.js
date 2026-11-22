@@ -1,4 +1,3 @@
-
 import { hashValue } from "./crypto.js";
 
 const SESSION_INACTIVITY_DAYS = 30;
@@ -96,25 +95,27 @@ function getRequestMetadata(request) {
   };
 }
 
-/**
- * A user may create a session only when:
- *
- * PENDING_REVIEW + DISABLED
- *   Limited access.
- *
- * APPROVED + ACTIVE
- *   Full access.
- *
- * All other combinations are denied.
- */
 const SESSION_ELIGIBILITY_SQL = `
   SELECT
     u.user_id,
     u.account_status,
-    r.registration_status
+    r.registration_status,
+    s.bootstrap_status,
+    CASE
+      WHEN EXISTS (
+        SELECT 1
+        FROM user_roles ur
+        WHERE ur.user_id = u.user_id
+          AND ur.role_id = 'role-super-admin'
+      )
+      THEN 1
+      ELSE 0
+    END AS is_super_admin
   FROM users u
-  INNER JOIN user_registration_reviews r
+  LEFT JOIN user_registration_reviews r
     ON r.user_id = u.user_id
+  LEFT JOIN super_admin_bootstrap_state s
+    ON s.user_id = u.user_id
   WHERE u.user_id = ?1
     AND (
       (
@@ -125,6 +126,17 @@ const SESSION_ELIGIBILITY_SQL = `
       (
         r.registration_status = 'APPROVED'
         AND u.account_status = 'ACTIVE'
+      )
+      OR
+      (
+        s.bootstrap_status = 'COMPLETE'
+        AND u.account_status = 'ACTIVE'
+        AND EXISTS (
+          SELECT 1
+          FROM user_roles ur
+          WHERE ur.user_id = u.user_id
+            AND ur.role_id = 'role-super-admin'
+        )
       )
     )
   LIMIT 1
@@ -207,12 +219,12 @@ export async function createSession({
        )
        SELECT
          ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, ?9
-      WHERE EXISTS (
-        ${SESSION_ELIGIBILITY_SQL.replace(
-          "u.user_id = ?1",
-          "u.user_id = ?10"
-        )}
-      )`
+       WHERE EXISTS (
+         ${SESSION_ELIGIBILITY_SQL.replace(
+           "u.user_id = ?1",
+           "u.user_id = ?10"
+         )}
+       )`
     ).bind(
       sessionId,
       normalizedUserId,
@@ -279,6 +291,11 @@ export async function createSession({
     );
   }
 
+  const isBootstrap =
+    account.bootstrap_status === "COMPLETE" &&
+    account.account_status === "ACTIVE" &&
+    account.is_super_admin === 1;
+
   return {
     sessionId,
     userId: normalizedUserId,
@@ -286,9 +303,12 @@ export async function createSession({
     tokenType: "Bearer",
     expiresAt,
     inactivityDays: SESSION_INACTIVITY_DAYS,
-    registrationStatus: account.registration_status,
+    registrationStatus: isBootstrap
+      ? null
+      : account.registration_status,
     accountStatus: account.account_status,
     accessLevel:
+      isBootstrap ||
       account.registration_status === "APPROVED"
         ? "FULL"
         : "LIMITED"
@@ -299,8 +319,6 @@ export async function createSession({
  * Authenticate a session and extend inactivity expiry.
  *
  * Account eligibility is checked on every request.
- * A rejected, cancelled, suspended or otherwise
- * ineligible account cannot continue using its session.
  */
 export async function authenticateSession({
   db,
@@ -337,8 +355,10 @@ export async function authenticateSession({
        AND EXISTS (
          SELECT 1
          FROM users u
-         INNER JOIN user_registration_reviews r
+         LEFT JOIN user_registration_reviews r
            ON r.user_id = u.user_id
+         LEFT JOIN super_admin_bootstrap_state s
+           ON s.user_id = u.user_id
          WHERE u.user_id = user_sessions.user_id
            AND (
              (
@@ -349,6 +369,17 @@ export async function authenticateSession({
              (
                r.registration_status = 'APPROVED'
                AND u.account_status = 'ACTIVE'
+             )
+             OR
+             (
+               s.bootstrap_status = 'COMPLETE'
+               AND u.account_status = 'ACTIVE'
+               AND EXISTS (
+                 SELECT 1
+                 FROM user_roles ur
+                 WHERE ur.user_id = u.user_id
+                   AND ur.role_id = 'role-super-admin'
+               )
              )
            )
        )
@@ -368,14 +399,26 @@ export async function authenticateSession({
     return null;
   }
 
-  // Read the current access status after validating the session.
   const account = await db.prepare(
     `SELECT
        u.account_status,
-       r.registration_status
+       r.registration_status,
+       s.bootstrap_status,
+       CASE
+         WHEN EXISTS (
+           SELECT 1
+           FROM user_roles ur
+           WHERE ur.user_id = u.user_id
+             AND ur.role_id = 'role-super-admin'
+         )
+         THEN 1
+         ELSE 0
+       END AS is_super_admin
      FROM users u
-     INNER JOIN user_registration_reviews r
+     LEFT JOIN user_registration_reviews r
        ON r.user_id = u.user_id
+     LEFT JOIN super_admin_bootstrap_state s
+       ON s.user_id = u.user_id
      WHERE u.user_id = ?1
      LIMIT 1`
   ).bind(result.user_id).first();
@@ -389,12 +432,23 @@ export async function authenticateSession({
     account.account_status === "DISABLED";
 
   const isFull =
-    account.registration_status === "APPROVED" &&
-    account.account_status === "ACTIVE";
+    (
+      account.registration_status === "APPROVED" &&
+      account.account_status === "ACTIVE"
+    ) ||
+    (
+      account.bootstrap_status === "COMPLETE" &&
+      account.account_status === "ACTIVE" &&
+      account.is_super_admin === 1
+    );
 
   if (!isLimited && !isFull) {
     return null;
   }
+
+  const isBootstrap =
+    account.bootstrap_status === "COMPLETE" &&
+    account.is_super_admin === 1;
 
   return {
     authenticated: true,
@@ -403,7 +457,9 @@ export async function authenticateSession({
     deviceName: result.device_name,
     deviceType: result.device_type,
     expiresAt: result.expires_at,
-    registrationStatus: account.registration_status,
+    registrationStatus: isBootstrap
+      ? null
+      : account.registration_status,
     accountStatus: account.account_status,
     accessLevel: isFull ? "FULL" : "LIMITED"
   };
