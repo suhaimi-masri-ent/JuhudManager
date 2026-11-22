@@ -6,10 +6,11 @@ import { handleLoginRequest } from "./routes/login.js";
 import { handlePasswordChangeRequest } from "./routes/password-change.js";
 import { handleSessionRequest } from "./routes/session.js";
 import { handleAdminRegistrationRequest } from "./routes/admin-registrations.js";
+import { handleSuperAdminBootstrapRequest } from "./routes/super-admin-bootstrap.js";
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
 const ALLOWED_METHODS = "GET, POST, OPTIONS";
-const ALLOWED_HEADERS = "Content-Type, Authorization";
+const ALLOWED_HEADERS = "Content-Type, Authorization, X-Super-Admin-Bootstrap-Key";
 
 export default {
   async fetch(request, env) {
@@ -45,7 +46,7 @@ export default {
 
         if (
           allowed.some(header =>
-            !["content-type", "authorization"].includes(header)
+            !["content-type", "authorization", "x-super-admin-bootstrap-key"].includes(header)
           )
         ) {
           return json({
@@ -90,7 +91,15 @@ export default {
       response = await handleDeliveryTest(request, env);
     } else {
       try {
-        response = await handleLoginRequest(request, env, url);
+        response = await handleSuperAdminBootstrapRequest(
+          request,
+          env,
+          url
+        );
+
+        if (!response) {
+          response = await handleLoginRequest(request, env, url);
+        }
 
         if (!response) {
           response = await handlePasswordChangeRequest(
