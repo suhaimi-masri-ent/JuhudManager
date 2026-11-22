@@ -347,3 +347,30 @@
     text-align: left;
   }
 }
+
+.workspace-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 14px;
+  border: 1px solid #174b38;
+  border-radius: 7px;
+  background: #174b38;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background 0.2s ease;
+}
+
+.workspace-link:hover {
+  background: #205c43;
+}
+
+.workspace-link:focus-visible {
+  outline: 3px solid #8bbfa0;
+  outline-offset: 3px;
+}
+
+
