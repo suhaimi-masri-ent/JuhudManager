@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#14532d">
+    <meta name="referrer" content="no-referrer">
+    <title>Country Admin Management | JuhudManager</title>
+
+    <link rel="stylesheet" href="./assets/css/app.css">
+    <link rel="stylesheet" href="./assets/css/super-admin-country-admins.css?v=1">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="header-brand">
+                <a href="./dashboard.html" class="brand-link">
+                    <span class="brand-name">JuhudManager</span>
+                </a>
+                <span class="page-context">Super Admin</span>
+            </div>
+
+            <div class="header-actions">
+                <a href="./super-admin-countries.html" class="button button-secondary">
+                    Countries
+                </a>
+                <button id="logoutButton" type="button" class="button button-secondary">
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <section class="page-heading">
+                <div>
+                    <p class="eyebrow">PLATFORM MANAGEMENT</p>
+                    <h1>Country Admin Management</h1>
+                    <p class="page-description">
+                        Assign and manage administrators responsible for each country.
+                    </p>
+                </div>
+
+                <button id="refreshButton" type="button" class="button button-secondary">
+                    Refresh
+                </button>
+            </section>
+
+            <div
+                id="pageNotice"
+                class="notice"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
+
+            <section class="management-section">
+                <div class="section-heading">
+                    <div>
+                        <h2>Country Selection</h2>
+                        <p>Select a country to view its administrator assignments.</p>
+                    </div>
+                </div>
+
+                <div class="filter-grid">
+                    <div class="form-field">
+                        <label for="countrySelect">Country</label>
+                        <select id="countrySelect" required>
+                            <option value="">Loading countries...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="statusFilter">Assignment Status</label>
+                        <select id="statusFilter">
+                            <option value="ACTIVE">Active</option>
+                            <option value="REVOKED">Revoked History</option>
+                            <option value="ALL">All Assignments</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="selectedCountryInfo" class="selected-country-info" hidden>
+                    <strong id="selectedCountryName"></strong>
+                    <span id="selectedCountryStatus"></span>
+                </div>
+            </section>
+
+            <section class="management-section">
+                <div class="section-heading">
+                    <div>
+                        <h2>Country Admin Assignments</h2>
+                        <p>
+                            Current and historical administrator assignments
+                            for the selected country.
+                        </p>
+                    </div>
+                    <span id="assignmentCount" class="count-label">0 records</span>
+                </div>
+
+                <div id="assignmentEmptyState" class="empty-state" hidden>
+                    <h3>No assignments found</h3>
+                    <p>No Country Admin assignments match the selected filter.</p>
+                </div>
+
+                <div id="assignmentTableWrap" class="table-wrap" hidden>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Administrator</th>
+                                <th scope="col">Email</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Assigned</th>
+                                <th scope="col">Active Countries</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="assignmentTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div id="assignmentMobileList" class="mobile-list"></div>
+            </section>
+
+            <section id="assignSection" class="management-section">
+                <div class="section-heading">
+                    <div>
+                        <h2>Assign Country Admin</h2>
+                        <p>
+                            Search for an eligible user and assign administrative
+                            responsibility to the selected country.
+                        </p>
+                    </div>
+                </div>
+
+                <form id="candidateSearchForm" class="search-form">
+                    <div class="form-field">
+                        <label for="candidateSearch">Search Users</label>
+                        <input
+                            id="candidateSearch"
+                            type="search"
+                            maxlength="100"
+                            placeholder="Search by name or email"
+                            autocomplete="off"
+                        >
+                    </div>
+
+                    <button id="searchCandidatesButton" type="submit" class="button button-primary">
+                        Search
+                    </button>
+                </form>
+
+                <div id="candidateEmptyState" class="empty-state" hidden>
+                    <h3>No eligible users found</h3>
+                    <p>
+                        Only active users with approved registration
+                        can be assigned as Country Admins.
+                    </p>
+                </div>
+
+                <div id="candidateResults" class="candidate-results"></div>
+
+                <div id="selectedCandidatePanel" class="selected-candidate-panel" hidden>
+                    <div>
+                        <span class="selected-label">Selected administrator</span>
+                        <strong id="selectedCandidateName"></strong>
+                        <span id="selectedCandidateEmail"></span>
+                    </div>
+
+                    <button
+                        id="clearCandidateButton"
+                        type="button"
+                        class="button button-secondary"
+                    >
+                        Change
+                    </button>
+                </div>
+
+                <form id="assignmentForm" class="assignment-form" hidden>
+                    <div class="form-field">
+                        <label for="assignmentReason">Reason for Appointment</label>
+                        <textarea
+                            id="assignmentReason"
+                            rows="4"
+                            maxlength="1000"
+                            placeholder="Explain why this user is being appointed as Country Admin."
+                            required
+                        ></textarea>
+                        <small>
+                            Required. This reason will be retained in the audit history.
+                        </small>
+                    </div>
+
+                    <button
+                        id="assignButton"
+                        type="submit"
+                        class="button button-primary"
+                    >
+                        Confirm Country Admin Appointment
+                    </button>
+                </form>
+            </section>
+
+            <p class="security-note">
+                Country Admin authority is determined by server-side role
+                and country assignment checks. Nationality and National ID
+                issuing country do not determine administrative scope.
+            </p>
+        </main>
+
+        <footer class="app-footer">
+            <p>JuhudManager V2</p>
+        </footer>
+    </div>
+
+    <script type="module" src="./assets/js/super-admin-country-admins.js"></script>
+</body>
+</html>
