@@ -58,6 +58,56 @@ async function requireSession(request, env) {
   return { session };
 }
 
+async function getUserAccessContext(db, userId) {
+  const [roleResult, assignmentResult] = await Promise.all([
+    db.prepare(
+      `SELECT
+         r.role_code,
+         r.role_name
+       FROM user_roles ur
+       INNER JOIN roles r
+         ON r.role_id = ur.role_id
+       WHERE ur.user_id = ?1
+       ORDER BY r.role_code`
+    ).bind(userId).all(),
+
+    db.prepare(
+      `SELECT
+         uca.assignment_id,
+         uca.country_id,
+         c.country_code,
+         c.country_name,
+         c.country_status,
+         uca.assignment_role_code,
+         uca.assigned_at
+       FROM user_country_assignments uca
+       INNER JOIN countries c
+         ON c.country_id = uca.country_id
+       WHERE uca.user_id = ?1
+         AND uca.assignment_status = 'ACTIVE'
+       ORDER BY c.country_name`
+    ).bind(userId).all()
+  ]);
+
+  return {
+    roles: (roleResult?.results ?? []).map((row) => ({
+      roleCode: row.role_code,
+      roleName: row.role_name
+    })),
+
+    activeCountryAssignments:
+      (assignmentResult?.results ?? []).map((row) => ({
+        assignmentId: row.assignment_id,
+        countryId: row.country_id,
+        countryCode: row.country_code,
+        countryName: row.country_name,
+        countryStatus: row.country_status,
+        assignmentRoleCode: row.assignment_role_code,
+        assignedAt: row.assigned_at
+      }))
+  };
+}
+
 /**
  * Handle authenticated session actions.
  *
@@ -116,13 +166,21 @@ export async function handleSessionRequest(request, env, url) {
 
     // GET /auth/me
     if (isMeRequest) {
+      const accessContext = await getUserAccessContext(
+        env.DB,
+        session.userId
+      );
+
       return json({
         ok: true,
         user: {
           userId: session.userId,
           registrationStatus: session.registrationStatus,
           accountStatus: session.accountStatus,
-          accessLevel: session.accessLevel
+          accessLevel: session.accessLevel,
+          roles: accessContext.roles,
+          activeCountryAssignments:
+            accessContext.activeCountryAssignments
         },
         session: {
           sessionId: session.sessionId,
@@ -132,7 +190,7 @@ export async function handleSessionRequest(request, env, url) {
         }
       });
     }
-    
+
     // POST /auth/logout
     if (isLogoutRequest) {
       const revoked = await revokeSession({
