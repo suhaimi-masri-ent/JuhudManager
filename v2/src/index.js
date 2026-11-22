@@ -9,6 +9,7 @@ import { handleSessionRequest } from "./routes/session.js";
 import { handleAdminRegistrationRequest } from "./routes/admin-registrations.js";
 import { handleSuperAdminBootstrapRequest } from "./routes/super-admin-bootstrap.js";
 import { handleSuperAdminCountryRequest } from "./routes/super-admin-countries.js";
+import { handleSuperAdminCountryAdminRequest } from "./routes/super-admin-country-admins.js";
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
 const ALLOWED_METHODS = "GET, POST, OPTIONS";
@@ -101,6 +102,14 @@ export default {
 
         if (!response) {
           response = await handleSuperAdminCountryRequest(
+            request,
+            env,
+            url
+          );
+        }
+
+        if (!response) {
+          response = await handleSuperAdminCountryAdminRequest(
             request,
             env,
             url
