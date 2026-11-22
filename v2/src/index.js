@@ -1,3 +1,4 @@
+
 import { json } from "./lib/http.js";
 import { createResendDelivery } from "./lib/resend-email.js";
 import { createWhatsAppCloudDelivery } from "./lib/whatsapp-cloud.js";
@@ -7,6 +8,7 @@ import { handlePasswordChangeRequest } from "./routes/password-change.js";
 import { handleSessionRequest } from "./routes/session.js";
 import { handleAdminRegistrationRequest } from "./routes/admin-registrations.js";
 import { handleSuperAdminBootstrapRequest } from "./routes/super-admin-bootstrap.js";
+import { handleSuperAdminCountryRequest } from "./routes/super-admin-countries.js";
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
 const ALLOWED_METHODS = "GET, POST, OPTIONS";
@@ -96,6 +98,14 @@ export default {
           env,
           url
         );
+
+        if (!response) {
+          response = await handleSuperAdminCountryRequest(
+            request,
+            env,
+            url
+          );
+        }
 
         if (!response) {
           response = await handleLoginRequest(request, env, url);
