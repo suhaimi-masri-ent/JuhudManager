@@ -7,6 +7,7 @@ import { handleLoginRequest } from "./routes/login.js";
 import { handlePasswordChangeRequest } from "./routes/password-change.js";
 import { handleSessionRequest } from "./routes/session.js";
 import { handleAdminRegistrationRequest } from "./routes/admin-registrations.js";
+import { handleAdminRegistrationCancellationRequest } from "./routes/admin-registration-cancellation.js";
 import { handleSuperAdminBootstrapRequest } from "./routes/super-admin-bootstrap.js";
 import { handleSuperAdminCountryRequest } from "./routes/super-admin-countries.js";
 import { handleSuperAdminCountryAdminRequest } from "./routes/super-admin-country-admins.js";
@@ -130,6 +131,14 @@ export default {
 
         if (!response) {
           response = await handleAdminRegistrationRequest(
+            request,
+            env,
+            url
+          );
+        }
+
+        if (!response) {
+          response = await handleAdminRegistrationCancellationRequest(
             request,
             env,
             url
