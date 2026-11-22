@@ -107,8 +107,7 @@ export async function hashPassword(password) {
   validatePassword(password);
 
   const encoded = await hash(password, {
-    profile: "standard",
-    hashLength: PASSWORD_POLICY.hashLength
+    profile: "standard"
   });
 
   if (!isAcceptablePasswordHash(encoded)) {
