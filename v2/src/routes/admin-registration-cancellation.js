@@ -1,12 +1,7 @@
+
 import { json } from "../lib/http.js";
-
-import {
-  authenticateSession
-} from "../auth/sessions.js";
-
-import {
-  requireSuperAdminRole
-} from "../auth/authorization.js";
+import { authenticateSession } from "../auth/sessions.js";
+import { requireSuperAdminRole } from "../auth/authorization.js";
 
 const MAX_REASON_LENGTH = 1000;
 const MAX_BODY_BYTES = 4096;
@@ -19,7 +14,6 @@ function httpError(message, status) {
 
 function getBearerToken(request) {
   const authorization = request.headers.get("Authorization");
-
   if (typeof authorization !== "string") return null;
 
   const match = authorization.match(/^Bearer ([A-Za-z0-9_-]{43})$/);
@@ -74,10 +68,7 @@ async function readJson(request) {
   if (contentLength !== null) {
     const declaredLength = Number(contentLength);
 
-    if (
-      Number.isFinite(declaredLength) &&
-      declaredLength > MAX_BODY_BYTES
-    ) {
+    if (Number.isFinite(declaredLength) && declaredLength > MAX_BODY_BYTES) {
       throw httpError("Request body is too large.", 413);
     }
   }
@@ -86,6 +77,10 @@ async function readJson(request) {
 
   if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) {
     throw httpError("Request body is too large.", 413);
+  }
+
+  if (!raw.trim()) {
+    throw httpError("A JSON request body is required.", 400);
   }
 
   try {
@@ -189,11 +184,11 @@ async function getCancellationEligibility(db, userId) {
 }
 
 async function getEligibility({ db, userId }) {
-  const eligibility = await getCancellationEligibility(db, userId);
+  const cancellation = await getCancellationEligibility(db, userId);
 
   return json({
     ok: true,
-    cancellation: eligibility
+    cancellation
   });
 }
 
@@ -225,7 +220,7 @@ async function cancelRegistration({
 
   const now = new Date().toISOString();
 
-  const results = await db.batch([
+  const statements = [
     db.prepare(
       `UPDATE user_registration_identity_details
        SET
@@ -276,22 +271,34 @@ async function cancelRegistration({
              AND u.account_status = 'DISABLED'
              AND (u.email IS NULL OR length(trim(u.email)) = 0)
          )`
-    ).bind(administratorId, now, reason, userId)
-  ]);
+    ).bind(administratorId, now, reason, userId),
+
+    db.prepare(
+      `INSERT INTO audit_logs (
+         audit_id,
+         action,
+         entity_type,
+         entity_id
+       )
+       SELECT
+         lower(hex(randomblob(16))),
+         NULL,
+         NULL,
+         NULL
+       WHERE changes() <> 1`
+    )
+  ];
+
+  const results = await db.batch(statements);
 
   const detailChanges = results?.[0]?.meta?.changes ?? 0;
   const authChanges = results?.[1]?.meta?.changes ?? 0;
   const otpChanges = results?.[2]?.meta?.changes ?? 0;
   const reviewChanges = results?.[3]?.meta?.changes ?? 0;
 
-  if (
-    detailChanges !== eligibility.identitiesToRevoke ||
-    authChanges !== eligibility.pendingAuthIdentitiesToRevoke ||
-    otpChanges !== eligibility.activeOtpRequestsToInvalidate ||
-    reviewChanges !== 1
-  ) {
+  if (reviewChanges !== 1) {
     throw httpError(
-      "Registration cancellation did not complete as expected. Refresh the registration before trying again.",
+      "Registration cancellation could not be confirmed.",
       409
     );
   }
