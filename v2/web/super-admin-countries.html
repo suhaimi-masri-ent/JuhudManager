@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#14532d">
+    <title>Country Management | JuhudManager</title>
+
+    <link rel="stylesheet" href="./assets/css/app.css">
+    <link rel="stylesheet" href="./assets/css/super-admin-countries.css">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="header-brand">
+                <a href="./dashboard.html" class="brand-link">
+                    <span class="brand-name">JuhudManager</span>
+                </a>
+                <span class="page-context">Super Admin</span>
+            </div>
+
+            <div class="header-actions">
+                <span id="accountAccessLabel" class="access-label">
+                    Super Admin Area
+                </span>
+                <button id="logoutButton" type="button" class="button button-secondary">
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <section class="page-heading">
+                <div>
+                    <p class="eyebrow">PLATFORM MANAGEMENT</p>
+                    <h1>Country Management</h1>
+                    <p class="page-description">
+                        Manage countries registered in the JuhudManager platform.
+                    </p>
+                </div>
+
+                <button
+                    id="refreshCountriesButton"
+                    type="button"
+                    class="button button-secondary"
+                >
+                    Refresh
+                </button>
+            </section>
+
+            <div
+                id="countryNotice"
+                class="notice"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
+
+            <section class="management-section">
+                <div class="section-heading">
+                    <div>
+                        <h2>Registered Countries</h2>
+                        <p>View country status and associated records.</p>
+                    </div>
+                </div>
+
+                <div id="emptyState" class="empty-state" hidden>
+                    <h3>No countries found</h3>
+                    <p>Countries will appear here after they are registered.</p>
+                </div>
+
+                <div id="countryTableWrap" class="table-wrap" hidden>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">Country</th>
+                                <th scope="col">Code</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Active Country Admins</th>
+                                <th scope="col">Active Jemaah</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="countryTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div id="countryList" class="country-list-mobile"></div>
+            </section>
+
+            <section class="management-section add-country-section">
+                <div class="section-heading">
+                    <div>
+                        <h2>Add Country</h2>
+                        <p>Register a new country in the platform.</p>
+                    </div>
+                </div>
+
+                <form id="addCountryForm" class="country-form">
+                    <div class="form-field">
+                        <label for="countryCode">Country Code</label>
+                        <input
+                            id="countryCode"
+                            name="countryCode"
+                            type="text"
+                            minlength="2"
+                            maxlength="2"
+                            pattern="[A-Za-z]{2}"
+                            placeholder="e.g. MY"
+                            autocomplete="off"
+                            required
+                        >
+                        <small>Two-letter ISO-style country code.</small>
+                    </div>
+
+                    <div class="form-field">
+                        <label for="countryName">Country Name</label>
+                        <input
+                            id="countryName"
+                            name="countryName"
+                            type="text"
+                            minlength="2"
+                            maxlength="100"
+                            placeholder="e.g. Malaysia"
+                            autocomplete="off"
+                            required
+                        >
+                    </div>
+
+                    <div class="form-actions">
+                        <button
+                            id="addCountryButton"
+                            type="submit"
+                            class="button button-primary"
+                        >
+                            Add Country
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <p class="security-note">
+                Access to country management is controlled by server-side
+                authorization. Only an authorized Super Admin can perform
+                these operations.
+            </p>
+        </main>
+
+        <footer class="app-footer">
+            <p>JuhudManager V2</p>
+        </footer>
+    </div>
+
+    <script type="module" src="./assets/js/super-admin-countries.js"></script>
+</body>
+</html>
