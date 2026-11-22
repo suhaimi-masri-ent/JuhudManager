@@ -1,7 +1,7 @@
-
 PRAGMA foreign_keys = ON;
 
 DROP TRIGGER IF EXISTS trg_registration_review_transition_guard;
+DROP TRIGGER IF EXISTS trg_registration_cancellation_audit;
 
 CREATE TRIGGER trg_registration_review_transition_guard
 BEFORE UPDATE OF registration_status
@@ -91,8 +91,9 @@ BEGIN
         SELECT 1
         FROM user_registration_identity_details
         WHERE user_id = NEW.user_id
+          AND identity_status IN ('UNVERIFIED', 'VERIFIED')
       )
-    THEN RAISE(ABORT, 'Registration identity records must be empty.')
+    THEN RAISE(ABORT, 'Active registration identity claims must be revoked first.')
   END;
 
   SELECT CASE
@@ -101,8 +102,9 @@ BEGIN
         SELECT 1
         FROM user_auth_identities
         WHERE user_id = NEW.user_id
+          AND verification_status IN ('PENDING', 'VERIFIED')
       )
-    THEN RAISE(ABORT, 'Authentication identity records must be empty.')
+    THEN RAISE(ABORT, 'Pending or verified authentication identities must be resolved first.')
   END;
 
   SELECT CASE
@@ -111,8 +113,10 @@ BEGIN
         SELECT 1
         FROM auth_otp_requests
         WHERE user_id = NEW.user_id
+          AND consumed_at IS NULL
+          AND invalidated_at IS NULL
       )
-    THEN RAISE(ABORT, 'OTP records must be empty.')
+    THEN RAISE(ABORT, 'Active OTP requests must be invalidated first.')
   END;
 
   SELECT CASE
@@ -122,7 +126,7 @@ BEGIN
         FROM user_credentials
         WHERE user_id = NEW.user_id
       )
-    THEN RAISE(ABORT, 'Credential records must be empty.')
+    THEN RAISE(ABORT, 'Registration credentials must not exist.')
   END;
 END;
 
