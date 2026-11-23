@@ -251,6 +251,7 @@ async function listRegistrations({ db, url }) {
  * Identity values are deliberately never decrypted for the Admin detail
  * screen. Admin sees type, issuing country, status and dates only.
  */
+
 async function getRegistrationDetails({ db, userId }) {
   const user = await db.prepare(
     `SELECT
@@ -264,7 +265,10 @@ async function getRegistrationDetails({ db, userId }) {
        r.reviewed_by,
        r.reviewed_at,
        r.rejection_reason,
-       r.cancellation_reason
+       r.cancellation_reason,
+       r.admin_assisted_recovery_at,
+       r.admin_assisted_recovery_by,
+       r.admin_assisted_recovery_method
      FROM users u
      INNER JOIN user_registration_reviews r
        ON r.user_id = u.user_id
@@ -318,7 +322,16 @@ async function getRegistrationDetails({ db, userId }) {
       rejectionReason: user.rejection_reason,
       cancellationReason: user.cancellation_reason,
       createdAt: user.created_at,
-      updatedAt: user.updated_at
+      updatedAt: user.updated_at,
+
+      adminAssistedRecoveryAt:
+        user.admin_assisted_recovery_at,
+
+      adminAssistedRecoveryBy:
+        user.admin_assisted_recovery_by,
+
+      adminAssistedRecoveryMethod:
+        user.admin_assisted_recovery_method
     },
     identities
   });
