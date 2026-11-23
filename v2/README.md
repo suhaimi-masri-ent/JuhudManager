@@ -59,8 +59,8 @@ The current backend implementation includes:
 - Disabled account creation pending verification.
 - NATIONAL_ID, EMAIL and WHATSAPP identity reservations.
 - Country-scoped NATIONAL_ID and PASSPORT identities.
-- Temporary PENDING identity reservations lasting 15 minutes.
-- Email and WhatsApp registration OTP verification.
+- Temporary 15-minute PENDING reservations for email identities.
+- Email registration OTP verification. WhatsApp is collected as an unverified identity claim; WhatsApp OTP verification is not implemented yet.
 - Account activation token issuance and verification.
 - Initial password setup using Argon2id.
 - Password login using NATIONAL_ID or PASSPORT.

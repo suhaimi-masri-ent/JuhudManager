@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "wrangler dev --config wrangler.jsonc",
     "build": "wrangler deploy --dry-run --config wrangler.jsonc",
+    "test": "node --experimental-test-module-mocks --test test/*.test.js",
     "deploy": "wrangler deploy --config wrangler.jsonc"
   },
   "dependencies": {

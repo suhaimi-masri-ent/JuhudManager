@@ -44,6 +44,52 @@ class Statement {
       return { meta: { changes: 1 } };
     }
 
+    if (this.sql.includes("INSERT INTO user_registration_reviews")) {
+      const [userId] = this.args;
+      this.db.reviews.push({
+        user_id: userId,
+        registration_status: "AWAITING_EMAIL_VERIFICATION"
+      });
+
+      return { meta: { changes: 1 } };
+    }
+
+    if (this.sql.includes("INSERT INTO user_registration_identity_details")) {
+      const isNationalId = this.sql.includes("'NATIONAL_ID'");
+      const [
+        detailId,
+        userId,
+        countryCodeOrHash,
+        scopeOrEncrypted,
+        hash,
+        encryptedValue
+      ] = this.args;
+
+      this.db.details.push(isNationalId
+        ? {
+            detail_id: detailId,
+            user_id: userId,
+            identity_type: "NATIONAL_ID",
+            country_code: countryCodeOrHash,
+            identity_scope: scopeOrEncrypted,
+            identity_hash: hash,
+            encrypted_value: encryptedValue,
+            identity_status: "UNVERIFIED"
+          }
+        : {
+            detail_id: detailId,
+            user_id: userId,
+            identity_type: "WHATSAPP",
+            country_code: null,
+            identity_scope: "GLOBAL",
+            identity_hash: countryCodeOrHash,
+            encrypted_value: scopeOrEncrypted,
+            identity_status: "UNVERIFIED"
+          });
+
+      return { meta: { changes: 1 } };
+    }
+
     if (this.sql.includes("UPDATE user_auth_identities")) {
       const [now, ...filters] = this.args;
       let i = 0;
@@ -107,6 +153,36 @@ class Statement {
       return { meta: { changes: 1 } };
     }
 
+    if (this.sql.includes("INSERT INTO user_auth_identities")) {
+      const [
+        identityId,
+        userId,
+        identityType,
+        countryCode,
+        identityScope,
+        identityHash,
+        encryptedValue,
+        expiresAt,
+        createdAt
+      ] = this.args;
+
+      this.db.identities.push({
+        identity_id: identityId,
+        user_id: userId,
+        identity_type: identityType,
+        country_code: countryCode,
+        identity_scope: identityScope,
+        identity_hash: identityHash,
+        encrypted_value: encryptedValue,
+        verification_status: "PENDING",
+        expires_at: expiresAt,
+        created_at: createdAt,
+        updated_at: createdAt
+      });
+
+      return { meta: { changes: 1 } };
+    }
+
     throw new Error("Unexpected SQL: " + this.sql);
   }
 }
@@ -115,6 +191,8 @@ class MockD1 {
   constructor() {
     this.users = [];
     this.identities = [];
+    this.details = [];
+    this.reviews = [];
   }
 
   prepare(sql) {
@@ -125,10 +203,19 @@ class MockD1 {
     for (const statement of statements) {
       if (statement.sql.includes("DELETE FROM user_auth_identities")) {
         this.identities = this.identities.filter(x =>
-          !(
-            x.user_id === statement.args[0] &&
-            x.verification_status === "PENDING"
-          )
+          x.user_id !== statement.args[0]
+        );
+      } else if (statement.sql.includes(
+        "DELETE FROM user_registration_identity_details"
+      )) {
+        this.details = this.details.filter(
+          x => x.user_id !== statement.args[0]
+        );
+      } else if (statement.sql.includes(
+        "DELETE FROM user_registration_reviews"
+      )) {
+        this.reviews = this.reviews.filter(
+          x => x.user_id !== statement.args[0]
         );
       } else if (statement.sql.includes("DELETE FROM users")) {
         this.users = this.users.filter(x =>
@@ -138,6 +225,8 @@ class MockD1 {
             x.email === null
           )
         );
+      } else {
+        await statement.run();
       }
     }
 
@@ -156,7 +245,7 @@ function validInput(overrides = {}) {
   };
 }
 
-test("creates a disabled draft with all three pending identities", async () => {
+test("creates a disabled draft with an email reservation and durable identity claims", async () => {
   const db = new MockD1();
 
   const result = await createRegistrationDraft({
@@ -167,29 +256,31 @@ test("creates a disabled draft with all three pending identities", async () => {
 
   assert.ok(result.userId);
   assert.equal(result.accountStatus, "DISABLED");
+  assert.equal(result.registrationStatus, "AWAITING_EMAIL_VERIFICATION");
   assert.equal(result.reservationMinutes, 15);
-  assert.equal(result.nextStep, "REQUEST_EMAIL_AND_WHATSAPP_OTP");
+  assert.equal(result.nextStep, "REQUEST_EMAIL_OTP");
 
   assert.equal(db.users.length, 1);
-  assert.equal(db.users[0].full_name, "Test User");
+  assert.equal(db.users[0].full_name, "TEST USER");
   assert.equal(db.users[0].email, null);
   assert.equal(db.users[0].account_status, "DISABLED");
 
-  assert.equal(db.identities.length, 3);
+  assert.equal(db.reviews[0].registration_status, "AWAITING_EMAIL_VERIFICATION");
+  assert.equal(db.identities.length, 1);
+  assert.equal(db.identities[0].identity_type, "EMAIL");
+  assert.equal(db.identities[0].verification_status, "PENDING");
+  assert.ok(db.identities[0].expires_at);
 
+  assert.equal(db.details.length, 2);
   assert.deepEqual(
-    db.identities.map(x => x.identity_type).sort(),
-    ["EMAIL", "NATIONAL_ID", "WHATSAPP"]
+    db.details.map(x => x.identity_type).sort(),
+    ["NATIONAL_ID", "WHATSAPP"]
   );
-
-  assert.ok(db.identities.every(
-    x => x.verification_status === "PENDING"
-  ));
-
-  assert.ok(db.identities.every(x => x.expires_at));
+  assert.ok(db.details.every(x => x.identity_status === "UNVERIFIED"));
+  assert.ok(db.details.every(x => x.encrypted_value));
 });
 
-test("normalizes country, email and WhatsApp identity values", async () => {
+test("normalizes country and stores durable identity claims separately", async () => {
   const db = new MockD1();
 
   await createRegistrationDraft({
@@ -198,13 +289,13 @@ test("normalizes country, email and WhatsApp identity values", async () => {
     ...validInput()
   });
 
-  const national = db.identities.find(
+  const national = db.details.find(
     x => x.identity_type === "NATIONAL_ID"
   );
   const email = db.identities.find(
     x => x.identity_type === "EMAIL"
   );
-  const whatsapp = db.identities.find(
+  const whatsapp = db.details.find(
     x => x.identity_type === "WHATSAPP"
   );
 
@@ -213,7 +304,8 @@ test("normalizes country, email and WhatsApp identity values", async () => {
   assert.equal(email.identity_scope, "GLOBAL");
   assert.equal(whatsapp.identity_scope, "GLOBAL");
 
-  assert.notEqual(email.encrypted_value, "TEST@EXAMPLE.COM");
+  assert.notEqual(email.encrypted_value, "test@example.com");
+  assert.notEqual(whatsapp.encrypted_value, "+60123456789");
 });
 
 test("rejects missing required registration fields before creating a user", async () => {
@@ -283,7 +375,8 @@ test("identity conflict cleans up the provisional user and pending identities", 
   });
 
   assert.equal(db.users.length, 1);
-  assert.equal(db.identities.length, 3);
+  assert.equal(db.identities.length, 1);
+  assert.equal(db.details.length, 2);
 
   await assert.rejects(
     createRegistrationDraft({
@@ -299,7 +392,8 @@ test("identity conflict cleans up the provisional user and pending identities", 
   );
 
   assert.equal(db.users.length, 1);
-  assert.equal(db.identities.length, 3);
+  assert.equal(db.identities.length, 1);
+  assert.equal(db.details.length, 2);
 
   assert.ok(db.identities.every(
     x => x.user_id === db.users[0].user_id

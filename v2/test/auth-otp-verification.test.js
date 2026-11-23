@@ -61,8 +61,31 @@ class Statement {
       };
     }
 
+    if (this.sql.includes("FROM user_auth_identities i")) {
+      const [requestedIdentityId, requestedUserId, identityHash, now] =
+        this.args;
+      const identity = this.db.identity;
+      const user = this.db.user;
+      const review = this.db.registrationReview;
+
+      return identity?.identity_id === requestedIdentityId &&
+        identity.user_id === requestedUserId &&
+        identity.identity_type === "EMAIL" &&
+        identity.identity_scope === "GLOBAL" &&
+        identity.identity_hash === identityHash &&
+        identity.verification_status === "PENDING" &&
+        identity.expires_at > now &&
+        user?.user_id === requestedUserId &&
+        user.account_status === "DISABLED" &&
+        user.email === null &&
+        review?.user_id === requestedUserId &&
+        review.registration_status === "AWAITING_EMAIL_VERIFICATION"
+        ? { identity_id: requestedIdentityId }
+        : null;
+    }
+
     if (this.sql.includes("FROM auth_otp_requests")) {
-      const [requestedUserId, requestedIdentityId, type, hash] =
+      const [requestedUserId, requestedIdentityId, hash] =
         this.args;
 
       const row = this.db.request;
@@ -71,7 +94,7 @@ class Statement {
         row &&
         row.user_id === requestedUserId &&
         row.identity_id === requestedIdentityId &&
-        row.destination_type === type &&
+        row.destination_type === "EMAIL" &&
         row.destination_hash === hash &&
         row.otp_purpose === "REGISTER" &&
         row.consumed_at === null &&
@@ -125,9 +148,7 @@ class Statement {
         requestId,
         requestedUserId,
         requestedIdentityId,
-        type,
-        hash,
-        guardedUserId
+        hash
       ] = this.args;
 
       const identity = this.db.identity;
@@ -137,39 +158,35 @@ class Statement {
         identity &&
         identity.identity_id === requestedIdentityId &&
         identity.user_id === requestedUserId &&
-        identity.identity_type === type &&
+        identity.identity_type === "EMAIL" &&
         identity.identity_scope === "GLOBAL" &&
-        identity.verification_status === "PENDING" &&
-        identity.expires_at > time;
-
-      const emailUserEligible =
-        type !== "EMAIL" ||
-        (
-          user &&
-          user.user_id === guardedUserId &&
-          user.account_status === "DISABLED" &&
-          user.email === null
-        );
+        identity.verification_status === "VERIFIED" &&
+        identity.expires_at === null;
 
       if (
         row &&
         row.otp_request_id === requestId &&
         row.user_id === requestedUserId &&
         row.identity_id === requestedIdentityId &&
-        row.destination_type === type &&
+        row.destination_type === "EMAIL" &&
         row.destination_hash === hash &&
         row.consumed_at === null &&
         row.invalidated_at === null &&
         row.expires_at > time &&
         row.attempt_count < row.max_attempts &&
         identityEligible &&
-        emailUserEligible
+        user?.user_id === requestedUserId &&
+        user.account_status === "DISABLED" &&
+        user.email !== null &&
+        this.db.registrationReview?.registration_status === "PENDING_REVIEW"
       ) {
         row.consumed_at = time;
         return { meta: { changes: 1 } };
       }
 
-      return { meta: { changes: 0 } };
+      throw new Error(
+        "Email verification must be completed before registration review."
+      );
     }
 
     if (this.sql.includes("UPDATE user_auth_identities")) {
@@ -177,8 +194,9 @@ class Statement {
         time,
         requestedIdentityId,
         requestedUserId,
-        type,
-        requestId
+        identityHash,
+        requestId,
+        destinationHash
       ] = this.args;
 
       const identity = this.db.identity;
@@ -187,15 +205,17 @@ class Statement {
         identity &&
         identity.identity_id === requestedIdentityId &&
         identity.user_id === requestedUserId &&
-        identity.identity_type === type &&
+        identity.identity_type === "EMAIL" &&
         identity.identity_scope === "GLOBAL" &&
+        identity.identity_hash === identityHash &&
         identity.verification_status === "PENDING" &&
         identity.expires_at > time &&
         row &&
         row.otp_request_id === requestId &&
         row.user_id === requestedUserId &&
         row.identity_id === requestedIdentityId &&
-        row.consumed_at === time
+        row.destination_hash === destinationHash &&
+        row.consumed_at === null
       ) {
         identity.verification_status = "VERIFIED";
         identity.verified_at = time;
@@ -213,7 +233,10 @@ class Statement {
         email,
         time,
         requestedUserId,
-        requestedIdentityId
+        requestedIdentityId,
+        identityHash,
+        requestId,
+        destinationHash
       ] = this.args;
 
       const user = this.db.user;
@@ -228,10 +251,54 @@ class Statement {
         identity.identity_id === requestedIdentityId &&
         identity.user_id === requestedUserId &&
         identity.identity_type === "EMAIL" &&
-        identity.verification_status === "VERIFIED"
+        identity.identity_hash === identityHash &&
+        identity.verification_status === "VERIFIED" &&
+        this.db.request.otp_request_id === requestId &&
+        this.db.request.destination_hash === destinationHash &&
+        this.db.request.consumed_at === null &&
+        this.db.request.invalidated_at === null
       ) {
         user.email = email;
         user.updated_at = time;
+
+        return { meta: { changes: 1 } };
+      }
+
+      return { meta: { changes: 0 } };
+    }
+
+    if (this.sql.includes("UPDATE user_registration_reviews")) {
+      const [
+        time,
+        requestedUserId,
+        email,
+        requestedIdentityId,
+        identityHash,
+        requestId,
+        destinationHash
+      ] = this.args;
+      const identity = this.db.identity;
+      const user = this.db.user;
+      const request = this.db.request;
+      const review = this.db.registrationReview;
+
+      if (
+        review?.user_id === requestedUserId &&
+        review.registration_status === "AWAITING_EMAIL_VERIFICATION" &&
+        user?.user_id === requestedUserId &&
+        user.email === email &&
+        user.account_status === "DISABLED" &&
+        identity?.identity_id === requestedIdentityId &&
+        identity.user_id === requestedUserId &&
+        identity.identity_hash === identityHash &&
+        identity.verification_status === "VERIFIED" &&
+        request?.otp_request_id === requestId &&
+        request.destination_hash === destinationHash &&
+        request.consumed_at === null &&
+        request.invalidated_at === null
+      ) {
+        review.registration_status = "PENDING_REVIEW";
+        review.updated_at = time;
 
         return { meta: { changes: 1 } };
       }
@@ -255,13 +322,25 @@ class MockD1 {
   }
 
   async batch(statements) {
-    const results = [];
+    const snapshot = {
+      request: structuredClone(this.request),
+      identity: structuredClone(this.identity),
+      user: structuredClone(this.user),
+      registrationReview: structuredClone(this.registrationReview)
+    };
 
-    for (const statement of statements) {
-      results.push(await statement.run());
+    try {
+      const results = [];
+
+      for (const statement of statements) {
+        results.push(await statement.run());
+      }
+
+      return results;
+    } catch (error) {
+      Object.assign(this, snapshot);
+      throw error;
     }
-
-    return results;
   }
 }
 
@@ -287,11 +366,20 @@ async function createDb(options = {}) {
     email: null
   };
 
+  db.registrationReview = {
+    user_id: userId,
+    registration_status: "AWAITING_EMAIL_VERIFICATION"
+  };
+
   db.identity = {
     identity_id: identityId,
     user_id: userId,
     identity_type: type,
     identity_scope: "GLOBAL",
+    identity_hash: await hashValue(
+      env.HMAC_SECRET,
+      `EMAIL:GLOBAL:${normalized}`
+    ),
     verification_status: "PENDING",
     expires_at: new Date(now + 10 * 60 * 1000).toISOString()
   };
@@ -342,33 +430,48 @@ test("correct email OTP verifies identity and updates users.email", async () => 
   assert.equal(result.destinationType, "EMAIL");
   assert.equal(result.identityStatus, "VERIFIED");
   assert.equal(result.emailUpdated, true);
+  assert.equal(result.registrationStatus, "PENDING_REVIEW");
+  assert.equal(result.nextStep, "SET_PASSWORD");
 
   assert.ok(db.request.consumed_at);
   assert.equal(db.identity.verification_status, "VERIFIED");
   assert.equal(db.identity.expires_at, null);
   assert.equal(db.user.email, destination);
+  assert.equal(
+    db.registrationReview.registration_status,
+    "PENDING_REVIEW"
+  );
 });
 
-test("correct WhatsApp OTP verifies identity without updating users.email", async () => {
+test("registration guard failures are returned as conflicts", async () => {
+  const db = await createDb();
+  db.batch = async () => {
+    throw new Error(
+      "Registration OTP completion state is incomplete."
+    );
+  };
+
+  await assert.rejects(
+    verify(db),
+    error => error.status === 409
+  );
+});
+
+test("WhatsApp OTP verification is not enabled", async () => {
   const whatsapp = "+60123456789";
+  const db = await createDb();
 
-  const db = await createDb({
-    destinationType: "WHATSAPP",
-    destination: whatsapp
-  });
+  await assert.rejects(
+    verify(db, {
+      destinationType: "WHATSAPP",
+      destination: whatsapp
+    }),
+    error => error.status === 400 &&
+      /only email otp verification/i.test(error.message)
+  );
 
-  const result = await verify(db, {
-    destinationType: "WHATSAPP",
-    destination: whatsapp
-  });
-
-  assert.equal(result.verified, true);
-  assert.equal(result.destinationType, "WHATSAPP");
-  assert.equal(result.emailUpdated, false);
-
-  assert.ok(db.request.consumed_at);
-  assert.equal(db.identity.verification_status, "VERIFIED");
-  assert.equal(db.user.email, null);
+  assert.equal(db.request.consumed_at, null);
+  assert.equal(db.identity.verification_status, "PENDING");
 });
 
 test("wrong OTP increments the attempt counter", async () => {
@@ -478,6 +581,10 @@ test("email OTP cannot be consumed when user already has an email", async () => 
   assert.equal(db.request.consumed_at, null);
   assert.equal(db.identity.verification_status, "PENDING");
   assert.equal(db.user.email, "existing@example.com");
+  assert.equal(
+    db.registrationReview.registration_status,
+    "AWAITING_EMAIL_VERIFICATION"
+  );
 });
 
 test("email OTP cannot be consumed when user is not DISABLED", async () => {
@@ -492,4 +599,8 @@ test("email OTP cannot be consumed when user is not DISABLED", async () => {
   assert.equal(db.request.consumed_at, null);
   assert.equal(db.identity.verification_status, "PENDING");
   assert.equal(db.user.email, null);
+  assert.equal(
+    db.registrationReview.registration_status,
+    "AWAITING_EMAIL_VERIFICATION"
+  );
 });

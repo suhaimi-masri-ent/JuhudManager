@@ -1,7 +1,7 @@
 
 # JuhudManager – Development Roadmap
 
-**Last Updated:** 19 November 2026
+**Last Updated:** 23 November 2026
 
 ---
 
@@ -36,7 +36,7 @@ Any future V1 maintenance should be handled separately from V2 development.
 
 ### Phase 1: Foundation and Core Domain
 
-**Status:** Initial foundation prepared.
+**Status:** Initial foundation implemented; current unit tests and Worker dry-run build pass. Remote migration history and end-to-end integration still need verification.
 
 - [x] Establish isolated `v2/` application directory.
 - [x] Create separate Wrangler configuration.
@@ -54,12 +54,15 @@ Any future V1 maintenance should be handled separately from V2 development.
 - [x] Define Amer replacement rules.
 - [x] Define Admin-controlled former Amer access.
 - [ ] Validate migration against a dedicated V2 D1 database.
-- [ ] Run automated tests and local Worker verification.
+- [x] Run automated unit tests.
+- [ ] Complete local Worker verification.
 
 ### Phase 2: Authentication and User Management
 
-- [ ] Authentication and session management.
-- [ ] User account provisioning.
+- [x] Initial authentication and session backend (registration, email OTP, activation and login).
+- [x] Initial user account provisioning and registration review workflow.
+- [ ] Complete email delivery and Worker/D1 integration testing.
+- [ ] Define and implement authorized National ID/Passport verification and recovery workflows.
 - [ ] Role and permission management.
 - [ ] Admin user management.
 - [ ] User profile management.
@@ -151,8 +154,8 @@ Case Management is intentionally excluded from the current V2 implementation seq
 
 ## 6. Current Development Position
 
-The initial V2 foundation and Amer appointment domain rules have been prepared.
+The V2 foundation, Amer appointment domain rules and initial authentication backend are implemented. Email OTP is supported; WhatsApp OTP is not. Current automated tests and the Wrangler dry-run build pass locally.
 
-The next priority is to verify the foundation migration and automated tests, then proceed with authentication and user management.
+The next priority is controlled end-to-end testing of email registration, activation and login, including delivery-provider configuration. D1 has been inspected read-only, but migration history, concurrency behavior and production integration remain unverified. No remote migration or deployment was performed for this verification.
 
 No V2 production deployment is claimed at this stage.

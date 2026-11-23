@@ -13,9 +13,10 @@ The V2 authentication backend currently includes:
 - NATIONAL_ID, EMAIL and WHATSAPP identity reservations.
 - Country-scoped NATIONAL_ID and PASSPORT identities.
 - Globally unique EMAIL and WHATSAPP identities.
-- Temporary PENDING identity reservations lasting 15 minutes.
+- Temporary 15-minute PENDING reservations for email identities.
+- Durable UNVERIFIED claims for National ID and WhatsApp identities.
 - Expired reservation handling.
-- Email and WhatsApp registration OTP verification.
+- Email registration OTP verification.
 - Account activation token issuance and verification.
 - Initial password setup using Argon2id.
 - Password login using NATIONAL_ID or PASSPORT.
@@ -34,15 +35,14 @@ This implementation has undergone static code review. It has not yet completed f
 
 1. User submits full name, issuing country, National ID, email and WhatsApp.
 2. System creates a DISABLED user account.
-3. System reserves NATIONAL_ID, EMAIL and WHATSAPP identities as PENDING.
-4. Each PENDING identity reservation expires after 15 minutes.
-5. User requests email and WhatsApp OTP verification.
-6. Successful OTP verification changes the corresponding identity to VERIFIED.
-7. Verified email is written to `users.email`.
-8. NATIONAL_ID/PASSPORT requires a separately authorized verification process.
-9. Account activation is permitted only after all required identities are VERIFIED.
-10. User receives an activation link and establishes an initial password.
-11. Successful credential creation activates the account.
+3. System stores National ID and WhatsApp as durable UNVERIFIED identity claims.
+4. System reserves the email as a PENDING identity for 15 minutes.
+5. User requests an email OTP. WhatsApp OTP verification is not implemented.
+6. Successful email OTP verification marks the email identity VERIFIED and writes it to `users.email`.
+7. The registration moves to `PENDING_REVIEW` for Admin review.
+8. National ID verification requires a separately authorized process.
+9. After approval, the user receives an activation link and establishes an initial password.
+10. Successful credential creation activates the account.
 
 PENDING identities cannot be claimed by another account while their reservations remain valid.
 
@@ -56,7 +56,8 @@ VERIFIED identities remain unique until revoked through an authorized process.
 - Maximum verification attempts: 5.
 - Resend cooldown: 60 seconds.
 - Maximum requests: 5 per destination within 15 minutes.
-- Registration OTP delivery supports EMAIL and WHATSAPP adapters.
+- Registration OTP delivery currently supports EMAIL only.
+- WhatsApp delivery is not wired into registration OTP verification.
 - OTP values are never returned in API responses.
 
 LOGIN OTP, password reset OTP and other OTP purposes are not implemented by the registration OTP module.
@@ -134,16 +135,7 @@ Dedicated V2 D1 database:
 - Binding: `DB`
 - Migration directory: `v2/migrations/`
 
-Migrations:
-
-- `0001_foundation.sql`
-- `0002_authentication.sql`
-- `0003_account_activation.sql`
-- `0004_auth_rate_limits.sql`
-
-All four migrations have already been applied to the remote V2 database.
-
-Do not rerun these migrations.
+Migration files are maintained under `v2/migrations/`. Before any remote migration, verify the database's `d1_migrations` history and confirm it matches the intended dedicated V2 database. Do not rerun an already-applied migration.
 
 Any future schema changes require a new migration file.
 
@@ -169,7 +161,7 @@ Any future schema changes require a new migration file.
 
 `ENCRYPTION_KEY` must represent exactly 32 bytes using Base64URL encoding.
 
-Email and WhatsApp delivery adapters are implemented, but production provider configuration and end-to-end delivery verification remain outstanding.
+The email delivery adapter is used by registration OTP. The WhatsApp adapter exists but WhatsApp OTP verification is not implemented. Production provider configuration and end-to-end delivery verification remain outstanding.
 
 Never commit secrets to GitHub.
 

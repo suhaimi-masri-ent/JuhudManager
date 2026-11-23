@@ -1,17 +1,40 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { handleAuthRequest } from "../src/routes/auth.js";
+import { mock } from "node:test";
+
+mock.module("../src/auth/credentials.js", {
+  exports: {
+    setInitialPassword: async () => ({})
+  }
+});
+
+const { handleAuthRequest } = await import("../src/routes/auth.js");
 
 const env = {
   HMAC_SECRET: "test-only-hmac-secret-with-sufficient-entropy",
   OTP_HASH_SECRET: "test-only-otp-secret-with-sufficient-entropy",
-  ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY"
+  ENCRYPTION_KEY: "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY",
+  DB: {
+    prepare() {
+      return {
+        bind() {
+          return this;
+        },
+        async first() {
+          return { request_count: 1 };
+        }
+      };
+    }
+  }
 };
 
 async function send(path, body, method = "POST", testEnv = env) {
   const request = new Request(`https://example.test${path}`, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "CF-Connecting-IP": "203.0.113.1"
+    },
     body: typeof body === "string" ? body : JSON.stringify(body)
   });
 

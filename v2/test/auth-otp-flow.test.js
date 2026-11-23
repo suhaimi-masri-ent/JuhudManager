@@ -28,39 +28,21 @@ class Statement {
   }
 
   async first() {
-    if (this.sql.includes("FROM user_auth_identities")) {
-      const [id, userId, type, hash, now] = this.args;
+    if (this.sql.includes("FROM user_auth_identities i")) {
+      const [id, userId, hash, now] = this.args;
 
       return this.db.identity &&
         this.db.identity.identity_id === id &&
         this.db.identity.user_id === userId &&
-        this.db.identity.identity_type === type &&
+        this.db.identity.identity_type === "EMAIL" &&
         this.db.identity.identity_hash === hash &&
         this.db.identity.verification_status === "PENDING" &&
-        this.db.identity.expires_at > now
+        this.db.identity.expires_at > now &&
+        this.db.user.account_status === "DISABLED" &&
+        this.db.user.email === null &&
+        this.db.registrationStatus === "AWAITING_EMAIL_VERIFICATION"
         ? { identity_id: id }
         : null;
-    }
-
-    if (this.sql.includes("COUNT(*) AS total")) {
-      const [type, hash, windowStart] = this.args;
-      const rows = this.db.requests.filter(row =>
-        row.destination_type === type &&
-        row.destination_hash === hash &&
-        row.otp_purpose === "REGISTER" &&
-        row.created_at >= windowStart
-      );
-
-      return {
-        total: rows.length,
-        last_sent_at: rows.reduce(
-          (latest, row) =>
-            !latest || row.last_sent_at > latest
-              ? row.last_sent_at
-              : latest,
-          null
-        )
-      };
     }
 
     throw new Error("Unexpected SELECT: " + this.sql);
@@ -71,19 +53,42 @@ class Statement {
       this.sql.includes("UPDATE auth_otp_requests") &&
       this.sql.includes("destination_hash")
     ) {
-      const [time, type, hash] = this.args;
+      const [
+        time,
+        hash,
+        windowStart,
+        maxRequests,
+        cooldownStart,
+        identityId,
+        userId,
+        identityHash,
+        identityCheckTime
+      ] = this.args;
+      const eligible = canCreateRequest(
+        this.db,
+        hash,
+        windowStart,
+        maxRequests,
+        cooldownStart,
+        identityId,
+        userId,
+        identityHash,
+        identityCheckTime
+      );
       let changes = 0;
 
-      for (const row of this.db.requests) {
-        if (
-          row.destination_type === type &&
-          row.destination_hash === hash &&
-          row.otp_purpose === "REGISTER" &&
-          row.consumed_at === null &&
-          row.invalidated_at === null
-        ) {
-          row.invalidated_at = time;
-          changes++;
+      if (eligible) {
+        for (const row of this.db.requests) {
+          if (
+            row.destination_type === "EMAIL" &&
+            row.destination_hash === hash &&
+            row.otp_purpose === "REGISTER" &&
+            row.consumed_at === null &&
+            row.invalidated_at === null
+          ) {
+            row.invalidated_at = time;
+            changes++;
+          }
         }
       }
 
@@ -112,21 +117,39 @@ class Statement {
         id,
         userId,
         identityId,
-        type,
         hash,
         encrypted,
         otpHash,
         expiresAt,
         maxAttempts,
-        sentAt
+        sentAt,
+        windowStart,
+        maxRequests,
+        cooldownStart,
+        identityHash,
+        identityCheckTime
       ] = this.args;
+
+      if (!canCreateRequest(
+        this.db,
+        hash,
+        windowStart,
+        maxRequests,
+        cooldownStart,
+        identityId,
+        userId,
+        identityHash,
+        identityCheckTime
+      )) {
+        return { meta: { changes: 0 } };
+      }
 
       this.db.requests.push({
         otp_request_id: id,
         user_id: userId,
         identity_id: identityId,
         otp_purpose: "REGISTER",
-        destination_type: type,
+        destination_type: "EMAIL",
         destination_hash: hash,
         destination_encrypted: encrypted,
         otp_hash: otpHash,
@@ -146,9 +169,52 @@ class Statement {
   }
 }
 
+function canCreateRequest(
+  db,
+  hash,
+  windowStart,
+  maxRequests,
+  cooldownStart,
+  identityId,
+  userId,
+  identityHash,
+  identityCheckTime
+) {
+  const recentRequests = db.requests.filter(row =>
+    row.destination_type === "EMAIL" &&
+    row.destination_hash === hash &&
+    row.otp_purpose === "REGISTER" &&
+    row.created_at >= windowStart
+  );
+  const inCooldown = db.requests.some(row =>
+    row.destination_type === "EMAIL" &&
+    row.destination_hash === hash &&
+    row.otp_purpose === "REGISTER" &&
+    row.last_sent_at > cooldownStart
+  );
+  const identity = db.identity;
+
+  return recentRequests.length < maxRequests &&
+    !inCooldown &&
+    identity?.identity_id === identityId &&
+    identity.user_id === userId &&
+    identity.identity_type === "EMAIL" &&
+    identity.identity_hash === identityHash &&
+    identity.verification_status === "PENDING" &&
+    identity.expires_at > identityCheckTime &&
+    db.user.account_status === "DISABLED" &&
+    db.user.email === null &&
+    db.registrationStatus === "AWAITING_EMAIL_VERIFICATION";
+}
+
 class MockD1 {
   constructor() {
     this.identity = null;
+    this.user = {
+      account_status: "DISABLED",
+      email: null
+    };
+    this.registrationStatus = "AWAITING_EMAIL_VERIFICATION";
     this.requests = [];
   }
 
@@ -299,7 +365,9 @@ test("OTP request enforces the 60-second resend cooldown", async () => {
   await assert.rejects(
     request(db, {}, testEnv),
     error => error.status === 429 &&
-      /wait before requesting another OTP/i.test(error.message)
+      /too many OTP requests|wait before requesting another OTP/i.test(
+        error.message
+      )
   );
 
   assert.equal(db.requests.length, 1);

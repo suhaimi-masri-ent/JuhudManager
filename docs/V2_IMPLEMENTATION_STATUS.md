@@ -2,8 +2,8 @@
 # JuhudManager V2 – Implementation Status
 
 **Branch:** `develop`  
-**Status:** Initial V2 foundation uploaded to the repository and under review.  
-**Last Updated:** 19 November 2026
+**Status:** V2 foundation and initial authentication backend are implemented; integration and business modules remain in progress.
+**Last Updated:** 23 November 2026
 
 ## Implemented in the current foundation
 
@@ -14,7 +14,9 @@
 - Domain validation for Amer appointment and replacement.
 - Former Amer access policy is Admin-controlled.
 - Worker health endpoint.
-- Node built-in tests for Amer appointment rules.
+- Authentication backend for registration, email OTP, activation, login and sessions.
+- Automated tests for the currently implemented domain and authentication flows.
+- Worker dry-run build.
 
 ## Design rules reflected
 
@@ -28,18 +30,19 @@
 
 ## Intentionally not implemented yet
 
-- Authentication and account provisioning.
 - Full Jemaah and membership APIs.
 - Takaza creation/release and participation application APIs.
+- WhatsApp OTP verification and production delivery integration.
+- Authorized National ID/Passport verification workflow.
 - Kawaif/Tafakut assessment engine and actual eligibility calculation.
 - Takaza Reports, Comments and version history.
 - Case Management (ON HOLD).
-- Frontend screens and production deployment.
+- Frontend screens and production integration verification.
 
 These are subsequent slices. The eligibility engine must not be guessed before the agreed Kawaif/Tafakut criteria are reconciled.
 
 ## Safety and deployment
 
-The placeholder D1 database ID in `v2/wrangler.jsonc` is for local development only. Create a dedicated V2 D1 database before configuring remote deployment. Never point V2 at the V1 database.
+V2 must use a dedicated D1 database and must never point to the V1 database. The remote schema has been inspected read-only; migration history and full production integration have not been independently verified.
 
-**Verification note:** This status records repository inspection and schema-level changes. It does not claim that the migration has been applied to a remote D1 database or that production deployment has occurred.
+**Verification note:** `npm test` and the Wrangler dry-run build pass locally. No remote migration or deployment was performed as part of this verification.

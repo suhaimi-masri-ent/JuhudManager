@@ -434,6 +434,38 @@ export async function verifyRegistrationOtp({
     throw httpError("OTP is invalid or expired.", 400);
   }
 
+  const eligibleIdentity = await db.prepare(
+    `SELECT i.identity_id
+     FROM user_auth_identities i
+     INNER JOIN users u
+       ON u.user_id = i.user_id
+     INNER JOIN user_registration_reviews r
+       ON r.user_id = u.user_id
+     WHERE i.identity_id = ?1
+       AND i.user_id = ?2
+       AND i.identity_type = 'EMAIL'
+       AND i.identity_scope = 'GLOBAL'
+       AND i.identity_hash = ?3
+       AND i.verification_status = 'PENDING'
+       AND i.expires_at > ?4
+       AND u.account_status = 'DISABLED'
+       AND u.email IS NULL
+       AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+     LIMIT 1`
+  ).bind(
+    identityId,
+    userId,
+    identityHash,
+    currentTime
+  ).first();
+
+  if (!eligibleIdentity) {
+    throw httpError(
+      "Registration is no longer eligible for email verification.",
+      409
+    );
+  }
+
   if (row.attempt_count >= row.max_attempts) {
     throw httpError("OTP attempt limit reached.", 429);
   }
@@ -484,7 +516,10 @@ export async function verifyRegistrationOtp({
   // The migration trigger rejects the final statement if
   // the required state has not been established.
 
-  const results = await db.batch([
+  let results;
+
+  try {
+    results = await db.batch([
     // 1. Verify the email identity.
     db.prepare(
       `UPDATE user_auth_identities
@@ -634,7 +669,21 @@ export async function verifyRegistrationOtp({
       identityId,
       destinationHash
     )
-  ]);
+    ]);
+  } catch (error) {
+    if (
+      String(error?.message ?? "").includes(
+        "Registration OTP completion state is incomplete."
+      )
+    ) {
+      throw httpError(
+        "Email verification or registration update could not be completed. Please check the registration status.",
+        409
+      );
+    }
+
+    throw error;
+  }
 
   const identityChanges = results?.[0]?.meta?.changes ?? 0;
   const userChanges = results?.[1]?.meta?.changes ?? 0;
