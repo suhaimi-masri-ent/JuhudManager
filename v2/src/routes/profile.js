@@ -23,7 +23,7 @@ function getBearerToken(request) {
   return match ? match[1] : null;
 }
 
-async function requireFullSession(request, env) {
+async function requireProfileSession(request, env) {
   const token = getBearerToken(request);
 
   if (!token) {
@@ -40,8 +40,8 @@ async function requireFullSession(request, env) {
     throw httpError("Invalid or expired session.", 401);
   }
 
-  if (session.accessLevel !== "FULL") {
-    throw httpError("Full account access is required.", 403);
+  if (!["FULL", "LIMITED"].includes(session.accessLevel)) {
+    throw httpError("Profile access is not permitted.", 403);
   }
 
   return session;
@@ -193,7 +193,6 @@ async function updateProfile({
   }
 
   const allowedFields = ["fullName", "dateOfBirth"];
-
   const suppliedFields = Object.keys(body);
 
   if (
@@ -242,6 +241,8 @@ async function updateProfile({
     dateOfBirth
   };
 
+  // FULL accounts and authenticated LIMITED accounts may update
+  // their own profile. LIMITED accounts are PENDING_REVIEW + DISABLED.
   const statements = [
     db.prepare(
       `INSERT INTO user_profiles (
@@ -251,17 +252,28 @@ async function updateProfile({
          created_at,
          updated_at
        )
-       VALUES (?1, ?2, ?3, ?4, ?4)
+       SELECT ?1, ?2, ?3, ?4, ?4
+       WHERE EXISTS (
+         SELECT 1
+         FROM users u
+         WHERE u.user_id = ?1
+           AND (
+             u.account_status = 'ACTIVE'
+             OR (
+               u.account_status = 'DISABLED'
+               AND EXISTS (
+                 SELECT 1
+                 FROM user_registration_reviews r
+                 WHERE r.user_id = u.user_id
+                   AND r.registration_status = 'PENDING_REVIEW'
+               )
+             )
+           )
+       )
        ON CONFLICT(user_id) DO UPDATE SET
          full_name = excluded.full_name,
          date_of_birth = excluded.date_of_birth,
-         updated_at = excluded.updated_at
-       WHERE EXISTS (
-         SELECT 1
-         FROM users
-         WHERE user_id = ?1
-           AND account_status = 'ACTIVE'
-       )`
+         updated_at = excluded.updated_at`
     ).bind(
       userId,
       fullName,
@@ -275,7 +287,18 @@ async function updateProfile({
          full_name = ?1,
          updated_at = ?2
        WHERE user_id = ?3
-         AND account_status = 'ACTIVE'`
+         AND (
+           account_status = 'ACTIVE'
+           OR (
+             account_status = 'DISABLED'
+             AND EXISTS (
+               SELECT 1
+               FROM user_registration_reviews r
+               WHERE r.user_id = users.user_id
+                 AND r.registration_status = 'PENDING_REVIEW'
+             )
+           )
+         )`
     ).bind(
       fullName,
       now,
@@ -304,9 +327,20 @@ async function updateProfile({
          ?5
        WHERE EXISTS (
          SELECT 1
-         FROM users
-         WHERE user_id = ?2
-           AND account_status = 'ACTIVE'
+         FROM users u
+         WHERE u.user_id = ?2
+           AND (
+             u.account_status = 'ACTIVE'
+             OR (
+               u.account_status = 'DISABLED'
+               AND EXISTS (
+                 SELECT 1
+                 FROM user_registration_reviews r
+                 WHERE r.user_id = u.user_id
+                   AND r.registration_status = 'PENDING_REVIEW'
+               )
+             )
+           )
        )`
     ).bind(
       crypto.randomUUID(),
@@ -356,7 +390,7 @@ export async function handleProfileRequest(request, env, url) {
   }
 
   try {
-    const session = await requireFullSession(request, env);
+    const session = await requireProfileSession(request, env);
 
     if (isGetRequest) {
       return await getProfile({
