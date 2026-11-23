@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -19,7 +20,7 @@
         <span>JuhudManager</span>
       </a>
       <div class="dashboard-header-actions">
-        <span class="access-label">Admin</span>
+        <span class="access-label">SUPER ADMIN</span>
         <button id="logoutButton" class="logout-button" type="button">Log Out</button>
       </div>
     </header>
@@ -30,7 +31,7 @@
           <p class="dashboard-eyebrow">ADMINISTRATION</p>
           <h1>Registration management</h1>
           <p class="dashboard-subtitle">
-            Recover incorrect identity details or cancel eligible incomplete registrations.
+            Review incomplete registrations and perform controlled account recovery.
           </p>
         </div>
       </section>
@@ -63,18 +64,25 @@
             <span>Registration status</span>
             <strong id="selectedStatus">—</strong>
           </div>
+          <div>
+            <span>Account status</span>
+            <strong id="selectedAccountStatus">—</strong>
+          </div>
         </div>
 
         <h3>Stored identity records</h3>
         <p class="muted">
-          Values are intentionally hidden. Replaced identity records are retained as REVOKED history.
+          Identity values are hidden. Replaced records remain in history as REVOKED.
+          New identity records remain UNVERIFIED until their normal verification process.
         </p>
         <div id="identityList" class="identity-list"></div>
 
         <form id="recoveryForm" class="recovery-form">
-          <h3>Correct identity details</h3>
+          <h3>Step 1 — Correct identity details</h3>
           <p class="muted">
-            Leave an identity field empty if it does not need correction. WhatsApp must use international E.164 format.
+            Enter the current correct details after independently checking the account owner.
+            Leave a field empty only when that identity does not need correction.
+            WhatsApp must use international E.164 format.
           </p>
 
           <div class="form-grid">
@@ -105,67 +113,115 @@
           </div>
 
           <div class="field">
-            <label for="reason">Recovery reason / verification notes</label>
+            <label for="reason">Identity correction reason / verification notes</label>
             <textarea id="reason" name="reason" rows="3" maxlength="1000" required placeholder="Record why correction is required and how ownership was confirmed. Do not enter the full identity number here."></textarea>
           </div>
 
           <label class="confirmation-check">
             <input id="ownerVerified" type="checkbox" required>
-            <span>I confirm that I independently verified the registration owner using the selected method before changing these identity details.</span>
+            <span>
+              I confirm that I independently verified the registration owner before changing these identity details.
+            </span>
           </label>
 
           <div class="form-actions">
             <button id="submitRecoveryButton" class="primary" type="submit">Save identity correction</button>
-            <button id="cancelSelectionButton" class="admin-secondary-button" type="button">Close</button>
           </div>
         </form>
 
-        <section id="cancellationPanel" class="cancellation-panel hidden">
-          <h3>Cancel incomplete registration</h3>
+        <section id="assistedRecoveryPanel" class="recovery-form">
+          <h3>Step 2 — Approve Admin-assisted recovery</h3>
 
           <p class="muted">
-            This action does not delete the user record. Eligible identity claims will be revoked,
-            pending OTP requests invalidated, and the cancellation retained in the audit history.
+            This approval allows the account owner to set a password without email OTP.
+            The email identity remains PENDING and the account remains DISABLED.
+            SUPER_ADMIN must independently verify the owner before approval.
           </p>
 
-          <div id="cancellationEligibility" class="cancellation-eligibility" role="status" aria-live="polite">
-            Checking cancellation eligibility…
+          <div id="assistedRecoveryStatus" class="cancellation-eligibility" role="status" aria-live="polite">
+            Loading recovery status…
           </div>
 
-          <form id="cancellationForm">
+          <form id="assistedApprovalForm">
             <div class="field">
-              <label for="cancellationReason">Cancellation reason</label>
+              <label for="approvalVerificationMethod">Owner verification method</label>
+              <select id="approvalVerificationMethod" required>
+                <option value="">Select verification method</option>
+                <option value="ORIGINAL_DOCUMENT_CHECK">Original identity document checked</option>
+                <option value="DIRECT_CONTACT">Confirmed through a trusted direct contact channel</option>
+                <option value="OTHER">Other approved method</option>
+              </select>
+            </div>
+
+            <div class="field">
+              <label for="approvalReason">Approval reason / verification record</label>
               <textarea
-                id="cancellationReason"
-                name="cancellationReason"
+                id="approvalReason"
                 rows="3"
                 maxlength="1000"
                 minlength="10"
                 required
-                placeholder="Explain why this incomplete registration should be cancelled."
+                placeholder="Record how the account owner was independently verified and why assisted recovery is approved."
               ></textarea>
             </div>
 
             <label class="confirmation-check">
-              <input id="confirmCancellation" type="checkbox" required>
+              <input id="approvalOwnerVerified" type="checkbox" required>
               <span>
-                I understand this will cancel the registration and revoke its remaining
-                unverified identity claims. The record will be retained for audit.
+                I confirm that I independently verified the account owner using the current identity details and approve this assisted recovery.
               </span>
             </label>
 
             <div class="form-actions">
-              <button
-                id="cancelRegistrationButton"
-                class="danger-button"
-                type="submit"
-                disabled
-              >
-                Cancel incomplete registration
+              <button id="approveAssistedRecoveryButton" class="primary" type="submit">
+                Approve assisted recovery
               </button>
             </div>
           </form>
+
+          <div id="tokenIssueSection" class="hidden">
+            <h3>Step 3 — Issue password setup token</h3>
+            <p class="muted">
+              The token is valid for 15 minutes and can be used once only.
+              Hand it directly to the verified account owner. Do not send it through an unverified channel.
+            </p>
+
+            <button id="issueRecoveryTokenButton" class="primary" type="button">
+              Issue one-time password setup token
+            </button>
+
+            <div id="recoveryTokenResult" class="hidden">
+              <div class="field">
+                <label for="recoveryTokenValue">One-time setup token</label>
+                <textarea id="recoveryTokenValue" rows="3" readonly></textarea>
+              </div>
+
+              <div class="field">
+                <label for="recoverySetupUrl">Password setup page</label>
+                <input id="recoverySetupUrl" type="text" readonly>
+              </div>
+
+              <p id="recoveryTokenExpiry" class="muted"></p>
+
+              <div class="form-actions">
+                <button id="copyRecoveryTokenButton" class="admin-secondary-button" type="button">
+                  Copy token
+                </button>
+                <button id="copyRecoveryUrlButton" class="admin-secondary-button" type="button">
+                  Copy setup link
+                </button>
+              </div>
+
+              <p class="muted">
+                This token is displayed only once. If lost or expired, SUPER_ADMIN must issue a new token.
+              </p>
+            </div>
+          </div>
         </section>
+
+        <div class="form-actions">
+          <button id="cancelSelectionButton" class="admin-secondary-button" type="button">Close</button>
+        </div>
       </section>
     </main>
 
