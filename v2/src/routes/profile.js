@@ -121,6 +121,83 @@ function errorResponse(error) {
   }, status);
 }
 
+function getWriteEligibilitySql(userIdParameter, accessLevel) {
+  if (accessLevel === "FULL") {
+    return `
+      EXISTS (
+        SELECT 1
+        FROM users u
+        WHERE u.user_id = ${userIdParameter}
+          AND u.account_status = 'ACTIVE'
+      )
+    `;
+  }
+
+  return `
+    EXISTS (
+      SELECT 1
+      FROM users u
+      INNER JOIN user_registration_reviews r
+        ON r.user_id = u.user_id
+      WHERE u.user_id = ${userIdParameter}
+        AND u.account_status = 'DISABLED'
+        AND r.registration_status IN (
+          'AWAITING_EMAIL_VERIFICATION',
+          'PENDING_REVIEW'
+        )
+        AND r.admin_assisted_recovery_at IS NOT NULL
+        AND r.admin_assisted_recovery_by IS NOT NULL
+        AND r.admin_assisted_recovery_method IS NOT NULL
+
+        AND EXISTS (
+          SELECT 1
+          FROM user_auth_identities i
+          WHERE i.user_id = u.user_id
+            AND i.identity_type = 'EMAIL'
+            AND i.identity_scope = 'GLOBAL'
+            AND (
+              (
+                r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+                AND i.verification_status = 'PENDING'
+                AND i.verified_at IS NULL
+              )
+              OR
+              (
+                r.registration_status = 'PENDING_REVIEW'
+                AND i.verification_status = 'VERIFIED'
+                AND i.verified_at IS NOT NULL
+                AND i.expires_at IS NULL
+              )
+            )
+        )
+
+        AND EXISTS (
+          SELECT 1
+          FROM user_credentials c
+          WHERE c.user_id = u.user_id
+            AND c.credential_type = 'PASSWORD'
+            AND c.revoked_at IS NULL
+        )
+
+        AND (
+          SELECT COUNT(*)
+          FROM user_registration_identity_details n
+          WHERE n.user_id = u.user_id
+            AND n.identity_type = 'NATIONAL_ID'
+            AND n.identity_status = 'UNVERIFIED'
+        ) = 1
+
+        AND (
+          SELECT COUNT(*)
+          FROM user_registration_identity_details w
+          WHERE w.user_id = u.user_id
+            AND w.identity_type = 'WHATSAPP'
+            AND w.identity_status = 'UNVERIFIED'
+        ) = 1
+    )
+  `;
+}
+
 async function getProfile({ db, env, userId }) {
   const user = await db.prepare(
     `SELECT
@@ -182,6 +259,7 @@ async function getProfile({ db, env, userId }) {
 async function updateProfile({
   db,
   userId,
+  accessLevel,
   body
 }) {
   if (
@@ -241,8 +319,35 @@ async function updateProfile({
     dateOfBirth
   };
 
-  // FULL accounts and authenticated LIMITED accounts may update
-  // their own profile. LIMITED accounts are PENDING_REVIEW + DISABLED.
+  const profileEligibility = getWriteEligibilitySql(
+    "?1",
+    accessLevel
+  );
+
+  const userEligibility = getWriteEligibilitySql(
+    "?3",
+    accessLevel
+  );
+
+  const auditEligibility = getWriteEligibilitySql(
+    "?2",
+    accessLevel
+  );
+
+  const eligibilityCheck = await db.prepare(
+    `SELECT CASE
+       WHEN ${profileEligibility} THEN 1
+       ELSE 0
+     END AS allowed`
+  ).bind(userId).first();
+
+  if (eligibilityCheck?.allowed !== 1) {
+    throw httpError(
+      "This account is not eligible to update its profile.",
+      403
+    );
+  }
+
   const statements = [
     db.prepare(
       `INSERT INTO user_profiles (
@@ -253,23 +358,7 @@ async function updateProfile({
          updated_at
        )
        SELECT ?1, ?2, ?3, ?4, ?4
-       WHERE EXISTS (
-         SELECT 1
-         FROM users u
-         WHERE u.user_id = ?1
-           AND (
-             u.account_status = 'ACTIVE'
-             OR (
-               u.account_status = 'DISABLED'
-               AND EXISTS (
-                 SELECT 1
-                 FROM user_registration_reviews r
-                 WHERE r.user_id = u.user_id
-                   AND r.registration_status = 'PENDING_REVIEW'
-               )
-             )
-           )
-       )
+       WHERE ${profileEligibility}
        ON CONFLICT(user_id) DO UPDATE SET
          full_name = excluded.full_name,
          date_of_birth = excluded.date_of_birth,
@@ -287,18 +376,7 @@ async function updateProfile({
          full_name = ?1,
          updated_at = ?2
        WHERE user_id = ?3
-         AND (
-           account_status = 'ACTIVE'
-           OR (
-             account_status = 'DISABLED'
-             AND EXISTS (
-               SELECT 1
-               FROM user_registration_reviews r
-               WHERE r.user_id = users.user_id
-                 AND r.registration_status = 'PENDING_REVIEW'
-             )
-           )
-         )`
+         AND ${userEligibility}`
     ).bind(
       fullName,
       now,
@@ -325,23 +403,7 @@ async function updateProfile({
          ?3,
          ?4,
          ?5
-       WHERE EXISTS (
-         SELECT 1
-         FROM users u
-         WHERE u.user_id = ?2
-           AND (
-             u.account_status = 'ACTIVE'
-             OR (
-               u.account_status = 'DISABLED'
-               AND EXISTS (
-                 SELECT 1
-                 FROM user_registration_reviews r
-                 WHERE r.user_id = u.user_id
-                   AND r.registration_status = 'PENDING_REVIEW'
-               )
-             )
-           )
-       )`
+       WHERE ${auditEligibility}`
     ).bind(
       crypto.randomUUID(),
       userId,
@@ -405,6 +467,7 @@ export async function handleProfileRequest(request, env, url) {
     const profile = await updateProfile({
       db: env.DB,
       userId: session.userId,
+      accessLevel: session.accessLevel,
       body
     });
 
