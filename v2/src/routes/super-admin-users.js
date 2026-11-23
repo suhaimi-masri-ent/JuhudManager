@@ -280,78 +280,98 @@ async function getUserDetail({ db, userId }) {
     throw httpError("User not found.", 404);
   }
 
-  const [rolesResult, assignmentsResult, archiveResult, identityResult] =
-    await Promise.all([
-      db.prepare(
-        `SELECT
-           role.role_code,
-           role.role_name,
-           ur.assigned_at,
-           ur.assigned_by,
-           assigner.full_name AS assigned_by_name
-         FROM user_roles ur
-         INNER JOIN roles role
-           ON role.role_id = ur.role_id
-         LEFT JOIN users assigner
-           ON assigner.user_id = ur.assigned_by
-         WHERE ur.user_id = ?1
-         ORDER BY role.role_code`
-      ).bind(userId).all(),
+  const [
+    rolesResult,
+    assignmentsResult,
+    archiveResult,
+    identityResult,
+    registrationIdentityResult
+  ] = await Promise.all([
+    db.prepare(
+      `SELECT
+         role.role_code,
+         role.role_name,
+         ur.assigned_at,
+         ur.assigned_by,
+         assigner.full_name AS assigned_by_name
+       FROM user_roles ur
+       INNER JOIN roles role
+         ON role.role_id = ur.role_id
+       LEFT JOIN users assigner
+         ON assigner.user_id = ur.assigned_by
+       WHERE ur.user_id = ?1
+       ORDER BY role.role_code`
+    ).bind(userId).all(),
 
-      db.prepare(
-        `SELECT
-           a.assignment_id,
-           a.country_id,
-           c.country_name,
-           a.assignment_role_code,
-           a.assignment_status,
-           a.assigned_at,
-           a.assigned_by,
-           assigner.full_name AS assigned_by_name,
-           a.revoked_at,
-           a.revoked_by,
-           revoker.full_name AS revoked_by_name,
-           a.revocation_reason
-         FROM user_country_assignments a
-         INNER JOIN countries c
-           ON c.country_id = a.country_id
-         LEFT JOIN users assigner
-           ON assigner.user_id = a.assigned_by
-         LEFT JOIN users revoker
-           ON revoker.user_id = a.revoked_by
-         WHERE a.user_id = ?1
-         ORDER BY a.assigned_at DESC`
-      ).bind(userId).all(),
+    db.prepare(
+      `SELECT
+         a.assignment_id,
+         a.country_id,
+         c.country_name,
+         a.assignment_role_code,
+         a.assignment_status,
+         a.assigned_at,
+         a.assigned_by,
+         assigner.full_name AS assigned_by_name,
+         a.revoked_at,
+         a.revoked_by,
+         revoker.full_name AS revoked_by_name,
+         a.revocation_reason
+       FROM user_country_assignments a
+       INNER JOIN countries c
+         ON c.country_id = a.country_id
+       LEFT JOIN users assigner
+         ON assigner.user_id = a.assigned_by
+       LEFT JOIN users revoker
+         ON revoker.user_id = a.revoked_by
+       WHERE a.user_id = ?1
+       ORDER BY a.assigned_at DESC`
+    ).bind(userId).all(),
 
-      db.prepare(
-        `SELECT
-           archive_id,
-           previous_account_status,
-           archived_by,
-           archived_at,
-           archive_reason,
-           restored_by,
-           restored_at,
-           restore_reason
-         FROM user_account_archives
-         WHERE user_id = ?1
-         ORDER BY archived_at DESC`
-      ).bind(userId).all(),
+    db.prepare(
+      `SELECT
+         archive_id,
+         previous_account_status,
+         archived_by,
+         archived_at,
+         archive_reason,
+         restored_by,
+         restored_at,
+         restore_reason
+       FROM user_account_archives
+       WHERE user_id = ?1
+       ORDER BY archived_at DESC`
+    ).bind(userId).all(),
 
-      db.prepare(
-        `SELECT
-           identity_type,
-           verification_status,
-           country_code,
-           expires_at,
-           verified_at,
-           revoked_at,
-           created_at
-         FROM user_auth_identities
-         WHERE user_id = ?1
-         ORDER BY created_at DESC`
-      ).bind(userId).all()
-    ]);
+    db.prepare(
+      `SELECT
+         identity_type,
+         verification_status,
+         country_code,
+         expires_at,
+         verified_at,
+         revoked_at,
+         created_at
+       FROM user_auth_identities
+       WHERE user_id = ?1
+       ORDER BY created_at DESC`
+    ).bind(userId).all(),
+
+    db.prepare(
+      `SELECT
+         identity_type,
+         identity_status,
+         country_code,
+         released_at,
+         released_by,
+         release_reason,
+         created_at,
+         updated_at
+       FROM user_registration_identity_details
+       WHERE user_id = ?1
+       ORDER BY created_at DESC`
+    ).bind(userId).all()
+  ]);
 
   const activeArchive = (archiveResult?.results ?? [])
     .find(row => row.restored_at === null);
@@ -375,7 +395,8 @@ async function getUserDetail({ db, userId }) {
       roles: rolesResult?.results ?? [],
       countryAssignments: assignmentsResult?.results ?? [],
       archiveHistory: archiveResult?.results ?? [],
-      authenticationIdentities: identityResult?.results ?? []
+      authenticationIdentities: identityResult?.results ?? [],
+      registrationIdentityHistory: registrationIdentityResult?.results ?? []
     }
   });
 }
@@ -420,8 +441,8 @@ async function getUserActivity({ db, userId, url }) {
          event_id AS activity_id,
          event_type AS activity_type,
          'AUTHENTICATION' AS entity_type,
-         user_id AS entity_id,
-         user_id AS actor_user_id,
+         auth_events.user_id AS entity_id,
+         auth_events.user_id AS actor_user_id,
          actor.full_name AS actor_name,
          NULL AS before_json,
          event_details AS after_json,
@@ -430,7 +451,7 @@ async function getUserActivity({ db, userId, url }) {
        FROM auth_events
        LEFT JOIN users actor
          ON actor.user_id = auth_events.user_id
-       WHERE user_id = ?1
+       WHERE auth_events.user_id = ?1
      )
      ORDER BY created_at DESC
      LIMIT ?2 OFFSET ?3`
