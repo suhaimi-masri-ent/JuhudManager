@@ -824,8 +824,10 @@ async function openActivity(userId, userName) {
     activityPage = 0;
 
     $("userDetailSection").hidden = true;
+    $("userDetailSection").style.display = "none";
     $("activitySection").hidden = false;
-
+    $("activitySection").style.display = "";
+    
     $("activityUserLabel").textContent =
         `Activity history for ${userName || userId}`;
 
