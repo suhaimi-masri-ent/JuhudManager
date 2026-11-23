@@ -414,46 +414,51 @@ async function getUserActivity({ db, userId, url }) {
   }
 
   const result = await db.prepare(
-    `SELECT *
+    `SELECT
+       activity.source,
+       activity.activity_id,
+       activity.activity_type,
+       activity.entity_type,
+       activity.entity_id,
+       activity.actor_user_id,
+       activity.actor_name,
+       activity.reason,
+       activity.activity_created_at
      FROM (
        SELECT
          'AUDIT' AS source,
-         audit_id AS activity_id,
-         action AS activity_type,
-         entity_type,
-         entity_id,
-         actor_user_id AS actor_user_id,
+         audit_logs.audit_id AS activity_id,
+         audit_logs.action AS activity_type,
+         audit_logs.entity_type AS entity_type,
+         audit_logs.entity_id AS entity_id,
+         audit_logs.actor_user_id AS actor_user_id,
          actor.full_name AS actor_name,
-         before_json,
-         after_json,
-         reason,
-         created_at
+         audit_logs.reason AS reason,
+         audit_logs.created_at AS activity_created_at
        FROM audit_logs
        LEFT JOIN users actor
          ON actor.user_id = audit_logs.actor_user_id
-       WHERE entity_id = ?1
-          OR actor_user_id = ?1
+       WHERE audit_logs.entity_id = ?1
+          OR audit_logs.actor_user_id = ?1
 
        UNION ALL
 
        SELECT
          'AUTH' AS source,
-         event_id AS activity_id,
-         event_type AS activity_type,
+         auth_events.event_id AS activity_id,
+         auth_events.event_type AS activity_type,
          'AUTHENTICATION' AS entity_type,
          auth_events.user_id AS entity_id,
          auth_events.user_id AS actor_user_id,
          actor.full_name AS actor_name,
-         NULL AS before_json,
-         event_details AS after_json,
          NULL AS reason,
-         created_at
+         auth_events.created_at AS activity_created_at
        FROM auth_events
        LEFT JOIN users actor
          ON actor.user_id = auth_events.user_id
        WHERE auth_events.user_id = ?1
-     )
-     ORDER BY created_at DESC
+     ) AS activity
+     ORDER BY activity.activity_created_at DESC
      LIMIT ?2 OFFSET ?3`
   ).bind(userId, limit, offset).all();
 
@@ -465,10 +470,8 @@ async function getUserActivity({ db, userId, url }) {
     entityId: row.entity_id,
     actorUserId: row.actor_user_id,
     actorName: row.actor_name,
-    before: row.before_json,
-    after: row.after_json,
     reason: row.reason,
-    createdAt: row.created_at
+    createdAt: row.activity_created_at
   }));
 
   return json({
@@ -481,7 +484,13 @@ async function getUserActivity({ db, userId, url }) {
   });
 }
 
-async function archiveUser({ db, userId, administratorId, body }) {
+async function archiveUser({
+  db,
+  userId,
+  administratorId,
+  body,
+  request
+}) {
   if (!body || typeof body !== "object" || Array.isArray(body)) {
     throw httpError("A valid JSON request body is required.", 400);
   }
@@ -509,30 +518,107 @@ async function archiveUser({ db, userId, administratorId, body }) {
 
   const now = new Date().toISOString();
   const archiveId = crypto.randomUUID();
+  const eventId = crypto.randomUUID();
+
+  const ipAddress = request.headers.get("CF-Connecting-IP");
+  const userAgent = request.headers.get("User-Agent");
 
   try {
-    const result = await db.prepare(
-      `INSERT INTO user_account_archives (
-         archive_id,
-         user_id,
-         previous_account_status,
-         archived_by,
-         archive_reason,
-         archived_at
-       )
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6)`
-    ).bind(
+    const results = await db.batch([
+      db.prepare(
+        `INSERT INTO user_account_archives (
+           archive_id,
+           user_id,
+           previous_account_status,
+           archived_by,
+           archive_reason,
+           archived_at
+         )
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6)`
+      ).bind(
+        archiveId,
+        userId,
+        current.account_status,
+        administratorId,
+        reason,
+        now
+      ),
+
+      db.prepare(
+        `UPDATE user_sessions
+         SET
+           revoked_at = ?1,
+           revocation_reason = 'ACCOUNT_SUSPENDED'
+         WHERE user_id = ?2
+           AND revoked_at IS NULL`
+      ).bind(
+        now,
+        userId
+      ),
+
+      db.prepare(
+        `INSERT INTO auth_events (
+           event_id,
+           user_id,
+           session_id,
+           event_type,
+           event_status,
+           ip_address,
+           user_agent,
+           event_details,
+           created_at
+         )
+         SELECT
+           ?1,
+           ?2,
+           NULL,
+           'ADMIN_ACCOUNT_SESSIONS_REVOKED',
+           'SUCCESS',
+           ?3,
+           ?4,
+           ?5,
+           ?6
+         WHERE EXISTS (
+           SELECT 1
+           FROM user_account_archives
+           WHERE archive_id = ?7
+             AND user_id = ?2
+             AND restored_at IS NULL
+         )`
+      ).bind(
+        eventId,
+        userId,
+        ipAddress,
+        userAgent,
+        JSON.stringify({
+          reason: "ACCOUNT_SUSPENDED",
+          archiveId
+        }),
+        now,
+        archiveId
+      )
+    ]);
+
+    const archiveChanges = results?.[0]?.meta?.changes ?? 0;
+    const sessionChanges = results?.[1]?.meta?.changes ?? 0;
+    const eventChanges = results?.[2]?.meta?.changes ?? 0;
+
+    if (archiveChanges !== 1 || eventChanges !== 1) {
+      throw httpError(
+        "Account archive and session revocation could not be completed.",
+        409
+      );
+    }
+
+    return json({
+      ok: true,
+      message: "Account archived successfully. All active sessions have been revoked.",
       archiveId,
       userId,
-      current.account_status,
-      administratorId,
-      reason,
-      now
-    ).run();
-
-    if ((result?.meta?.changes ?? 0) !== 1) {
-      throw httpError("Account could not be archived.", 409);
-    }
+      accountStatus: "SUSPENDED",
+      revokedSessionCount: sessionChanges,
+      archivedAt: now
+    });
   } catch (error) {
     if (error?.status) {
       throw error;
@@ -547,15 +633,6 @@ async function archiveUser({ db, userId, administratorId, body }) {
 
     throw error;
   }
-
-  return json({
-    ok: true,
-    message: "Account archived successfully.",
-    archiveId,
-    userId,
-    accountStatus: "SUSPENDED",
-    archivedAt: now
-  });
 }
 
 async function restoreUser({ db, userId, administratorId, body }) {
@@ -602,7 +679,7 @@ async function restoreUser({ db, userId, administratorId, body }) {
 
   return json({
     ok: true,
-    message: "Account restored successfully.",
+    message: "Account restored successfully. The previous account status has been reinstated.",
     archiveId: archive.archive_id,
     userId,
     restoredAt: now
@@ -696,7 +773,8 @@ export async function handleSuperAdminUserRequest(request, env, url) {
         db: env.DB,
         userId: validateUserId(archiveMatch[1]),
         administratorId: session.userId,
-        body
+        body,
+        request
       });
     }
 
