@@ -371,6 +371,7 @@ async function completeSuperAdminBootstrap({
 }
 
 
+
 async function completeAdminAssistedRecovery({
   db,
   env,
@@ -434,6 +435,7 @@ async function completeAdminAssistedRecovery({
   `;
 
   const results = await db.batch([
+    // 1. Consume the token only while the account remains eligible.
     db.prepare(
       `UPDATE admin_assisted_recovery_tokens
        SET consumed_at = ?1
@@ -449,6 +451,8 @@ async function completeAdminAssistedRecovery({
       setup.userId
     ),
 
+    // 2. Create the password only if token consumption succeeded.
+    // password_hash is NOT NULL, so an invalid state aborts the batch.
     db.prepare(
       `INSERT INTO user_credentials (
          credential_id,
@@ -459,7 +463,9 @@ async function completeAdminAssistedRecovery({
          updated_at
        )
        SELECT
-         ?1, ?2, 'PASSWORD',
+         ?1,
+         ?2,
+         'PASSWORD',
          CASE
            WHEN EXISTS (
              SELECT 1
@@ -485,7 +491,8 @@ async function completeAdminAssistedRecovery({
            THEN ?5
            ELSE NULL
          END,
-         ?4, ?4`
+         ?4,
+         ?4`
     ).bind(
       credentialId,
       setup.userId,
@@ -494,6 +501,9 @@ async function completeAdminAssistedRecovery({
       passwordHash
     ),
 
+    // 3. Require the authentication event to be recorded.
+    // event_type is NOT NULL. If either previous record is missing,
+    // this statement fails and D1 rolls back the entire batch.
     db.prepare(
       `INSERT INTO auth_events (
          event_id,
@@ -504,25 +514,33 @@ async function completeAdminAssistedRecovery({
          event_details,
          created_at
        )
-       SELECT
-         ?1, ?2, NULL,
-         'PASSWORD_SETUP',
+       VALUES (
+         ?1,
+         ?2,
+         NULL,
+         CASE
+           WHEN EXISTS (
+             SELECT 1
+             FROM user_credentials
+             WHERE credential_id = ?5
+               AND user_id = ?2
+               AND credential_type = 'PASSWORD'
+               AND revoked_at IS NULL
+           )
+           AND EXISTS (
+             SELECT 1
+             FROM admin_assisted_recovery_tokens
+             WHERE recovery_token_id = ?6
+               AND user_id = ?2
+               AND consumed_at = ?4
+               AND invalidated_at IS NULL
+           )
+           THEN 'PASSWORD_SETUP'
+           ELSE NULL
+         END,
          'SUCCESS',
-         ?3, ?4
-       WHERE EXISTS (
-         SELECT 1
-         FROM user_credentials
-         WHERE credential_id = ?5
-           AND user_id = ?2
-           AND credential_type = 'PASSWORD'
-           AND revoked_at IS NULL
-       )
-       AND EXISTS (
-         SELECT 1
-         FROM admin_assisted_recovery_tokens
-         WHERE recovery_token_id = ?6
-           AND user_id = ?2
-           AND consumed_at = ?4
+         ?3,
+         ?4
        )`
     ).bind(
       eventId,
@@ -539,10 +557,14 @@ async function completeAdminAssistedRecovery({
     )
   ]);
 
+  const tokenChanges = results?.[0]?.meta?.changes ?? 0;
+  const credentialChanges = results?.[1]?.meta?.changes ?? 0;
+  const eventChanges = results?.[2]?.meta?.changes ?? 0;
+
   if (
-    (results?.[0]?.meta?.changes ?? 0) !== 1 ||
-    (results?.[1]?.meta?.changes ?? 0) !== 1 ||
-    (results?.[2]?.meta?.changes ?? 0) !== 1
+    tokenChanges !== 1 ||
+    credentialChanges !== 1 ||
+    eventChanges !== 1
   ) {
     throw httpError(
       "Password setup could not be completed. The recovery token may be invalid, expired or already used.",
@@ -561,7 +583,6 @@ async function completeAdminAssistedRecovery({
     nextStep: "LOGIN_LIMITED_ACCESS"
   };
 }
-
 
 /**
  * Set the initial password after email verification.
