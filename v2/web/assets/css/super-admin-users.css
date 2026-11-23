@@ -797,3 +797,50 @@ body {
         padding: 6px 7px;
     }
 }
+
+.history-card > details > summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    cursor: pointer;
+    list-style: none;
+    color: var(--users-primary);
+    font-size: 14px;
+    font-weight: 750;
+}
+
+.history-card > details > summary::-webkit-details-marker {
+    display: none;
+}
+
+.history-card > details > summary::after {
+    content: "+";
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 25px;
+    height: 25px;
+    flex-shrink: 0;
+    border: 1px solid var(--users-border);
+    border-radius: 50%;
+    background: var(--users-primary-light);
+    color: var(--users-primary);
+    font-size: 17px;
+    line-height: 1;
+}
+
+.history-card > details[open] > summary::after {
+    content: "−";
+}
+
+.history-card > details[open] > summary {
+    margin-bottom: 14px;
+}
+
+.history-card .card-note {
+    margin-top: 0;
+}
+
+
+
