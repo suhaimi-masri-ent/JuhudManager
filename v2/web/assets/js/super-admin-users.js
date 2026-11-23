@@ -967,6 +967,7 @@ async function archiveSelectedUser() {
     }
 }
 
+
 async function restoreSelectedUser() {
     if (!selectedUserId || !currentUser) return;
 
@@ -999,22 +1000,44 @@ async function restoreSelectedUser() {
             getToken()
         );
 
-        const refreshed = await openUserDetail(
-            userId,
-            { scroll: false, clearNotice: false }
+        const restoredArchive = currentUser.archiveHistory?.find(
+            item => item.archive_id === result.archiveId
         );
 
-        await loadUsers();
-
-        if (
-            refreshed &&
-            selectedUserId === userId &&
-            !$("userDetailSection").hidden
-        ) {
-            showDetailNotice(
-                result.message || "Account restored successfully."
+        if (!restoredArchive) {
+            throw new Error(
+                "Restore succeeded, but the previous account status could not be identified. Reload the page to verify."
             );
         }
+
+        currentUser.accountStatus =
+            restoredArchive.previous_account_status;
+
+        currentUser.isArchived = false;
+
+        restoredArchive.restored_at = result.restoredAt;
+        restoredArchive.restore_reason = reason;
+
+        renderUserDetail(currentUser);
+
+        const listUser = users.find(
+            item => item.userId === userId
+        );
+
+        if (listUser) {
+            listUser.accountStatus =
+                restoredArchive.previous_account_status;
+            listUser.isArchived = false;
+        }
+
+        renderUserList();
+
+        showDetailNotice(
+            result.message || "Account restored successfully."
+        );
+
+        $("restoreReason").value = "";
+
     } catch (error) {
         if (handleSessionError(error)) return;
 
