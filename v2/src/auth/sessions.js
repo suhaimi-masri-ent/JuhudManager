@@ -1,3 +1,4 @@
+
 import { hashValue } from "./crypto.js";
 
 const SESSION_INACTIVITY_DAYS = 30;
@@ -95,6 +96,19 @@ function getRequestMetadata(request) {
   };
 }
 
+/*
+ * Shared account eligibility check.
+ *
+ * Normal registration rules remain unchanged.
+ * Assisted recovery is an explicit exception:
+ * - registration is still awaiting email verification
+ * - account remains DISABLED
+ * - email remains PENDING
+ * - SUPER_ADMIN recovery approval exists
+ * - password has been created
+ * - exactly one current unverified National ID exists
+ * - exactly one current unverified WhatsApp exists
+ */
 const SESSION_ELIGIBILITY_SQL = `
   SELECT
     u.user_id,
@@ -137,6 +151,44 @@ const SESSION_ELIGIBILITY_SQL = `
           WHERE ur.user_id = u.user_id
             AND ur.role_id = 'role-super-admin'
         )
+      )
+      OR
+      (
+        r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+        AND u.account_status = 'DISABLED'
+        AND r.admin_assisted_recovery_at IS NOT NULL
+        AND r.admin_assisted_recovery_by IS NOT NULL
+        AND r.admin_assisted_recovery_method IS NOT NULL
+        AND EXISTS (
+          SELECT 1
+          FROM user_auth_identities i
+          WHERE i.user_id = u.user_id
+            AND i.identity_type = 'EMAIL'
+            AND i.identity_scope = 'GLOBAL'
+            AND i.verification_status = 'PENDING'
+            AND i.verified_at IS NULL
+        )
+        AND EXISTS (
+          SELECT 1
+          FROM user_credentials c
+          WHERE c.user_id = u.user_id
+            AND c.credential_type = 'PASSWORD'
+            AND c.revoked_at IS NULL
+        )
+        AND (
+          SELECT COUNT(*)
+          FROM user_registration_identity_details n
+          WHERE n.user_id = u.user_id
+            AND n.identity_type = 'NATIONAL_ID'
+            AND n.identity_status = 'UNVERIFIED'
+        ) = 1
+        AND (
+          SELECT COUNT(*)
+          FROM user_registration_identity_details w
+          WHERE w.user_id = u.user_id
+            AND w.identity_type = 'WHATSAPP'
+            AND w.identity_status = 'UNVERIFIED'
+        ) = 1
       )
     )
   LIMIT 1
@@ -296,6 +348,11 @@ export async function createSession({
     account.account_status === "ACTIVE" &&
     account.is_super_admin === 1;
 
+  const isAssistedRecovery =
+    account.registration_status ===
+      "AWAITING_EMAIL_VERIFICATION" &&
+    account.account_status === "DISABLED";
+
   return {
     sessionId,
     userId: normalizedUserId,
@@ -381,6 +438,44 @@ export async function authenticateSession({
                    AND ur.role_id = 'role-super-admin'
                )
              )
+             OR
+             (
+               r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+               AND u.account_status = 'DISABLED'
+               AND r.admin_assisted_recovery_at IS NOT NULL
+               AND r.admin_assisted_recovery_by IS NOT NULL
+               AND r.admin_assisted_recovery_method IS NOT NULL
+               AND EXISTS (
+                 SELECT 1
+                 FROM user_auth_identities i
+                 WHERE i.user_id = u.user_id
+                   AND i.identity_type = 'EMAIL'
+                   AND i.identity_scope = 'GLOBAL'
+                   AND i.verification_status = 'PENDING'
+                   AND i.verified_at IS NULL
+               )
+               AND EXISTS (
+                 SELECT 1
+                 FROM user_credentials c
+                 WHERE c.user_id = u.user_id
+                   AND c.credential_type = 'PASSWORD'
+                   AND c.revoked_at IS NULL
+               )
+               AND (
+                 SELECT COUNT(*)
+                 FROM user_registration_identity_details n
+                 WHERE n.user_id = u.user_id
+                   AND n.identity_type = 'NATIONAL_ID'
+                   AND n.identity_status = 'UNVERIFIED'
+               ) = 1
+               AND (
+                 SELECT COUNT(*)
+                 FROM user_registration_identity_details w
+                 WHERE w.user_id = u.user_id
+                   AND w.identity_type = 'WHATSAPP'
+                   AND w.identity_status = 'UNVERIFIED'
+               ) = 1
+             )
            )
        )
      RETURNING
@@ -403,6 +498,9 @@ export async function authenticateSession({
     `SELECT
        u.account_status,
        r.registration_status,
+       r.admin_assisted_recovery_at,
+       r.admin_assisted_recovery_by,
+       r.admin_assisted_recovery_method,
        s.bootstrap_status,
        CASE
          WHEN EXISTS (
@@ -413,7 +511,46 @@ export async function authenticateSession({
          )
          THEN 1
          ELSE 0
-       END AS is_super_admin
+       END AS is_super_admin,
+       CASE
+         WHEN r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+          AND u.account_status = 'DISABLED'
+          AND r.admin_assisted_recovery_at IS NOT NULL
+          AND r.admin_assisted_recovery_by IS NOT NULL
+          AND r.admin_assisted_recovery_method IS NOT NULL
+          AND EXISTS (
+            SELECT 1
+            FROM user_auth_identities i
+            WHERE i.user_id = u.user_id
+              AND i.identity_type = 'EMAIL'
+              AND i.identity_scope = 'GLOBAL'
+              AND i.verification_status = 'PENDING'
+              AND i.verified_at IS NULL
+          )
+          AND EXISTS (
+            SELECT 1
+            FROM user_credentials c
+            WHERE c.user_id = u.user_id
+              AND c.credential_type = 'PASSWORD'
+              AND c.revoked_at IS NULL
+          )
+          AND (
+            SELECT COUNT(*)
+            FROM user_registration_identity_details n
+            WHERE n.user_id = u.user_id
+              AND n.identity_type = 'NATIONAL_ID'
+              AND n.identity_status = 'UNVERIFIED'
+          ) = 1
+          AND (
+            SELECT COUNT(*)
+            FROM user_registration_identity_details w
+            WHERE w.user_id = u.user_id
+              AND w.identity_type = 'WHATSAPP'
+              AND w.identity_status = 'UNVERIFIED'
+          ) = 1
+         THEN 1
+         ELSE 0
+       END AS is_assisted_recovery
      FROM users u
      LEFT JOIN user_registration_reviews r
        ON r.user_id = u.user_id
@@ -428,8 +565,16 @@ export async function authenticateSession({
   }
 
   const isLimited =
-    account.registration_status === "PENDING_REVIEW" &&
-    account.account_status === "DISABLED";
+    (
+      account.registration_status === "PENDING_REVIEW" &&
+      account.account_status === "DISABLED"
+    ) ||
+    (
+      account.registration_status ===
+        "AWAITING_EMAIL_VERIFICATION" &&
+      account.account_status === "DISABLED" &&
+      account.is_assisted_recovery === 1
+    );
 
   const isFull =
     (
