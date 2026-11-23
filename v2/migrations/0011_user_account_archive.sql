@@ -93,6 +93,35 @@ BEGIN
         account_status = 'SUSPENDED',
         updated_at = NEW.archived_at
     WHERE user_id = NEW.user_id;
+
+    INSERT INTO audit_logs (
+        audit_id,
+        actor_user_id,
+        action,
+        entity_type,
+        entity_id,
+        before_json,
+        after_json,
+        reason,
+        created_at
+    )
+    VALUES (
+        lower(hex(randomblob(16))),
+        NEW.archived_by,
+        'USER_ACCOUNT_ARCHIVED',
+        'USER_ACCOUNT',
+        NEW.user_id,
+        json_object(
+            'account_status', NEW.previous_account_status
+        ),
+        json_object(
+            'account_status', 'SUSPENDED',
+            'archive_id', NEW.archive_id,
+            'archived_at', NEW.archived_at
+        ),
+        NEW.archive_reason,
+        NEW.archived_at
+    );
 END;
 
 CREATE TRIGGER trg_user_account_archive_restore_validate
@@ -146,4 +175,33 @@ BEGIN
         account_status = NEW.previous_account_status,
         updated_at = NEW.restored_at
     WHERE user_id = NEW.user_id;
+
+    INSERT INTO audit_logs (
+        audit_id,
+        actor_user_id,
+        action,
+        entity_type,
+        entity_id,
+        before_json,
+        after_json,
+        reason,
+        created_at
+    )
+    VALUES (
+        lower(hex(randomblob(16))),
+        NEW.restored_by,
+        'USER_ACCOUNT_RESTORED',
+        'USER_ACCOUNT',
+        NEW.user_id,
+        json_object(
+            'account_status', 'SUSPENDED',
+            'archive_id', NEW.archive_id
+        ),
+        json_object(
+            'account_status', NEW.previous_account_status,
+            'restored_at', NEW.restored_at
+        ),
+        NEW.restore_reason,
+        NEW.restored_at
+    );
 END;
