@@ -938,22 +938,11 @@ async function archiveSelectedUser() {
             getToken()
         );
 
-        const refreshed = await openUserDetail(
-            userId,
-            { scroll: false, clearNotice: false }
-        );
+        closeUserDetail();
+        closeActivity();
 
         await loadUsers();
 
-        if (
-            refreshed &&
-            selectedUserId === userId &&
-            !$("userDetailSection").hidden
-        ) {
-            showDetailNotice(
-                result.message || "Account archived successfully."
-            );
-        }
     } catch (error) {
         if (handleSessionError(error)) return;
 
@@ -966,7 +955,6 @@ async function archiveSelectedUser() {
         button.textContent = "Archive Account";
     }
 }
-
 
 async function restoreSelectedUser() {
     if (!selectedUserId || !currentUser) return;
@@ -994,49 +982,16 @@ async function restoreSelectedUser() {
     button.textContent = "Restoring...";
 
     try {
-        const result = await apiRequest(
+        await apiRequest(
             `/super-admin/users/${encodeURIComponent(userId)}/restore`,
             { reason },
             getToken()
         );
 
-        const restoredArchive = currentUser.archiveHistory?.find(
-            item => item.archive_id === result.archiveId
-        );
+        closeUserDetail();
+        closeActivity();
 
-        if (!restoredArchive) {
-            throw new Error(
-                "Restore succeeded, but the previous account status could not be identified. Reload the page to verify."
-            );
-        }
-
-        currentUser.accountStatus =
-            restoredArchive.previous_account_status;
-
-        currentUser.isArchived = false;
-
-        restoredArchive.restored_at = result.restoredAt;
-        restoredArchive.restore_reason = reason;
-
-        renderUserDetail(currentUser);
-
-        const listUser = users.find(
-            item => item.userId === userId
-        );
-
-        if (listUser) {
-            listUser.accountStatus =
-                restoredArchive.previous_account_status;
-            listUser.isArchived = false;
-        }
-
-        renderUserList();
-
-        showDetailNotice(
-            result.message || "Account restored successfully."
-        );
-
-        $("restoreReason").value = "";
+        await loadUsers();
 
     } catch (error) {
         if (handleSessionError(error)) return;
