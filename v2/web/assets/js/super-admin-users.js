@@ -639,8 +639,10 @@ async function openUserDetail(userId, options = {}) {
     currentUser = null;
 
     $("userDetailSection").hidden = false;
+    $("userDetailSection").style.display = "";
     $("activitySection").hidden = true;
-
+    $("activitySection").style.display = "none";
+    
     $("detailUserName").textContent = "Loading user profile...";
     $("detailUserEmail").textContent = "";
 
@@ -1040,7 +1042,10 @@ async function loadCurrentSession() {
 function closeUserDetail() {
     detailRequestSequence += 1;
 
-    $("userDetailSection").hidden = true;
+    const section = $("userDetailSection");
+    section.hidden = true;
+    section.style.display = "none";
+
     currentUser = null;
     selectedUserId = null;
 }
@@ -1048,7 +1053,10 @@ function closeUserDetail() {
 function closeActivity() {
     activityRequestSequence += 1;
 
-    $("activitySection").hidden = true;
+    const section = $("activitySection");
+    section.hidden = true;
+    section.style.display = "none";
+
     selectedUserId = null;
 }
 
