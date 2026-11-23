@@ -936,16 +936,13 @@ async function archiveSelectedUser() {
     button.textContent = "Archiving...";
 
     try {
-        const result = await apiRequest(
+        await apiRequest(
             `/super-admin/users/${encodeURIComponent(userId)}/archive`,
             { reason },
             getToken()
         );
 
-        closeUserDetail();
-        closeActivity();
-
-        await loadUsers();
+        window.location.reload();
 
     } catch (error) {
         if (handleSessionError(error)) return;
@@ -992,10 +989,7 @@ async function restoreSelectedUser() {
             getToken()
         );
 
-        closeUserDetail();
-        closeActivity();
-
-        await loadUsers();
+        window.location.reload();
 
     } catch (error) {
         if (handleSessionError(error)) return;
