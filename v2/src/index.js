@@ -11,6 +11,7 @@ import { handleAdminRegistrationCancellationRequest } from "./routes/admin-regis
 import { handleSuperAdminBootstrapRequest } from "./routes/super-admin-bootstrap.js";
 import { handleSuperAdminCountryRequest } from "./routes/super-admin-countries.js";
 import { handleSuperAdminCountryAdminRequest } from "./routes/super-admin-country-admins.js";
+import { handleSuperAdminUserRequest } from "./routes/super-admin-users.js";
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
 const ALLOWED_METHODS = "GET, POST, OPTIONS";
@@ -111,6 +112,14 @@ export default {
 
         if (!response) {
           response = await handleSuperAdminCountryAdminRequest(
+            request,
+            env,
+            url
+          );
+        }
+
+        if (!response) {
+          response = await handleSuperAdminUserRequest(
             request,
             env,
             url
