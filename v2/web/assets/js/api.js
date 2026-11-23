@@ -1,11 +1,14 @@
+
 import { API_BASE } from "./config.js";
 
-export async function apiRequest(path, body, token) {
+export async function apiRequest(path, body, token, method = null) {
   if (!API_BASE) {
     throw new Error(
       "API is not connected yet. Configure the V2 Worker URL first."
     );
   }
+
+  const requestMethod = method || (body ? "POST" : "GET");
 
   const headers = {
     "Content-Type": "application/json"
@@ -18,9 +21,11 @@ export async function apiRequest(path, body, token) {
   const response = await fetch(
     `${API_BASE.replace(/\/$/, "")}${path}`,
     {
-      method: body ? "POST" : "GET",
+      method: requestMethod,
       headers,
-      body: body ? JSON.stringify(body) : undefined,
+      body: body !== null && body !== undefined
+        ? JSON.stringify(body)
+        : undefined,
       cache: "no-store"
     }
   );
