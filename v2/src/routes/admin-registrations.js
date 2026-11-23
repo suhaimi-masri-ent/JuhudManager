@@ -14,6 +14,11 @@ import {
   normalizeDestination
 } from "../auth/crypto.js";
 
+import {
+  approveAdminAssistedRecovery,
+  issueAdminAssistedRecoveryToken
+} from "../auth/admin-assisted-recovery.js";
+
 const ALLOWED_STATUSES = [
   "AWAITING_EMAIL_VERIFICATION",
   "PENDING_REVIEW",
@@ -785,11 +790,30 @@ export async function handleAdminRegistrationRequest(
     Boolean(recoveryMatch) &&
     request.method === "POST";
 
+  const assistedApprovalMatch = url.pathname.match(
+    /^\/admin\/registrations\/([0-9a-f-]{36})\/approve-assisted-recovery$/i
+  );
+
+  const isAssistedApprovalRequest =
+    Boolean(assistedApprovalMatch) &&
+    request.method === "POST";
+
+  const recoveryTokenMatch = url.pathname.match(
+    /^\/admin\/registrations\/([0-9a-f-]{36})\/issue-recovery-token$/i
+  );
+
+  const isRecoveryTokenRequest =
+    Boolean(recoveryTokenMatch) &&
+    request.method === "POST";
+  
+
   if (
     !isListRequest &&
     !isDetailRequest &&
     !isReviewRequest &&
-    !isRecoveryRequest
+    !isRecoveryRequest &&
+    !isAssistedApprovalRequest &&
+    !isRecoveryTokenRequest
   ) {
     return null;
   }
@@ -843,6 +867,52 @@ export async function handleAdminRegistrationRequest(
         recovery: result
       });
     }
+
+    if (isAssistedApprovalRequest) {
+      const userId = assistedApprovalMatch[1];
+
+      if (!validUserId(userId)) {
+        throw httpError("Invalid user ID.", 400);
+      }
+
+      const body = await readJson(request);
+
+      const result = await approveAdminAssistedRecovery({
+        db: env.DB,
+        userId,
+        adminId: session.userId,
+        ownerVerified: body?.ownerVerified,
+        verificationMethod: body?.verificationMethod,
+        reason: body?.reason
+      });
+
+      return json({
+        ok: true,
+        message: "Admin-assisted recovery approved. Email remains unverified.",
+        recovery: result
+      });
+    }
+
+    if (isRecoveryTokenRequest) {
+      const userId = recoveryTokenMatch[1];
+
+      if (!validUserId(userId)) {
+        throw httpError("Invalid user ID.", 400);
+      }
+
+      const result = await issueAdminAssistedRecoveryToken({
+        db: env.DB,
+        env,
+        userId,
+        adminId: session.userId
+      });
+
+      return json({
+        ok: true,
+        message: "One-time password setup token issued. Hand it directly to the account owner.",
+        recovery: result
+      });
+    }    
 
     const userId = reviewMatch[1];
 
