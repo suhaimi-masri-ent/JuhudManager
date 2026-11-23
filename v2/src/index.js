@@ -6,6 +6,7 @@ import { handleAuthRequest } from "./routes/auth.js";
 import { handleLoginRequest } from "./routes/login.js";
 import { handlePasswordChangeRequest } from "./routes/password-change.js";
 import { handleSessionRequest } from "./routes/session.js";
+import { handleProfileRequest } from "./routes/profile.js";
 import { handleAdminRegistrationRequest } from "./routes/admin-registrations.js";
 import { handleAdminRegistrationCancellationRequest } from "./routes/admin-registration-cancellation.js";
 import { handleSuperAdminBootstrapRequest } from "./routes/super-admin-bootstrap.js";
@@ -14,7 +15,7 @@ import { handleSuperAdminCountryAdminRequest } from "./routes/super-admin-countr
 import { handleSuperAdminUserRequest } from "./routes/super-admin-users.js";
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
-const ALLOWED_METHODS = "GET, POST, OPTIONS";
+const ALLOWED_METHODS = "GET, POST, PATCH, OPTIONS";
 const ALLOWED_HEADERS = "Content-Type, Authorization, X-Super-Admin-Bootstrap-Key";
 
 export default {
@@ -33,7 +34,7 @@ export default {
 
       if (
         requestedMethod &&
-        !["GET", "POST"].includes(requestedMethod)
+        !["GET", "POST", "PATCH"].includes(requestedMethod)
       ) {
         return json({
           error: "Requested method is not allowed."
@@ -162,6 +163,14 @@ export default {
           );
         }
 
+        if (!response) {
+          response = await handleProfileRequest(
+            request,
+            env,
+            url
+          );
+        }
+        
         if (!response) {
           const emailDelivery = createResendDelivery(env);
           const whatsappDelivery = createWhatsAppCloudDelivery(env);
