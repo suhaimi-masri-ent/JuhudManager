@@ -1,0 +1,399 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#14532d">
+    <meta name="referrer" content="no-referrer">
+    <title>User Management | JuhudManager</title>
+
+    <link rel="stylesheet" href="./assets/css/app.css">
+    <link rel="stylesheet" href="./assets/css/super-admin-users.css?v=1">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="header-brand">
+                <a href="./dashboard.html" class="brand-link">
+                    <span class="brand-name">JuhudManager</span>
+                </a>
+                <span class="page-context">Super Admin</span>
+            </div>
+
+            <div class="header-actions">
+                <a href="./dashboard.html" class="button button-secondary">
+                    Dashboard
+                </a>
+                <button id="logoutButton" type="button" class="button button-secondary">
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <section class="page-heading">
+                <div>
+                    <p class="eyebrow">PLATFORM MANAGEMENT</p>
+                    <h1>User Management</h1>
+                    <p class="page-description">
+                        View user accounts, access assignments and account activity history.
+                    </p>
+                </div>
+
+                <button id="refreshButton" type="button" class="button button-secondary">
+                    Refresh
+                </button>
+            </section>
+
+            <div
+                id="pageNotice"
+                class="notice"
+                role="status"
+                aria-live="polite"
+                hidden
+            ></div>
+
+            <section class="management-section">
+                <div class="section-heading">
+                    <div>
+                        <h2>Search and Filter Users</h2>
+                        <p>Find accounts by name, email or User ID.</p>
+                    </div>
+                    <span id="userCount" class="count-label">0 records</span>
+                </div>
+
+                <form id="filterForm" class="filter-form">
+                    <div class="filter-grid">
+                        <div class="form-field search-field">
+                            <label for="searchInput">Search</label>
+                            <input
+                                id="searchInput"
+                                type="search"
+                                maxlength="100"
+                                placeholder="Name, email or User ID"
+                                autocomplete="off"
+                            >
+                        </div>
+
+                        <div class="form-field">
+                            <label for="roleFilter">Role</label>
+                            <select id="roleFilter">
+                                <option value="ALL">All Roles</option>
+                                <option value="SUPER_ADMIN">Super Admin</option>
+                                <option value="ADMIN">Admin</option>
+                                <option value="AHBAB">Ahbab</option>
+                                <option value="NO_ROLE">No Role</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="accountStatusFilter">Account Status</label>
+                            <select id="accountStatusFilter">
+                                <option value="ALL">All Statuses</option>
+                                <option value="ACTIVE">Active</option>
+                                <option value="DISABLED">Disabled</option>
+                                <option value="SUSPENDED">Suspended / Archived</option>
+                            </select>
+                        </div>
+
+                        <div class="form-field">
+                            <label for="registrationStatusFilter">Registration Status</label>
+                            <select id="registrationStatusFilter">
+                                <option value="ALL">All Registration Statuses</option>
+                                <option value="AWAITING_EMAIL_VERIFICATION">Awaiting Email Verification</option>
+                                <option value="PENDING_REVIEW">Pending Review</option>
+                                <option value="APPROVED">Approved</option>
+                                <option value="REJECTED">Rejected</option>
+                                <option value="CANCELLED">Cancelled</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button id="searchButton" type="submit" class="button button-primary">
+                            Search Users
+                        </button>
+
+                        <button id="resetFilterButton" type="button" class="button button-secondary">
+                            Reset Filters
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="management-section">
+                <div class="section-heading">
+                    <div>
+                        <h2>User Accounts</h2>
+                        <p>
+                            All platform accounts, including administrators and archived accounts.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="loadingState" class="empty-state">
+                    <p>Loading user accounts...</p>
+                </div>
+
+                <div id="emptyState" class="empty-state" hidden>
+                    <h3>No users found</h3>
+                    <p>No accounts match the selected search and filters.</p>
+                </div>
+
+                <div id="userTableWrap" class="table-wrap" hidden>
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th scope="col">User</th>
+                                <th scope="col">Role</th>
+                                <th scope="col">Account Status</th>
+                                <th scope="col">Registration</th>
+                                <th scope="col">Countries</th>
+                                <th scope="col">Created</th>
+                                <th scope="col">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="userTableBody"></tbody>
+                    </table>
+                </div>
+
+                <div id="userMobileList" class="user-mobile-list"></div>
+
+                <div id="pagination" class="pagination" hidden>
+                    <button
+                        id="previousPageButton"
+                        type="button"
+                        class="button button-secondary"
+                    >
+                        Previous
+                    </button>
+
+                    <span id="pageInformation">Page 1</span>
+
+                    <button
+                        id="nextPageButton"
+                        type="button"
+                        class="button button-secondary"
+                    >
+                        Next
+                    </button>
+                </div>
+            </section>
+
+            <section id="userDetailSection" class="management-section detail-section" hidden>
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">USER ACCOUNT</p>
+                        <h2 id="detailUserName">User Profile</h2>
+                        <p id="detailUserEmail" class="detail-subtitle"></p>
+                    </div>
+
+                    <button
+                        id="closeDetailButton"
+                        type="button"
+                        class="button button-secondary"
+                    >
+                        Close
+                    </button>
+                </div>
+
+                <div id="detailNotice" class="notice" hidden></div>
+
+                <div class="detail-grid">
+                    <article class="detail-card">
+                        <h3>Account Information</h3>
+
+                        <dl class="detail-list">
+                            <div>
+                                <dt>User ID</dt>
+                                <dd id="detailUserId">—</dd>
+                            </div>
+                            <div>
+                                <dt>Account Status</dt>
+                                <dd id="detailAccountStatus">—</dd>
+                            </div>
+                            <div>
+                                <dt>Registration Status</dt>
+                                <dd id="detailRegistrationStatus">—</dd>
+                            </div>
+                            <div>
+                                <dt>Created</dt>
+                                <dd id="detailCreatedAt">—</dd>
+                            </div>
+                            <div>
+                                <dt>Last Updated</dt>
+                                <dd id="detailUpdatedAt">—</dd>
+                            </div>
+                        </dl>
+                    </article>
+
+                    <article class="detail-card">
+                        <h3>Role Assignments</h3>
+                        <div id="roleHistory" class="history-list"></div>
+                    </article>
+
+                    <article class="detail-card">
+                        <h3>Country Assignments</h3>
+                        <div id="countryAssignmentHistory" class="history-list"></div>
+                    </article>
+
+                    <article class="detail-card">
+                        <h3>Registration Review</h3>
+                        <dl class="detail-list">
+                            <div>
+                                <dt>Reviewed By</dt>
+                                <dd id="detailReviewedBy">—</dd>
+                            </div>
+                            <div>
+                                <dt>Reviewed At</dt>
+                                <dd id="detailReviewedAt">—</dd>
+                            </div>
+                            <div>
+                                <dt>Rejection Reason</dt>
+                                <dd id="detailRejectionReason">—</dd>
+                            </div>
+                            <div>
+                                <dt>Cancellation Reason</dt>
+                                <dd id="detailCancellationReason">—</dd>
+                            </div>
+                        </dl>
+                    </article>
+
+                    <article class="detail-card">
+                        <h3>Authentication Identity History</h3>
+                        <p class="card-note">
+                            Identity values are not displayed. Only type and verification metadata are shown.
+                        </p>
+                        <div id="identityHistory" class="history-list"></div>
+                    </article>
+
+                    <article class="detail-card">
+                        <h3>Registration Identity History</h3>
+                        <p class="card-note">
+                            National ID and WhatsApp values remain protected.
+                        </p>
+                        <div id="registrationIdentityHistory" class="history-list"></div>
+                    </article>
+
+                    <article class="detail-card full-width">
+                        <h3>Account Archive History</h3>
+                        <div id="archiveHistory" class="history-list"></div>
+                    </article>
+                </div>
+
+                <section id="accountActionSection" class="account-action-section">
+                    <h3>Account Actions</h3>
+                    <p>
+                        Archiving suspends account access while preserving the user record and its history.
+                    </p>
+
+                    <div id="archiveActionPanel" class="action-panel" hidden>
+                        <label for="archiveReason">Archive Reason</label>
+                        <textarea
+                            id="archiveReason"
+                            rows="3"
+                            maxlength="1000"
+                            placeholder="Explain why this account should be archived."
+                        ></textarea>
+
+                        <button
+                            id="archiveButton"
+                            type="button"
+                            class="button button-danger"
+                        >
+                            Archive Account
+                        </button>
+                    </div>
+
+                    <div id="restoreActionPanel" class="action-panel" hidden>
+                        <label for="restoreReason">Restore Reason</label>
+                        <textarea
+                            id="restoreReason"
+                            rows="3"
+                            maxlength="1000"
+                            placeholder="Explain why this account should be restored."
+                        ></textarea>
+
+                        <button
+                            id="restoreButton"
+                            type="button"
+                            class="button button-primary"
+                        >
+                            Restore Account
+                        </button>
+                    </div>
+
+                    <p class="security-note">
+                        SUPER_ADMIN accounts and accounts with active country admin assignments
+                        cannot be archived through this function. Self-archiving is also prohibited.
+                    </p>
+                </section>
+            </section>
+
+            <section id="activitySection" class="management-section activity-section" hidden>
+                <div class="section-heading">
+                    <div>
+                        <p class="eyebrow">AUDIT AND SECURITY</p>
+                        <h2>Activity History</h2>
+                        <p id="activityUserLabel">
+                            Account activity and administrative actions.
+                        </p>
+                    </div>
+
+                    <button
+                        id="closeActivityButton"
+                        type="button"
+                        class="button button-secondary"
+                    >
+                        Close
+                    </button>
+                </div>
+
+                <div id="activityLoadingState" class="empty-state" hidden>
+                    <p>Loading activity history...</p>
+                </div>
+
+                <div id="activityEmptyState" class="empty-state" hidden>
+                    <h3>No activity found</h3>
+                    <p>No recorded activity is available for this account.</p>
+                </div>
+
+                <div id="activityList" class="activity-list"></div>
+
+                <div id="activityPagination" class="pagination" hidden>
+                    <button
+                        id="previousActivityButton"
+                        type="button"
+                        class="button button-secondary"
+                    >
+                        Previous
+                    </button>
+
+                    <span id="activityPageInformation">Page 1</span>
+
+                    <button
+                        id="nextActivityButton"
+                        type="button"
+                        class="button button-secondary"
+                    >
+                        Next
+                    </button>
+                </div>
+            </section>
+
+            <p class="security-note">
+                All account management operations require server-side SUPER_ADMIN
+                authorization. Account archiving preserves historical records;
+                it does not permanently delete user data.
+            </p>
+        </main>
+
+        <footer class="app-footer">
+            <p>JuhudManager V2</p>
+        </footer>
+    </div>
+
+    <script type="module" src="./assets/js/super-admin-users.js?v=1"></script>
+</body>
+</html>
