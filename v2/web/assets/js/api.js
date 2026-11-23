@@ -20,7 +20,8 @@ export async function apiRequest(path, body, token) {
     {
       method: body ? "POST" : "GET",
       headers,
-      body: body ? JSON.stringify(body) : undefined
+      body: body ? JSON.stringify(body) : undefined,
+      cache: "no-store"
     }
   );
 
