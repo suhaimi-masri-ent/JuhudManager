@@ -201,7 +201,13 @@ function renderUserRoles(container, roles) {
     }
 
     roles.forEach(role => {
-        container.appendChild(createBadge(role, "role"));
+        const roleCode = typeof role === "string"
+            ? role
+            : role?.role_code || role?.roleCode;
+
+        if (roleCode) {
+            container.appendChild(createBadge(roleCode, "role"));
+        }
     });
 }
 
@@ -236,11 +242,7 @@ function renderUserList() {
         );
 
         userCell.appendChild(
-            createElement(
-                "span",
-                "user-id-short",
-                user.userId || ""
-            )
+            createElement("span", "user-id-short", user.userId || "")
         );
 
         row.appendChild(userCell);
@@ -250,6 +252,7 @@ function renderUserList() {
         row.appendChild(roleCell);
 
         const statusCell = document.createElement("td");
+
         statusCell.appendChild(
             createBadge(user.accountStatus, "status")
         );
@@ -263,6 +266,7 @@ function renderUserList() {
         row.appendChild(statusCell);
 
         const registrationCell = document.createElement("td");
+
         registrationCell.textContent =
             formatStatus(user.registrationStatus);
 
@@ -373,9 +377,7 @@ function renderMobileUser(user, container) {
 }
 
 function renderPagination() {
-    const pagination = $("pagination");
-
-    pagination.hidden = false;
+    $("pagination").hidden = false;
 
     $("pageInformation").textContent =
         `Page ${currentPage + 1}`;
@@ -454,13 +456,13 @@ function renderHistory(containerId, items, emptyMessage, renderer) {
 }
 
 function appendHistoryLine(container, label, value) {
-    const paragraph = createElement(
-        "p",
-        "",
-        `${label}: ${value === null || value === undefined || value === "" ? "—" : value}`
+    container.appendChild(
+        createElement(
+            "p",
+            "",
+            `${label}: ${value === null || value === undefined || value === "" ? "—" : value}`
+        )
     );
-
-    container.appendChild(paragraph);
 }
 
 function renderRoleHistory(items) {
@@ -519,11 +521,7 @@ function renderAuthenticationIdentityHistory(items) {
         "No authentication identity history recorded.",
         (card, item) => {
             card.appendChild(
-                createElement(
-                    "strong",
-                    "",
-                    formatStatus(item.identity_type)
-                )
+                createElement("strong", "", formatStatus(item.identity_type))
             );
 
             appendHistoryLine(card, "Verification", formatStatus(item.verification_status));
@@ -543,11 +541,7 @@ function renderRegistrationIdentityHistory(items) {
         "No registration identity history recorded.",
         (card, item) => {
             card.appendChild(
-                createElement(
-                    "strong",
-                    "",
-                    formatStatus(item.identity_type)
-                )
+                createElement("strong", "", formatStatus(item.identity_type))
             );
 
             appendHistoryLine(card, "Status", formatStatus(item.identity_status));
@@ -596,11 +590,8 @@ function isCurrentUser(userId) {
 }
 
 function updateAccountActions(user) {
-    const archivePanel = $("archiveActionPanel");
-    const restorePanel = $("restoreActionPanel");
-
-    archivePanel.hidden = true;
-    restorePanel.hidden = true;
+    $("archiveActionPanel").hidden = true;
+    $("restoreActionPanel").hidden = true;
 
     $("archiveReason").value = "";
     $("restoreReason").value = "";
@@ -608,7 +599,11 @@ function updateAccountActions(user) {
     if (!user) return;
 
     const roles = Array.isArray(user.roles)
-        ? user.roles.map(item => item.role_code)
+        ? user.roles.map(item =>
+            typeof item === "string"
+                ? item
+                : item?.role_code || item?.roleCode
+        )
         : [];
 
     const isSuperAdmin = roles.includes("SUPER_ADMIN");
@@ -627,9 +622,9 @@ function updateAccountActions(user) {
         !user.isArchived;
 
     if (user.isArchived && user.accountStatus === "SUSPENDED") {
-        restorePanel.hidden = false;
+        $("restoreActionPanel").hidden = false;
     } else if (canArchive) {
-        archivePanel.hidden = false;
+        $("archiveActionPanel").hidden = false;
     }
 }
 
@@ -686,11 +681,7 @@ function renderUserDetail(user) {
     setText("detailCreatedAt", formatDate(user.createdAt));
     setText("detailUpdatedAt", formatDate(user.updatedAt));
 
-    setText(
-        "detailReviewedBy",
-        user.reviewedByName || user.reviewedBy
-    );
-
+    setText("detailReviewedBy", user.reviewedByName || user.reviewedBy);
     setText("detailReviewedAt", formatDate(user.reviewedAt));
     setText("detailRejectionReason", user.rejectionReason);
     setText("detailCancellationReason", user.cancellationReason);
@@ -702,80 +693,6 @@ function renderUserDetail(user) {
     renderArchiveHistory(user.archiveHistory);
 
     updateAccountActions(user);
-}
-
-function parseActivityJson(value) {
-    if (!value) return null;
-
-    if (typeof value === "object") {
-        return value;
-    }
-
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
-
-function sanitizeActivityValue(value, key = "") {
-    const sensitiveKey =
-        /(password|passwd|secret|token|otp|email|phone|whatsapp|national.?id|identity.?value|encrypted|cipher|hash|credential|authorization)/i;
-
-    if (sensitiveKey.test(key)) {
-        return "[REDACTED]";
-    }
-
-    if (Array.isArray(value)) {
-        return value.map(item => sanitizeActivityValue(item));
-    }
-
-    if (value && typeof value === "object") {
-        const sanitized = {};
-
-        Object.entries(value).forEach(([childKey, childValue]) => {
-            sanitized[childKey] = sanitizeActivityValue(
-                childValue,
-                childKey
-            );
-        });
-
-        return sanitized;
-    }
-
-    if (typeof value === "string") {
-        return value.length > 500
-            ? `${value.slice(0, 500)}…`
-            : value;
-    }
-
-    return value;
-}
-
-function renderActivityData(container, label, rawValue) {
-    const parsed = parseActivityJson(rawValue);
-
-    if (!parsed) return;
-
-    const details = document.createElement("details");
-    details.className = "activity-data";
-
-    const summary = createElement(
-        "summary",
-        "",
-        `${label} details (sensitive fields hidden)`
-    );
-
-    const pre = document.createElement("pre");
-
-    pre.textContent = JSON.stringify(
-        sanitizeActivityValue(parsed),
-        null,
-        2
-    );
-
-    details.append(summary, pre);
-    container.appendChild(details);
 }
 
 function renderActivities(items) {
@@ -849,9 +766,6 @@ function renderActivities(items) {
             );
         }
 
-        renderActivityData(card, "Before", activity.before);
-        renderActivityData(card, "After / Event", activity.after);
-
         container.appendChild(card);
     });
 }
@@ -919,8 +833,8 @@ async function loadActivity() {
         if (handleSessionError(error)) return;
 
         $("activityLoadingState").hidden = true;
-
         $("activityEmptyState").hidden = false;
+
         $("activityEmptyState").querySelector("p").textContent =
             `Unable to load activity history: ${error.message}`;
     }
@@ -956,11 +870,12 @@ async function archiveSelectedUser() {
             getToken()
         );
 
+        await openUserDetail(selectedUserId);
+
         showDetailNotice(
             result.message || "Account archived successfully."
         );
 
-        await openUserDetail(selectedUserId);
         await loadUsers();
     } catch (error) {
         if (handleSessionError(error)) return;
@@ -1005,11 +920,12 @@ async function restoreSelectedUser() {
             getToken()
         );
 
+        await openUserDetail(selectedUserId);
+
         showDetailNotice(
             result.message || "Account restored successfully."
         );
 
-        await openUserDetail(selectedUserId);
         await loadUsers();
     } catch (error) {
         if (handleSessionError(error)) return;
