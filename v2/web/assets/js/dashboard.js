@@ -139,6 +139,11 @@ function renderRoleNavigation(user) {
         "Registration Management",
         "Review and manage user registration requests.",
         "./admin-registrations.html"
+      ),
+      createWorkspaceCard(
+        "User Management",
+        "View user profiles, roles, account status and activity history. Archive or restore eligible accounts.",
+        "./super-admin-users.html"
       )
     );
   }
