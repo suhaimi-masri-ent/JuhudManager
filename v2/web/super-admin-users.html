@@ -203,7 +203,7 @@
                 <div class="detail-grid">
                     <article class="detail-card">
                         <h3>Account Information</h3>
-
+                
                         <dl class="detail-list">
                             <div>
                                 <dt>User ID</dt>
@@ -227,19 +227,10 @@
                             </div>
                         </dl>
                     </article>
-
-                    <article class="detail-card">
-                        <h3>Role Assignments</h3>
-                        <div id="roleHistory" class="history-list"></div>
-                    </article>
-
-                    <article class="detail-card">
-                        <h3>Country Assignments</h3>
-                        <div id="countryAssignmentHistory" class="history-list"></div>
-                    </article>
-
+                
                     <article class="detail-card">
                         <h3>Registration Review</h3>
+                
                         <dl class="detail-list">
                             <div>
                                 <dt>Reviewed By</dt>
@@ -259,29 +250,49 @@
                             </div>
                         </dl>
                     </article>
-
-                    <article class="detail-card">
-                        <h3>Authentication Identity History</h3>
-                        <p class="card-note">
-                            Identity values are not displayed. Only type and verification metadata are shown.
-                        </p>
-                        <div id="identityHistory" class="history-list"></div>
+                
+                    <article class="detail-card full-width history-card">
+                        <details>
+                            <summary>Role Assignments</summary>
+                            <div id="roleHistory" class="history-list"></div>
+                        </details>
                     </article>
-
-                    <article class="detail-card">
-                        <h3>Registration Identity History</h3>
-                        <p class="card-note">
-                            National ID and WhatsApp values remain protected.
-                        </p>
-                        <div id="registrationIdentityHistory" class="history-list"></div>
+                
+                    <article class="detail-card full-width history-card">
+                        <details>
+                            <summary>Country Assignments</summary>
+                            <div id="countryAssignmentHistory" class="history-list"></div>
+                        </details>
                     </article>
-
-                    <article class="detail-card full-width">
-                        <h3>Account Archive History</h3>
-                        <div id="archiveHistory" class="history-list"></div>
+                
+                    <article class="detail-card full-width history-card">
+                        <details>
+                            <summary>Authentication Identity History</summary>
+                            <p class="card-note">
+                                Identity values are not displayed. Only type and verification metadata are shown.
+                            </p>
+                            <div id="identityHistory" class="history-list"></div>
+                        </details>
+                    </article>
+                
+                    <article class="detail-card full-width history-card">
+                        <details>
+                            <summary>Registration Identity History</summary>
+                            <p class="card-note">
+                                National ID and WhatsApp values remain protected.
+                            </p>
+                            <div id="registrationIdentityHistory" class="history-list"></div>
+                        </details>
+                    </article>
+                
+                    <article class="detail-card full-width history-card">
+                        <details>
+                            <summary>Account Archive History</summary>
+                            <div id="archiveHistory" class="history-list"></div>
+                        </details>
                     </article>
                 </div>
-
+                
                 <section id="accountActionSection" class="account-action-section">
                     <h3>Account Actions</h3>
                     <p>
