@@ -11,6 +11,10 @@ import {
   findValidSuperAdminBootstrapToken
 } from "./super-admin-bootstrap.js";
 
+import {
+  findValidAdminAssistedRecoveryToken
+} from "./admin-assisted-recovery.js";
+
 const BOOTSTRAP_USER_ID = "6b3b4088-7e19-4efc-a942-387c7880460c";
 const BOOTSTRAP_USER_NAME = "JUHUD MANAGER";
 const BOOTSTRAP_USER_EMAIL = "al.masri.ent@gmail.com";
@@ -366,6 +370,199 @@ async function completeSuperAdminBootstrap({
   };
 }
 
+
+async function completeAdminAssistedRecovery({
+  db,
+  env,
+  setupToken,
+  password
+}) {
+  const setup = await findValidAdminAssistedRecoveryToken({
+    db,
+    env,
+    token: setupToken
+  });
+
+  const passwordHash = await hashPassword(password);
+  const credentialId = crypto.randomUUID();
+  const eventId = crypto.randomUUID();
+  const now = new Date().toISOString();
+
+  const eligible = `
+    EXISTS (
+      SELECT 1
+      FROM users u
+      INNER JOIN user_registration_reviews r
+        ON r.user_id = u.user_id
+      WHERE u.user_id = ?3
+        AND u.account_status = 'DISABLED'
+        AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+        AND r.admin_assisted_recovery_at IS NOT NULL
+        AND r.admin_assisted_recovery_by IS NOT NULL
+        AND r.admin_assisted_recovery_method IS NOT NULL
+    )
+    AND EXISTS (
+      SELECT 1
+      FROM user_auth_identities i
+      WHERE i.user_id = ?3
+        AND i.identity_type = 'EMAIL'
+        AND i.identity_scope = 'GLOBAL'
+        AND i.verification_status = 'PENDING'
+        AND i.verified_at IS NULL
+    )
+    AND (
+      SELECT COUNT(*)
+      FROM user_registration_identity_details
+      WHERE user_id = ?3
+        AND identity_type = 'NATIONAL_ID'
+        AND identity_status = 'UNVERIFIED'
+    ) = 1
+    AND (
+      SELECT COUNT(*)
+      FROM user_registration_identity_details
+      WHERE user_id = ?3
+        AND identity_type = 'WHATSAPP'
+        AND identity_status = 'UNVERIFIED'
+    ) = 1
+    AND NOT EXISTS (
+      SELECT 1
+      FROM user_credentials
+      WHERE user_id = ?3
+        AND credential_type = 'PASSWORD'
+        AND revoked_at IS NULL
+    )
+  `;
+
+  const results = await db.batch([
+    db.prepare(
+      `UPDATE admin_assisted_recovery_tokens
+       SET consumed_at = ?1
+       WHERE recovery_token_id = ?2
+         AND user_id = ?3
+         AND consumed_at IS NULL
+         AND invalidated_at IS NULL
+         AND expires_at > ?1
+         AND ${eligible}`
+    ).bind(
+      now,
+      setup.recoveryTokenId,
+      setup.userId
+    ),
+
+    db.prepare(
+      `INSERT INTO user_credentials (
+         credential_id,
+         user_id,
+         credential_type,
+         password_hash,
+         created_at,
+         updated_at
+       )
+       SELECT
+         ?1, ?2, 'PASSWORD',
+         CASE
+           WHEN EXISTS (
+             SELECT 1
+             FROM admin_assisted_recovery_tokens
+             WHERE recovery_token_id = ?3
+               AND user_id = ?2
+               AND consumed_at = ?4
+               AND invalidated_at IS NULL
+           )
+           AND EXISTS (
+             SELECT 1
+             FROM users
+             WHERE user_id = ?2
+               AND account_status = 'DISABLED'
+           )
+           AND NOT EXISTS (
+             SELECT 1
+             FROM user_credentials
+             WHERE user_id = ?2
+               AND credential_type = 'PASSWORD'
+               AND revoked_at IS NULL
+           )
+           THEN ?5
+           ELSE NULL
+         END,
+         ?4, ?4`
+    ).bind(
+      credentialId,
+      setup.userId,
+      setup.recoveryTokenId,
+      now,
+      passwordHash
+    ),
+
+    db.prepare(
+      `INSERT INTO auth_events (
+         event_id,
+         user_id,
+         session_id,
+         event_type,
+         event_status,
+         event_details,
+         created_at
+       )
+       SELECT
+         ?1, ?2, NULL,
+         'PASSWORD_SETUP',
+         'SUCCESS',
+         ?3, ?4
+       WHERE EXISTS (
+         SELECT 1
+         FROM user_credentials
+         WHERE credential_id = ?5
+           AND user_id = ?2
+           AND credential_type = 'PASSWORD'
+           AND revoked_at IS NULL
+       )
+       AND EXISTS (
+         SELECT 1
+         FROM admin_assisted_recovery_tokens
+         WHERE recovery_token_id = ?6
+           AND user_id = ?2
+           AND consumed_at = ?4
+       )`
+    ).bind(
+      eventId,
+      setup.userId,
+      JSON.stringify({
+        setupMethod: "ADMIN_ASSISTED_RECOVERY",
+        emailVerification: "PENDING",
+        credentialType: "PASSWORD",
+        accountActivated: false
+      }),
+      now,
+      credentialId,
+      setup.recoveryTokenId
+    )
+  ]);
+
+  if (
+    (results?.[0]?.meta?.changes ?? 0) !== 1 ||
+    (results?.[1]?.meta?.changes ?? 0) !== 1 ||
+    (results?.[2]?.meta?.changes ?? 0) !== 1
+  ) {
+    throw httpError(
+      "Password setup could not be completed. The recovery token may be invalid, expired or already used.",
+      409
+    );
+  }
+
+  return {
+    passwordSet: true,
+    userId: setup.userId,
+    credentialId,
+    credentialType: "PASSWORD",
+    accountStatus: "DISABLED",
+    registrationStatus: "AWAITING_EMAIL_VERIFICATION",
+    accessLevel: "LIMITED",
+    nextStep: "LOGIN_LIMITED_ACCESS"
+  };
+}
+
+
 /**
  * Set the initial password after email verification.
  *
@@ -396,6 +593,29 @@ export async function setInitialPassword({
 
   if (bootstrapSetup) {
     return completeSuperAdminBootstrap({
+      db,
+      env,
+      setupToken,
+      password
+    });
+  }
+
+    let recoverySetup = null;
+
+  try {
+    recoverySetup = await findValidAdminAssistedRecoveryToken({
+      db,
+      env,
+      token: setupToken
+    });
+  } catch (error) {
+    if (error?.status !== 400) {
+      throw error;
+    }
+  }
+
+  if (recoverySetup) {
+    return completeAdminAssistedRecovery({
       db,
       env,
       setupToken,
