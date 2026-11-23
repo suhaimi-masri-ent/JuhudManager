@@ -942,7 +942,9 @@ async function archiveSelectedUser() {
             getToken()
         );
 
-        window.location.reload();
+        window.location.assign(
+            `${window.location.pathname}?refresh=${Date.now()}`
+        );
 
     } catch (error) {
         if (handleSessionError(error)) return;
@@ -989,7 +991,9 @@ async function restoreSelectedUser() {
             getToken()
         );
 
-        window.location.reload();
+        window.location.assign(
+            `${window.location.pathname}?refresh=${Date.now()}`
+        );
 
     } catch (error) {
         if (handleSessionError(error)) return;
