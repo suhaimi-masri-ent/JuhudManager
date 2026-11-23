@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174b38">
+  <meta name="referrer" content="no-referrer">
+  <title>My Profile · JuhudManager V2</title>
+  <link rel="stylesheet" href="./assets/css/app.css">
+  <link rel="stylesheet" href="./assets/css/dashboard.css">
+  <script type="module" src="./assets/js/profile.js"></script>
+  <style>
+    .profile-card {
+      padding: 24px;
+      border: 1px solid #e1e9e3;
+      border-radius: 10px;
+      background: #fff;
+      max-width: 720px;
+    }
+    .profile-field { margin-bottom: 20px; }
+    .profile-field label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 13px;
+      font-weight: 650;
+    }
+    .profile-field input {
+      width: 100%;
+      min-height: 46px;
+      padding: 12px 14px;
+      border: 1px solid #dfe8e1;
+      border-radius: 8px;
+      background: #fff;
+    }
+    .profile-field input[readonly] {
+      background: #f1f4f2;
+      color: #718078;
+    }
+    .profile-help {
+      margin-top: 7px;
+      color: #718078;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .profile-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 24px;
+    }
+    .profile-button {
+      min-height: 43px;
+      padding: 10px 18px;
+      border: 1px solid #174b38;
+      border-radius: 7px;
+      background: #174b38;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .profile-button.secondary {
+      background: #fff;
+      color: #174b38;
+    }
+    .profile-button:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+    .profile-message {
+      display: none;
+      margin-bottom: 20px;
+      padding: 12px 15px;
+      border-radius: 8px;
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    .profile-message.show { display: block; }
+    .profile-message.error {
+      background: #fff0ef;
+      color: #b42318;
+    }
+    .profile-message.success {
+      background: #e9f6ee;
+      color: #18794e;
+    }
+    .profile-meta {
+      margin-top: 22px;
+      color: #718078;
+      font-size: 12px;
+      line-height: 1.8;
+    }
+    @media (max-width: 600px) {
+      .profile-card { padding: 18px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="dashboard-page">
+    <header class="dashboard-header">
+      <a class="dashboard-brand" href="./dashboard.html">
+        <span class="brand-icon">✦</span>
+        <span>JuhudManager</span>
+      </a>
+      <div class="dashboard-header-actions">
+        <a class="logout-button" href="./dashboard.html"
+           style="text-decoration:none">Dashboard</a>
+      </div>
+    </header>
+
+    <main class="dashboard-main">
+      <section class="dashboard-welcome">
+        <div>
+          <p class="dashboard-eyebrow">JUHUDMANAGER V2</p>
+          <h1>My Profile</h1>
+          <p class="dashboard-subtitle">
+            View and manage your personal account information.
+          </p>
+        </div>
+      </section>
+
+      <div id="profileMessage" class="profile-message"
+           role="status" aria-live="polite"></div>
+
+      <section class="profile-card">
+        <form id="profileForm">
+          <div class="profile-field">
+            <label for="fullName">Full name</label>
+            <input id="fullName" name="fullName"
+                   type="text" maxlength="150" required>
+          </div>
+
+          <div class="profile-field">
+            <label for="dateOfBirth">Date of birth</label>
+            <input id="dateOfBirth" name="dateOfBirth"
+                   type="date">
+            <p class="profile-help">
+              Leave blank if you do not want to provide your date of birth.
+            </p>
+          </div>
+
+          <div class="profile-field">
+            <label for="email">Email address</label>
+            <input id="email" type="email" readonly>
+            <p class="profile-help">
+              Email address is read-only on this page.
+            </p>
+          </div>
+
+          <div class="profile-field">
+            <label for="whatsapp">Verified WhatsApp</label>
+            <input id="whatsapp" type="text" readonly>
+          </div>
+
+          <div class="profile-field">
+            <label for="accountStatus">Account status</label>
+            <input id="accountStatus" type="text" readonly>
+          </div>
+
+          <div class="profile-actions">
+            <button id="saveProfileButton"
+                    class="profile-button" type="submit">
+              Save Changes
+            </button>
+            <button id="reloadProfileButton"
+                    class="profile-button secondary" type="button">
+              Reload
+            </button>
+          </div>
+        </form>
+
+        <div class="profile-meta">
+          <div>Profile created: <span id="createdAt">—</span></div>
+          <div>Last updated: <span id="updatedAt">—</span></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="dashboard-footer">
+      JuhudManager V2 · Community Management Platform
+    </footer>
+  </div>
+</body>
+</html>
