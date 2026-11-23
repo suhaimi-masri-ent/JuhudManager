@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#174b38">
   <meta name="referrer" content="no-referrer">
-  <title>Admin Registration Recovery · JuhudManager V2</title>
+  <title>Admin Registration Management · JuhudManager V2</title>
   <link rel="stylesheet" href="./assets/css/app.css">
   <link rel="stylesheet" href="./assets/css/dashboard.css">
   <link rel="stylesheet" href="./assets/css/admin-registrations.css">
@@ -28,9 +28,9 @@
       <section class="dashboard-welcome">
         <div>
           <p class="dashboard-eyebrow">ADMINISTRATION</p>
-          <h1>Registration recovery</h1>
+          <h1>Registration management</h1>
           <p class="dashboard-subtitle">
-            Correct National ID or WhatsApp details for registrations awaiting email verification.
+            Recover incorrect identity details or cancel eligible incomplete registrations.
           </p>
         </div>
       </section>
@@ -49,15 +49,25 @@
 
       <section id="detailPanel" class="dashboard-section detail-panel hidden">
         <h2>Selected registration</h2>
+
         <div class="selected-summary">
-          <div><span>Name</span><strong id="selectedName">—</strong></div>
-          <div><span>Email</span><strong id="selectedEmail">—</strong></div>
-          <div><span>Registration status</span><strong id="selectedStatus">—</strong></div>
+          <div>
+            <span>Name</span>
+            <strong id="selectedName">—</strong>
+          </div>
+          <div>
+            <span>Email</span>
+            <strong id="selectedEmail">—</strong>
+          </div>
+          <div>
+            <span>Registration status</span>
+            <strong id="selectedStatus">—</strong>
+          </div>
         </div>
 
         <h3>Stored identity records</h3>
         <p class="muted">
-          Values are intentionally hidden. The previous record will be retained as REVOKED history.
+          Values are intentionally hidden. Replaced identity records are retained as REVOKED history.
         </p>
         <div id="identityList" class="identity-list"></div>
 
@@ -72,10 +82,12 @@
               <label for="countryCode">National ID issuing country (ISO 2-letter code)</label>
               <input id="countryCode" name="countryCode" maxlength="2" placeholder="MY" autocomplete="off">
             </div>
+
             <div class="field">
               <label for="nationalId">Correct National ID</label>
               <input id="nationalId" name="nationalId" maxlength="100" placeholder="Enter corrected National ID" autocomplete="off">
             </div>
+
             <div class="field full-width">
               <label for="whatsapp">Correct WhatsApp number (E.164)</label>
               <input id="whatsapp" name="whatsapp" type="tel" maxlength="16" placeholder="+60123456789" autocomplete="off">
@@ -107,6 +119,53 @@
             <button id="cancelSelectionButton" class="admin-secondary-button" type="button">Close</button>
           </div>
         </form>
+
+        <section id="cancellationPanel" class="cancellation-panel hidden">
+          <h3>Cancel incomplete registration</h3>
+
+          <p class="muted">
+            This action does not delete the user record. Eligible identity claims will be revoked,
+            pending OTP requests invalidated, and the cancellation retained in the audit history.
+          </p>
+
+          <div id="cancellationEligibility" class="cancellation-eligibility" role="status" aria-live="polite">
+            Checking cancellation eligibility…
+          </div>
+
+          <form id="cancellationForm">
+            <div class="field">
+              <label for="cancellationReason">Cancellation reason</label>
+              <textarea
+                id="cancellationReason"
+                name="cancellationReason"
+                rows="3"
+                maxlength="1000"
+                minlength="10"
+                required
+                placeholder="Explain why this incomplete registration should be cancelled."
+              ></textarea>
+            </div>
+
+            <label class="confirmation-check">
+              <input id="confirmCancellation" type="checkbox" required>
+              <span>
+                I understand this will cancel the registration and revoke its remaining
+                unverified identity claims. The record will be retained for audit.
+              </span>
+            </label>
+
+            <div class="form-actions">
+              <button
+                id="cancelRegistrationButton"
+                class="danger-button"
+                type="submit"
+                disabled
+              >
+                Cancel incomplete registration
+              </button>
+            </div>
+          </form>
+        </section>
       </section>
     </main>
 
