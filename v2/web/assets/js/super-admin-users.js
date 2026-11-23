@@ -1,4 +1,3 @@
-
 import { apiRequest } from "./api.js";
 
 const $ = (id) => document.getElementById(id);
@@ -16,6 +15,10 @@ let activityPage = 0;
 let selectedUserId = null;
 let hasNextPage = false;
 let hasNextActivityPage = false;
+
+let listRequestSequence = 0;
+let detailRequestSequence = 0;
+let activityRequestSequence = 0;
 
 function getToken() {
     return sessionStorage.getItem(ACCESS_TOKEN_KEY);
@@ -230,7 +233,6 @@ function renderUserList() {
 
     users.forEach(user => {
         const row = document.createElement("tr");
-
         const userCell = document.createElement("td");
 
         userCell.appendChild(
@@ -266,18 +268,11 @@ function renderUserList() {
         row.appendChild(statusCell);
 
         const registrationCell = document.createElement("td");
-
-        registrationCell.textContent =
-            formatStatus(user.registrationStatus);
-
+        registrationCell.textContent = formatStatus(user.registrationStatus);
         row.appendChild(registrationCell);
 
         row.appendChild(
-            createElement(
-                "td",
-                "",
-                Number(user.activeCountryCount || 0)
-            )
+            createElement("td", "", Number(user.activeCountryCount || 0))
         );
 
         row.appendChild(
@@ -303,7 +298,6 @@ function renderUserList() {
         row.appendChild(actionCell);
 
         body.appendChild(row);
-
         renderMobileUser(user, mobile);
     });
 
@@ -326,7 +320,6 @@ function renderMobileUser(user, container) {
     );
 
     const roles = createElement("div");
-
     renderUserRoles(roles, user.roles);
     card.appendChild(roles);
 
@@ -387,6 +380,8 @@ function renderPagination() {
 }
 
 async function loadUsers() {
+    const requestSequence = ++listRequestSequence;
+
     clearNotice();
     setLoadingState(true);
 
@@ -408,6 +403,8 @@ async function loadUsers() {
             getToken()
         );
 
+        if (requestSequence !== listRequestSequence) return;
+
         users = Array.isArray(result.users)
             ? result.users
             : [];
@@ -416,6 +413,7 @@ async function loadUsers() {
 
         renderUserList();
     } catch (error) {
+        if (requestSequence !== listRequestSequence) return;
         if (handleSessionError(error)) return;
 
         setLoadingState(false);
@@ -628,8 +626,14 @@ function updateAccountActions(user) {
     }
 }
 
-async function openUserDetail(userId) {
-    clearDetailNotice();
+async function openUserDetail(userId, options = {}) {
+    const requestSequence = ++detailRequestSequence;
+    const {
+        scroll = true,
+        clearNotice: shouldClearNotice = true
+    } = options;
+
+    if (shouldClearNotice) clearDetailNotice();
 
     selectedUserId = userId;
     currentUser = null;
@@ -640,10 +644,35 @@ async function openUserDetail(userId) {
     $("detailUserName").textContent = "Loading user profile...";
     $("detailUserEmail").textContent = "";
 
-    $("userDetailSection").scrollIntoView({
-        behavior: "smooth",
-        block: "start"
-    });
+    [
+        "detailUserId",
+        "detailAccountStatus",
+        "detailRegistrationStatus",
+        "detailCreatedAt",
+        "detailUpdatedAt",
+        "detailReviewedBy",
+        "detailReviewedAt",
+        "detailRejectionReason",
+        "detailCancellationReason"
+    ].forEach(id => setText(id, "—"));
+
+    [
+        "roleHistory",
+        "countryAssignmentHistory",
+        "identityHistory",
+        "registrationIdentityHistory",
+        "archiveHistory"
+    ].forEach(id => $(id).replaceChildren());
+
+    $("archiveActionPanel").hidden = true;
+    $("restoreActionPanel").hidden = true;
+
+    if (scroll) {
+        $("userDetailSection").scrollIntoView({
+            behavior: "smooth",
+            block: "start"
+        });
+    }
 
     try {
         const result = await apiRequest(
@@ -652,19 +681,37 @@ async function openUserDetail(userId) {
             getToken()
         );
 
+        if (
+            requestSequence !== detailRequestSequence ||
+            selectedUserId !== userId
+        ) {
+            return false;
+        }
+
         if (!result.user) {
             throw new Error("User profile was not returned.");
         }
 
         currentUser = result.user;
         renderUserDetail(currentUser);
+
+        return true;
     } catch (error) {
-        if (handleSessionError(error)) return;
+        if (
+            requestSequence !== detailRequestSequence ||
+            selectedUserId !== userId
+        ) {
+            return false;
+        }
+
+        if (handleSessionError(error)) return false;
 
         showDetailNotice(
             `Unable to load user profile: ${error.message}`,
             "error"
         );
+
+        return false;
     }
 }
 
@@ -791,6 +838,10 @@ async function openActivity(userId, userName) {
 async function loadActivity() {
     if (!selectedUserId) return;
 
+    const userId = selectedUserId;
+    const requestSequence = ++activityRequestSequence;
+    const requestedPage = activityPage;
+
     $("activityLoadingState").hidden = false;
     $("activityEmptyState").hidden = true;
     $("activityList").replaceChildren();
@@ -803,10 +854,18 @@ async function loadActivity() {
 
     try {
         const result = await apiRequest(
-            `/super-admin/users/${encodeURIComponent(selectedUserId)}/activity?${params.toString()}`,
+            `/super-admin/users/${encodeURIComponent(userId)}/activity?${params.toString()}`,
             null,
             getToken()
         );
+
+        if (
+            requestSequence !== activityRequestSequence ||
+            selectedUserId !== userId ||
+            activityPage !== requestedPage
+        ) {
+            return;
+        }
 
         const activities = Array.isArray(result.activities)
             ? result.activities
@@ -830,6 +889,13 @@ async function loadActivity() {
         $("nextActivityButton").disabled =
             !hasNextActivityPage;
     } catch (error) {
+        if (
+            requestSequence !== activityRequestSequence ||
+            selectedUserId !== userId
+        ) {
+            return;
+        }
+
         if (handleSessionError(error)) return;
 
         $("activityLoadingState").hidden = true;
@@ -853,6 +919,8 @@ async function archiveSelectedUser() {
         return;
     }
 
+    const userId = selectedUserId;
+
     const confirmed = window.confirm(
         `Archive ${currentUser.fullName || "this account"}?\n\nThe account will be suspended. Historical records will be preserved.`
     );
@@ -865,18 +933,27 @@ async function archiveSelectedUser() {
 
     try {
         const result = await apiRequest(
-            `/super-admin/users/${encodeURIComponent(selectedUserId)}/archive`,
+            `/super-admin/users/${encodeURIComponent(userId)}/archive`,
             { reason },
             getToken()
         );
 
-        await openUserDetail(selectedUserId);
-
-        showDetailNotice(
-            result.message || "Account archived successfully."
+        const refreshed = await openUserDetail(
+            userId,
+            { scroll: false, clearNotice: false }
         );
 
         await loadUsers();
+
+        if (
+            refreshed &&
+            selectedUserId === userId &&
+            !$("userDetailSection").hidden
+        ) {
+            showDetailNotice(
+                result.message || "Account archived successfully."
+            );
+        }
     } catch (error) {
         if (handleSessionError(error)) return;
 
@@ -903,6 +980,8 @@ async function restoreSelectedUser() {
         return;
     }
 
+    const userId = selectedUserId;
+
     const confirmed = window.confirm(
         `Restore ${currentUser.fullName || "this account"}?\n\nThe account will return to its previous account status.`
     );
@@ -915,18 +994,27 @@ async function restoreSelectedUser() {
 
     try {
         const result = await apiRequest(
-            `/super-admin/users/${encodeURIComponent(selectedUserId)}/restore`,
+            `/super-admin/users/${encodeURIComponent(userId)}/restore`,
             { reason },
             getToken()
         );
 
-        await openUserDetail(selectedUserId);
-
-        showDetailNotice(
-            result.message || "Account restored successfully."
+        const refreshed = await openUserDetail(
+            userId,
+            { scroll: false, clearNotice: false }
         );
 
         await loadUsers();
+
+        if (
+            refreshed &&
+            selectedUserId === userId &&
+            !$("userDetailSection").hidden
+        ) {
+            showDetailNotice(
+                result.message || "Account restored successfully."
+            );
+        }
     } catch (error) {
         if (handleSessionError(error)) return;
 
@@ -972,12 +1060,16 @@ async function loadCurrentSession() {
 }
 
 function closeUserDetail() {
+    detailRequestSequence += 1;
+
     $("userDetailSection").hidden = true;
     currentUser = null;
     selectedUserId = null;
 }
 
 function closeActivity() {
+    activityRequestSequence += 1;
+
     $("activitySection").hidden = true;
     selectedUserId = null;
 }
@@ -1033,15 +1125,33 @@ $("resetFilterButton").addEventListener("click", () => {
     loadUsers();
 });
 
-$("refreshButton").addEventListener("click", () => {
-    loadUsers();
+$("refreshButton").addEventListener("click", async () => {
+    const button = $("refreshButton");
+    const userId = selectedUserId;
+    const detailIsOpen = !$("userDetailSection").hidden;
+    const activityIsOpen = !$("activitySection").hidden;
+    const originalText = button.textContent;
 
-    if (selectedUserId && !$("userDetailSection").hidden) {
-        openUserDetail(selectedUserId);
-    }
+    button.disabled = true;
+    button.textContent = "Refreshing...";
 
-    if (selectedUserId && !$("activitySection").hidden) {
-        loadActivity();
+    try {
+        const tasks = [loadUsers()];
+
+        if (userId && detailIsOpen) {
+            tasks.push(
+                openUserDetail(userId, { scroll: false })
+            );
+        }
+
+        if (userId && activityIsOpen) {
+            tasks.push(loadActivity());
+        }
+
+        await Promise.all(tasks);
+    } finally {
+        button.disabled = false;
+        button.textContent = originalText || "Refresh";
     }
 });
 
