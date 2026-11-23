@@ -1,3 +1,4 @@
+
 import {
   hashValue
 } from "./crypto.js";
@@ -29,9 +30,7 @@ function normalizeEmail(email) {
 
   const normalized = email.trim().toLowerCase();
 
-  if (
-    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
-  ) {
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)) {
     throw httpError("A valid email address is required.", 400);
   }
 
@@ -40,18 +39,14 @@ function normalizeEmail(email) {
 
 function requireLoginSecrets(env) {
   if (!env.HMAC_SECRET) {
-    throw new Error(
-      "Authentication security secret is not configured."
-    );
+    throw new Error("Authentication security secret is not configured.");
   }
 }
 
 function getRequestMetadata(request) {
   return {
-    ipAddress:
-      request?.headers?.get("CF-Connecting-IP") || null,
-    userAgent:
-      request?.headers?.get("User-Agent") || null
+    ipAddress: request?.headers?.get("CF-Connecting-IP") || null,
+    userAgent: request?.headers?.get("User-Agent") || null
   };
 }
 
@@ -111,19 +106,9 @@ async function recordPasswordLoginEvent({
 /**
  * Authenticate with verified email and password.
  *
- * PENDING_REVIEW:
- *   Allows login with limited access.
- *
- * APPROVED + ACTIVE:
- *   Allows login with full access.
- *
- * SUPER_ADMIN bootstrap COMPLETE + ACTIVE:
- *   Allows login with full access without a registration review.
- *
- * REJECTED / CANCELLED / SUSPENDED:
- *   Login denied.
- *
- * This function does not create a session.
+ * Special exception:
+ * SUPER_ADMIN-approved assisted recovery may log in
+ * while email remains PENDING, with LIMITED access only.
  */
 export async function authenticatePasswordLogin({
   db,
@@ -154,6 +139,9 @@ export async function authenticatePasswordLogin({
        u.user_id,
        u.account_status,
        r.registration_status,
+       r.admin_assisted_recovery_at,
+       r.admin_assisted_recovery_by,
+       r.admin_assisted_recovery_method,
        c.password_hash,
        s.bootstrap_status,
        CASE
@@ -165,7 +153,33 @@ export async function authenticatePasswordLogin({
          )
          THEN 1
          ELSE 0
-       END AS is_super_admin
+       END AS is_super_admin,
+       CASE
+         WHEN i.verification_status = 'PENDING'
+          AND i.verified_at IS NULL
+          AND u.account_status = 'DISABLED'
+          AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+          AND r.admin_assisted_recovery_at IS NOT NULL
+          AND r.admin_assisted_recovery_by IS NOT NULL
+          AND r.admin_assisted_recovery_method IS NOT NULL
+          AND c.password_hash IS NOT NULL
+          AND (
+            SELECT COUNT(*)
+            FROM user_registration_identity_details n
+            WHERE n.user_id = u.user_id
+              AND n.identity_type = 'NATIONAL_ID'
+              AND n.identity_status = 'UNVERIFIED'
+          ) = 1
+          AND (
+            SELECT COUNT(*)
+            FROM user_registration_identity_details w
+            WHERE w.user_id = u.user_id
+              AND w.identity_type = 'WHATSAPP'
+              AND w.identity_status = 'UNVERIFIED'
+          ) = 1
+         THEN 1
+         ELSE 0
+       END AS is_assisted_recovery
      FROM user_auth_identities i
      INNER JOIN users u
        ON u.user_id = i.user_id
@@ -180,9 +194,38 @@ export async function authenticatePasswordLogin({
      WHERE i.identity_type = 'EMAIL'
        AND i.identity_scope = 'GLOBAL'
        AND i.identity_hash = ?1
-       AND i.verification_status = 'VERIFIED'
-       AND i.verified_at IS NOT NULL
-       AND i.expires_at IS NULL
+       AND (
+         (
+           i.verification_status = 'VERIFIED'
+           AND i.verified_at IS NOT NULL
+           AND i.expires_at IS NULL
+         )
+         OR
+         (
+           i.verification_status = 'PENDING'
+           AND i.verified_at IS NULL
+           AND u.account_status = 'DISABLED'
+           AND r.registration_status = 'AWAITING_EMAIL_VERIFICATION'
+           AND r.admin_assisted_recovery_at IS NOT NULL
+           AND r.admin_assisted_recovery_by IS NOT NULL
+           AND r.admin_assisted_recovery_method IS NOT NULL
+           AND c.password_hash IS NOT NULL
+           AND (
+             SELECT COUNT(*)
+             FROM user_registration_identity_details n
+             WHERE n.user_id = u.user_id
+               AND n.identity_type = 'NATIONAL_ID'
+               AND n.identity_status = 'UNVERIFIED'
+           ) = 1
+           AND (
+             SELECT COUNT(*)
+             FROM user_registration_identity_details w
+             WHERE w.user_id = u.user_id
+               AND w.identity_type = 'WHATSAPP'
+               AND w.identity_status = 'UNVERIFIED'
+           ) = 1
+         )
+       )
      LIMIT 1`
   ).bind(emailHash).first();
 
@@ -191,6 +234,11 @@ export async function authenticatePasswordLogin({
     account.bootstrap_status === "COMPLETE" &&
     account.account_status === "ACTIVE" &&
     account.is_super_admin === 1
+  );
+
+  const assistedRecoveryLoginAllowed = Boolean(
+    account &&
+    account.is_assisted_recovery === 1
   );
 
   const registrationLoginAllowed = Boolean(
@@ -203,7 +251,8 @@ export async function authenticatePasswordLogin({
       (
         account.registration_status === "APPROVED" &&
         account.account_status === "ACTIVE"
-      )
+      ) ||
+      assistedRecoveryLoginAllowed
     )
   );
 
