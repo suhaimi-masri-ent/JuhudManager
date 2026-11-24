@@ -586,7 +586,7 @@ async function updateProfile({
            changed_at
          )
          SELECT ?1, ?2, ?2, ?3, ?4, ?5
-         WHERE ${profileEligibility}`
+         WHEREWHERE ${getWriteEligibilitySql("?2", accessLevel)}`
       ).bind(
         crypto.randomUUID(),
         userId,
