@@ -6,7 +6,8 @@ on:
     branches:
       - develop
     paths-ignore:
-      - 'v2/docs/**'
+      - "v2/docs/**"
+      - "v2/migrations/**"
   workflow_dispatch:
 
 permissions:
