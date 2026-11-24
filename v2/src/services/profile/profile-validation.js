@@ -1,5 +1,4 @@
 
-
 export const ADDRESS_FIELDS = [
   "addressLine1",
   "addressLine2",
@@ -17,10 +16,50 @@ export function httpError(message, status) {
 
 export async function readProfileJson(request) {
   const maxBodyBytes = 4096;
-  const raw = await request.text();
+  const reader = request.body?.getReader();
 
-  if (new TextEncoder().encode(raw).byteLength > maxBodyBytes) {
-    throw httpError("Request body is too large.", 413);
+  if (!reader) {
+    throw httpError("Invalid JSON request body.", 400);
+  }
+
+  const chunks = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+
+      if (done) break;
+
+      totalBytes += value.byteLength;
+
+      if (totalBytes > maxBodyBytes) {
+        await reader.cancel();
+        throw httpError("Request body is too large.", 413);
+      }
+
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const body = new Uint8Array(totalBytes);
+  let offset = 0;
+
+  for (const chunk of chunks) {
+    body.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  let raw;
+
+  try {
+    raw = new TextDecoder("utf-8", {
+      fatal: true
+    }).decode(body);
+  } catch {
+    throw httpError("Invalid JSON request body.", 400);
   }
 
   try {
