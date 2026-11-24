@@ -12,6 +12,8 @@ on:
       - "v2/package.json"
       - "v2/wrangler.jsonc"
       - ".github/workflows/deploy-worker.yml"
+    paths-ignore:
+      - "v2/docs/**"  
   workflow_dispatch:
 
 jobs:
