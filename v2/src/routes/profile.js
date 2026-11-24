@@ -1,9 +1,17 @@
-
 import { json } from "../lib/http.js";
 import { authenticateSession } from "../auth/sessions.js";
 import { decryptValue } from "../auth/crypto.js";
 
-const MAX_BODY_BYTES = 2048;
+const MAX_BODY_BYTES = 4096;
+
+const ADDRESS_FIELDS = [
+  "addressLine1",
+  "addressLine2",
+  "city",
+  "stateRegion",
+  "postalCode",
+  "countryId"
+];
 
 function httpError(message, status) {
   const error = new Error(message);
@@ -14,12 +22,9 @@ function httpError(message, status) {
 function getBearerToken(request) {
   const authorization = request.headers.get("Authorization");
 
-  if (typeof authorization !== "string") {
-    return null;
-  }
+  if (typeof authorization !== "string") return null;
 
   const match = authorization.match(/^Bearer ([A-Za-z0-9_-]{43})$/);
-
   return match ? match[1] : null;
 }
 
@@ -79,9 +84,7 @@ function validateFullName(value) {
 }
 
 function validateDateOfBirth(value) {
-  if (value === null) {
-    return null;
-  }
+  if (value === null) return null;
 
   if (
     typeof value !== "string" ||
@@ -109,6 +112,37 @@ function validateDateOfBirth(value) {
   return value;
 }
 
+function normalizeAddressText(value, field, maxLength) {
+  if (value === null || value === "") return null;
+
+  if (typeof value !== "string") {
+    throw httpError(`${field} must be a string or null.`, 400);
+  }
+
+  const normalized = value.trim();
+
+  if (normalized.length > maxLength) {
+    throw httpError(`${field} is too long.`, 400);
+  }
+
+  return normalized || null;
+}
+
+function getAddressFromRow(row) {
+  return {
+    addressLine1: row.address_line1 ?? null,
+    addressLine2: row.address_line2 ?? null,
+    city: row.city ?? null,
+    stateRegion: row.state_region ?? null,
+    postalCode: row.postal_code ?? null,
+    countryId: row.country_id ?? null
+  };
+}
+
+function addressHasContent(address) {
+  return ADDRESS_FIELDS.some(field => Boolean(address[field]));
+}
+
 function errorResponse(error) {
   const status = Number.isInteger(error?.status)
     ? error.status
@@ -121,6 +155,10 @@ function errorResponse(error) {
   }, status);
 }
 
+/*
+ * Existing profile write eligibility rules.
+ * Do not simplify or remove the LIMITED assisted-recovery checks.
+ */
 function getWriteEligibilitySql(userIdParameter, accessLevel) {
   if (accessLevel === "FULL") {
     return `
@@ -198,7 +236,7 @@ function getWriteEligibilitySql(userIdParameter, accessLevel) {
   `;
 }
 
-async function getProfile({ db, env, userId }) {
+async function getProfile({ db, env, userId, accessLevel }) {
   const user = await db.prepare(
     `SELECT
        u.user_id,
@@ -209,11 +247,20 @@ async function getProfile({ db, env, userId }) {
        u.updated_at,
        p.full_name AS profile_full_name,
        p.date_of_birth,
+       p.address_line1,
+       p.address_line2,
+       p.city,
+       p.state_region,
+       p.postal_code,
+       p.country_id,
+       c.country_name,
        p.created_at AS profile_created_at,
        p.updated_at AS profile_updated_at
      FROM users u
      LEFT JOIN user_profiles p
        ON p.user_id = u.user_id
+     LEFT JOIN countries c
+       ON c.country_id = p.country_id
      WHERE u.user_id = ?1
      LIMIT 1`
   ).bind(userId).first();
@@ -250,9 +297,36 @@ async function getProfile({ db, env, userId }) {
       email: user.email,
       whatsapp: verifiedWhatsApp,
       accountStatus: user.account_status,
+      accessLevel,
+
+      addressLine1: user.address_line1 ?? null,
+      addressLine2: user.address_line2 ?? null,
+      city: user.city ?? null,
+      stateRegion: user.state_region ?? null,
+      postalCode: user.postal_code ?? null,
+      countryId: user.country_id ?? null,
+      countryName: user.country_name ?? null,
+
       createdAt: user.profile_created_at ?? user.created_at,
       updatedAt: user.profile_updated_at ?? user.updated_at
     }
+  });
+}
+
+async function getProfileCountries(db) {
+  const result = await db.prepare(
+    `SELECT
+       country_id,
+       country_code,
+       country_name
+     FROM countries
+     WHERE country_status = 'ACTIVE'
+     ORDER BY country_name COLLATE NOCASE`
+  ).all();
+
+  return json({
+    ok: true,
+    countries: result?.results ?? []
   });
 }
 
@@ -270,16 +344,34 @@ async function updateProfile({
     throw httpError("A valid JSON object is required.", 400);
   }
 
-  const allowedFields = ["fullName", "dateOfBirth"];
+  const allowedFields = [
+    "fullName",
+    "dateOfBirth",
+    ...ADDRESS_FIELDS
+  ];
+
   const suppliedFields = Object.keys(body);
 
   if (
     suppliedFields.length === 0 ||
     suppliedFields.some(field => !allowedFields.includes(field))
   ) {
+    throw httpError("One or more profile fields are invalid.", 400);
+  }
+
+  const hasAddressUpdate = ADDRESS_FIELDS.some(
+    field => Object.hasOwn(body, field)
+  );
+
+  /*
+   * Address changes are FULL-only.
+   * LIMITED users retain their existing name/date-of-birth
+   * update eligibility, but cannot update residential address.
+   */
+  if (hasAddressUpdate && accessLevel !== "FULL") {
     throw httpError(
-      "Only fullName and dateOfBirth can be updated.",
-      400
+      "Your account does not have permission to update its address.",
+      403
     );
   }
 
@@ -287,7 +379,13 @@ async function updateProfile({
     `SELECT
        u.full_name AS account_full_name,
        p.full_name AS profile_full_name,
-       p.date_of_birth
+       p.date_of_birth,
+       p.address_line1,
+       p.address_line2,
+       p.city,
+       p.state_region,
+       p.postal_code,
+       p.country_id
      FROM users u
      LEFT JOIN user_profiles p
        ON p.user_id = u.user_id
@@ -306,6 +404,71 @@ async function updateProfile({
   const dateOfBirth = Object.hasOwn(body, "dateOfBirth")
     ? validateDateOfBirth(body.dateOfBirth)
     : current.date_of_birth;
+
+  const currentAddress = getAddressFromRow(current);
+
+  const address = hasAddressUpdate
+    ? {
+        addressLine1: Object.hasOwn(body, "addressLine1")
+          ? normalizeAddressText(body.addressLine1, "Address line 1", 200)
+          : currentAddress.addressLine1,
+
+        addressLine2: Object.hasOwn(body, "addressLine2")
+          ? normalizeAddressText(body.addressLine2, "Address line 2", 200)
+          : currentAddress.addressLine2,
+
+        city: Object.hasOwn(body, "city")
+          ? normalizeAddressText(body.city, "City", 100)
+          : currentAddress.city,
+
+        stateRegion: Object.hasOwn(body, "stateRegion")
+          ? normalizeAddressText(body.stateRegion, "State / region", 100)
+          : currentAddress.stateRegion,
+
+        postalCode: Object.hasOwn(body, "postalCode")
+          ? normalizeAddressText(body.postalCode, "Postal code", 20)
+          : currentAddress.postalCode,
+
+        countryId: Object.hasOwn(body, "countryId")
+          ? normalizeAddressText(body.countryId, "Country ID", 2)
+          : currentAddress.countryId
+      }
+    : currentAddress;
+
+  if (address.countryId) {
+    if (!/^[A-Z]{2}$/.test(address.countryId)) {
+      throw httpError("Invalid country ID.", 400);
+    }
+
+    const country = await db.prepare(
+      `SELECT country_id
+       FROM countries
+       WHERE country_id = ?1
+         AND country_status = 'ACTIVE'
+       LIMIT 1`
+    ).bind(address.countryId).first();
+
+    if (!country) {
+      throw httpError("Selected country is not active.", 400);
+    }
+  }
+
+  if (
+    addressHasContent(address) &&
+    (
+      !address.addressLine1 ||
+      !address.city ||
+      !address.countryId
+    )
+  ) {
+    throw httpError(
+      "Address line 1, city and country are required when providing an address.",
+      400
+    );
+  }
+
+  const addressChanged =
+    JSON.stringify(currentAddress) !== JSON.stringify(address);
 
   const now = new Date().toISOString();
 
@@ -348,28 +511,128 @@ async function updateProfile({
     );
   }
 
-  const statements = [
+  const statements = [];
+
+  /*
+   * Upsert profile data.
+   * Existing fields are retained when not supplied.
+   */
+  statements.push(
     db.prepare(
       `INSERT INTO user_profiles (
          user_id,
          full_name,
          date_of_birth,
+         address_line1,
+         address_line2,
+         city,
+         state_region,
+         postal_code,
+         country_id,
          created_at,
          updated_at
        )
-       SELECT ?1, ?2, ?3, ?4, ?4
+       SELECT
+         ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10
        WHERE ${profileEligibility}
        ON CONFLICT(user_id) DO UPDATE SET
          full_name = excluded.full_name,
          date_of_birth = excluded.date_of_birth,
+         address_line1 = excluded.address_line1,
+         address_line2 = excluded.address_line2,
+         city = excluded.city,
+         state_region = excluded.state_region,
+         postal_code = excluded.postal_code,
+         country_id = excluded.country_id,
          updated_at = excluded.updated_at`
     ).bind(
       userId,
       fullName,
       dateOfBirth,
+      address.addressLine1,
+      address.addressLine2,
+      address.city,
+      address.stateRegion,
+      address.postalCode,
+      address.countryId,
       now
-    ),
+    )
+  );
 
+  let historyIndex = null;
+  let addressAuditIndex = null;
+
+  if (hasAddressUpdate && addressChanged) {
+    const previousAddressJson = addressHasContent(currentAddress)
+      ? JSON.stringify(currentAddress)
+      : null;
+
+    const newAddressJson = JSON.stringify(address);
+
+    /*
+     * Store address history only when the profile update
+     * and the same eligibility condition are valid.
+     */
+    historyIndex = statements.length;
+
+    statements.push(
+      db.prepare(
+        `INSERT INTO user_profile_address_history (
+           history_id,
+           user_id,
+           changed_by,
+           previous_address_json,
+           new_address_json,
+           changed_at
+         )
+         SELECT ?1, ?2, ?2, ?3, ?4, ?5
+         WHERE ${profileEligibility}`
+      ).bind(
+        crypto.randomUUID(),
+        userId,
+        previousAddressJson,
+        newAddressJson,
+        now
+      )
+    );
+
+    addressAuditIndex = statements.length;
+
+    statements.push(
+      db.prepare(
+        `INSERT INTO audit_logs (
+           audit_id,
+           actor_user_id,
+           action,
+           entity_type,
+           entity_id,
+           before_json,
+           after_json,
+           created_at
+         )
+         SELECT
+           ?1,
+           ?2,
+           'AHBAB_PROFILE_ADDRESS_UPDATED',
+           'USER_PROFILE',
+           ?2,
+           ?3,
+           ?4,
+           ?5
+         WHERE ${auditEligibility}`
+      ).bind(
+        crypto.randomUUID(),
+        userId,
+        previousAddressJson,
+        newAddressJson,
+        now
+      )
+    );
+  }
+
+  const userUpdateIndex = statements.length;
+
+  statements.push(
     db.prepare(
       `UPDATE users
        SET
@@ -381,8 +644,12 @@ async function updateProfile({
       fullName,
       now,
       userId
-    ),
+    )
+  );
 
+  const profileAuditIndex = statements.length;
+
+  statements.push(
     db.prepare(
       `INSERT INTO audit_logs (
          audit_id,
@@ -411,18 +678,33 @@ async function updateProfile({
       JSON.stringify(after),
       now
     )
-  ];
+  );
 
+  /*
+   * D1 batch executes the statements transactionally.
+   */
   const results = await db.batch(statements);
 
   const profileChanges = results?.[0]?.meta?.changes ?? 0;
-  const userChanges = results?.[1]?.meta?.changes ?? 0;
-  const auditChanges = results?.[2]?.meta?.changes ?? 0;
+  const userChanges =
+    results?.[userUpdateIndex]?.meta?.changes ?? 0;
+  const profileAuditChanges =
+    results?.[profileAuditIndex]?.meta?.changes ?? 0;
+
+  const historyChanges = historyIndex === null
+    ? 1
+    : results?.[historyIndex]?.meta?.changes ?? 0;
+
+  const addressAuditChanges = addressAuditIndex === null
+    ? 1
+    : results?.[addressAuditIndex]?.meta?.changes ?? 0;
 
   if (
     profileChanges !== 1 ||
     userChanges !== 1 ||
-    auditChanges !== 1
+    profileAuditChanges !== 1 ||
+    historyChanges !== 1 ||
+    addressAuditChanges !== 1
   ) {
     throw httpError(
       "Profile update could not be completed.",
@@ -434,6 +716,14 @@ async function updateProfile({
     userId,
     fullName,
     dateOfBirth,
+
+    addressLine1: address.addressLine1,
+    addressLine2: address.addressLine2,
+    city: address.city,
+    stateRegion: address.stateRegion,
+    postalCode: address.postalCode,
+    countryId: address.countryId,
+
     updatedAt: now
   };
 }
@@ -447,18 +737,27 @@ export async function handleProfileRequest(request, env, url) {
     url.pathname === "/me/profile" &&
     request.method === "PATCH";
 
-  if (!isGetRequest && !isPatchRequest) {
+  const isCountriesRequest =
+    url.pathname === "/me/profile/countries" &&
+    request.method === "GET";
+
+  if (!isGetRequest && !isPatchRequest && !isCountriesRequest) {
     return null;
   }
 
   try {
     const session = await requireProfileSession(request, env);
 
+    if (isCountriesRequest) {
+      return await getProfileCountries(env.DB);
+    }
+
     if (isGetRequest) {
       return await getProfile({
         db: env.DB,
         env,
-        userId: session.userId
+        userId: session.userId,
+        accessLevel: session.accessLevel
       });
     }
 
