@@ -435,11 +435,28 @@ async function updateProfile({
       }
     : currentAddress;
 
-  if (address.countryId) {
-    if (!/^[A-Z]{2}$/.test(address.countryId)) {
-      throw httpError("Invalid country ID.", 400);
+    if (
+      hasAddressUpdate &&
+      address.countryId &&
+      address.countryId !== currentAddress.countryId
+    ) {
+      if (!/^[A-Z]{2}$/.test(address.countryId)) {
+        throw httpError("Invalid country ID.", 400);
+      }
+    
+      const country = await db.prepare(
+        `SELECT country_id
+         FROM countries
+         WHERE country_id = ?1
+           AND country_status = 'ACTIVE'
+         LIMIT 1`
+      ).bind(address.countryId).first();
+    
+      if (!country) {
+        throw httpError("Selected country is not active.", 400);
+      }
     }
-
+  
     const country = await db.prepare(
       `SELECT country_id
        FROM countries
@@ -586,7 +603,7 @@ async function updateProfile({
            changed_at
          )
          SELECT ?1, ?2, ?2, ?3, ?4, ?5
-         WHEREWHERE ${getWriteEligibilitySql("?2", accessLevel)}`
+         WHERE ${getWriteEligibilitySql("?2", accessLevel)}`
       ).bind(
         crypto.randomUUID(),
         userId,
