@@ -1,3 +1,4 @@
+
 import { json } from "../lib/http.js";
 import { authenticateSession } from "../auth/sessions.js";
 import { decryptValue } from "../auth/crypto.js";
@@ -435,28 +436,19 @@ async function updateProfile({
       }
     : currentAddress;
 
-    if (
-      hasAddressUpdate &&
-      address.countryId &&
-      address.countryId !== currentAddress.countryId
-    ) {
-      if (!/^[A-Z]{2}$/.test(address.countryId)) {
-        throw httpError("Invalid country ID.", 400);
-      }
-    
-      const country = await db.prepare(
-        `SELECT country_id
-         FROM countries
-         WHERE country_id = ?1
-           AND country_status = 'ACTIVE'
-         LIMIT 1`
-      ).bind(address.countryId).first();
-    
-      if (!country) {
-        throw httpError("Selected country is not active.", 400);
-      }
+  /*
+   * Validate the country only when the address is being updated
+   * and the selected country differs from the current country.
+   */
+  if (
+    hasAddressUpdate &&
+    address.countryId &&
+    address.countryId !== currentAddress.countryId
+  ) {
+    if (!/^[A-Z]{2}$/.test(address.countryId)) {
+      throw httpError("Invalid country ID.", 400);
     }
-  
+
     const country = await db.prepare(
       `SELECT country_id
        FROM countries
