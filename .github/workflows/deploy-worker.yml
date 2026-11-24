@@ -8,12 +8,12 @@ on:
       - develop
     paths:
       - "v2/src/**"
-      - "v2/migrations/**"
       - "v2/package.json"
       - "v2/wrangler.jsonc"
       - ".github/workflows/deploy-worker.yml"
     paths-ignore:
       - "v2/docs/**"  
+      - "v2/migrations/**"
   workflow_dispatch:
 
 jobs:
