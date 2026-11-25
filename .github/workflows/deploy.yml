@@ -2,13 +2,6 @@
 name: Deploy JuhudManager
 
 on:
-  push:
-    branches:
-      - develop
-    paths-ignore:
-      - "**.md"    
-      - "v2/docs/**"
-      - "v2/migrations/**"
   workflow_dispatch:
 
 permissions:
@@ -16,7 +9,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  
+
 concurrency:
   group: pages
   cancel-in-progress: true
