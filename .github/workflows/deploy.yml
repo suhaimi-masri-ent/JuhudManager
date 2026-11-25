@@ -6,6 +6,7 @@ on:
     branches:
       - develop
     paths-ignore:
+      - "**.md"    
       - "v2/docs/**"
       - "v2/migrations/**"
   workflow_dispatch:
