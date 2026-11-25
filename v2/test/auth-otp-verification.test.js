@@ -1,3 +1,4 @@
+
 import test from "node:test";
 import assert from "node:assert/strict";
 import {
@@ -131,7 +132,7 @@ class Statement {
       }
 
       return null;
-    }    
+    }
 
     throw new Error("Unexpected SELECT: " + this.sql);
   }
@@ -442,26 +443,6 @@ function verify(db, overrides = {}) {
 }
 
 test("correct email OTP verifies identity and updates users.email", async () => {
-
-test("email already owned by another account is rejected", async () => {
-  const db = await createDb();
-
-  db.existingEmailOwner = {
-    user_id: "another-user",
-    email: destination
-  };
-
-  await assert.rejects(
-    verify(db),
-    error => error.status === 409 &&
-      /already registered/i.test(error.message)
-  );
-
-  assert.equal(db.request.consumed_at, null);
-  assert.equal(db.identity.verification_status, "PENDING");
-  assert.equal(db.user.email, null);
-});
-  
   const db = await createDb();
 
   const result = await verify(db);
@@ -481,6 +462,25 @@ test("email already owned by another account is rejected", async () => {
     db.registrationReview.registration_status,
     "PENDING_REVIEW"
   );
+});
+
+test("email already owned by another account is rejected", async () => {
+  const db = await createDb();
+
+  db.existingEmailOwner = {
+    user_id: "another-user",
+    email: destination
+  };
+
+  await assert.rejects(
+    verify(db),
+    error => error.status === 409 &&
+      /already registered/i.test(error.message)
+  );
+
+  assert.equal(db.request.consumed_at, null);
+  assert.equal(db.identity.verification_status, "PENDING");
+  assert.equal(db.user.email, null);
 });
 
 test("registration guard failures are returned as conflicts", async () => {
