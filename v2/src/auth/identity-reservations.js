@@ -113,17 +113,12 @@ async function prepareIdentity({
     identityType,
     identityScope: scope.identityScope,
     countryCode: scope.countryCode,
+    normalized,
     identityHash,
     encryptedValue
   };
 }
 
-/**
- * Mark expired PENDING identity reservations as EXPIRED.
- *
- * This function can be called before attempting to reuse
- * an identity or periodically as maintenance.
- */
 export async function expirePendingIdentityReservations({
   db,
   identityType,
@@ -168,11 +163,9 @@ export async function expirePendingIdentityReservations({
 /**
  * Reserve an identity for one user for 15 minutes.
  *
- * A PENDING or VERIFIED identity belonging to another user
- * cannot be claimed.
- *
- * The existing unique partial index remains the final
- * concurrency protection.
+ * Email reservations also check users.email because
+ * bootstrap accounts may have an email before an
+ * EMAIL identity record exists.
  */
 export async function reservePendingIdentity({
   db,
@@ -197,13 +190,33 @@ export async function reservePendingIdentity({
   const currentIso = currentTime.toISOString();
   const expiresAt = reservationExpiry(currentTime);
 
-  // First expire any overdue reservation for this identity.
   await expirePendingIdentityReservations({
     db,
     identityType: identity.identityType,
     identityScope: identity.identityScope,
     identityHash: identity.identityHash
   });
+
+  // Check the legacy/direct email field first.
+  // A different user already owning this email blocks reservation.
+  if (identity.identityType === "EMAIL") {
+    const existingUserEmail = await db.prepare(
+      `SELECT user_id
+       FROM users
+       WHERE lower(trim(email)) = lower(?1)
+       LIMIT 1`
+    ).bind(identity.normalized).first();
+
+    if (
+      existingUserEmail &&
+      existingUserEmail.user_id !== userId
+    ) {
+      throw httpError(
+        "This identity is already reserved or registered.",
+        409
+      );
+    }
+  }
 
   const existing = await db.prepare(
     `SELECT
@@ -281,8 +294,6 @@ export async function reservePendingIdentity({
       currentIso
     ).run();
   } catch {
-    // The unique index protects against another request
-    // claiming the same identity at the same time.
     throw httpError(
       "This identity is already reserved or registered.",
       409
@@ -297,15 +308,6 @@ export async function reservePendingIdentity({
   };
 }
 
-/**
- * Mark a PENDING identity as VERIFIED.
- *
- * Call this only after the required verification process
- * has succeeded, such as successful email or WhatsApp OTP.
- *
- * National ID and Passport verification must use their
- * separately approved verification process.
- */
 export async function verifyPendingIdentity({
   db,
   identityId,
