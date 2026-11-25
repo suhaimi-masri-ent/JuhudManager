@@ -12,6 +12,7 @@ on:
       - "v2/wrangler.jsonc"
       - ".github/workflows/deploy-worker.yml"
     paths-ignore:
+      - "**.md"
       - "v2/docs/**"  
       - "v2/migrations/**"
   workflow_dispatch:
