@@ -1,5 +1,6 @@
+
 import { json } from "../lib/http.js";
-import { createResendDelivery } from "../lib/resend-email.js";
+import { createBrevoDelivery } from "../lib/brevo-email.js";
 import { enforceRateLimit } from "../lib/rate-limit.js";
 import {
   issueSuperAdminBootstrapToken
@@ -81,7 +82,7 @@ export async function handleSuperAdminBootstrapRequest(
       db: env.DB,
       env: {
         ...env,
-        ACTIVATION_DELIVERY: createResendDelivery(env)
+        ACTIVATION_DELIVERY: createBrevoDelivery(env)
       }
     });
 
