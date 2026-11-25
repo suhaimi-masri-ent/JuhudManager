@@ -2,18 +2,6 @@
 name: Deploy JuhudManager V2 Worker
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-    paths:
-      - "v2/src/**"
-      - "v2/package.json"
-      - "v2/wrangler.jsonc"
-      - ".github/workflows/deploy-worker.yml"
-      - "!**.md"
-      - "!v2/docs/**"
-      - "!v2/migrations/**"
   workflow_dispatch:
 
 jobs:
