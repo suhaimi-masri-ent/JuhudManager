@@ -14,7 +14,8 @@
   },
   "vars": {
     "APP_ENV": "production",
-    "ALLOWED_ORIGIN": "https://suhaimi-masri-ent.github.io"
+    "ALLOWED_ORIGIN": "https://suhaimi-masri-ent.github.io",
+    "BREVO_FROM_EMAIL": "noreply@m.juhud.run.place"
   },
   "d1_databases": [
     {
