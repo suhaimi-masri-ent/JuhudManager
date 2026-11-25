@@ -1,0 +1,36 @@
+
+name: JuhudManager V2 - Build & Test
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-test:
+    name: Run Tests and Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: v2/package-lock.json
+
+      - name: Install V2 dependencies
+        working-directory: v2
+        run: npm ci --no-audit --no-fund
+
+      - name: Run unit tests
+        working-directory: v2
+        run: npm test
+
+      - name: Run Wrangler build dry-run
+        working-directory: v2
+        run: npm run build
