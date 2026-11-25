@@ -1,6 +1,6 @@
 
 import { json } from "./lib/http.js";
-import { createResendDelivery } from "./lib/resend-email.js";
+import { createBrevoDelivery } from "./lib/brevo-email.js";
 import { createWhatsAppCloudDelivery } from "./lib/whatsapp-cloud.js";
 import { handleAuthRequest } from "./routes/auth.js";
 import { handleLoginRequest } from "./routes/login.js";
@@ -170,9 +170,9 @@ export default {
             url
           );
         }
-        
+
         if (!response) {
-          const emailDelivery = createResendDelivery(env);
+          const emailDelivery = createBrevoDelivery(env);
           const whatsappDelivery = createWhatsAppCloudDelivery(env);
 
           const otpDelivery = {
@@ -312,7 +312,7 @@ async function handleDeliveryTest(request, env) {
 
   try {
     const delivery = channel === "EMAIL"
-      ? createResendDelivery(env)
+      ? createBrevoDelivery(env)
       : createWhatsAppCloudDelivery(env);
 
     const result = await delivery.send({
