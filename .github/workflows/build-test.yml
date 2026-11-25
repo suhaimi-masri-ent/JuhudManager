@@ -20,12 +20,10 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
-          cache: npm
-          cache-dependency-path: v2/package-lock.json
 
       - name: Install V2 dependencies
         working-directory: v2
-        run: npm ci --no-audit --no-fund
+        run: npm install --no-audit --no-fund
 
       - name: Run unit tests
         working-directory: v2
