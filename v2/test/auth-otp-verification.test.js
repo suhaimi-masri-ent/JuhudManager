@@ -114,6 +114,25 @@ class Statement {
       return null;
     }
 
+    if (
+      this.sql.includes("FROM users") &&
+      this.sql.includes("lower(trim(email))")
+    ) {
+      const [email, excludedUserId] = this.args;
+      const owner = this.db.existingEmailOwner;
+
+      if (
+        owner &&
+        owner.user_id !== excludedUserId &&
+        String(owner.email ?? "").trim().toLowerCase() ===
+          String(email ?? "").trim().toLowerCase()
+      ) {
+        return { user_id: owner.user_id };
+      }
+
+      return null;
+    }    
+
     throw new Error("Unexpected SELECT: " + this.sql);
   }
 
@@ -315,6 +334,7 @@ class MockD1 {
     this.request = null;
     this.identity = null;
     this.user = null;
+    this.existingEmailOwner = null;
   }
 
   prepare(sql) {
@@ -422,6 +442,26 @@ function verify(db, overrides = {}) {
 }
 
 test("correct email OTP verifies identity and updates users.email", async () => {
+
+test("email already owned by another account is rejected", async () => {
+  const db = await createDb();
+
+  db.existingEmailOwner = {
+    user_id: "another-user",
+    email: destination
+  };
+
+  await assert.rejects(
+    verify(db),
+    error => error.status === 409 &&
+      /already registered/i.test(error.message)
+  );
+
+  assert.equal(db.request.consumed_at, null);
+  assert.equal(db.identity.verification_status, "PENDING");
+  assert.equal(db.user.email, null);
+});
+  
   const db = await createDb();
 
   const result = await verify(db);
