@@ -361,6 +361,7 @@ export async function requestRegistrationOtp({
   };
 }
 
+
 export async function verifyRegistrationOtp({
   db,
   env,
@@ -466,6 +467,33 @@ export async function verifyRegistrationOtp({
     );
   }
 
+  // --------------------------------------------------
+  // FIX 1:
+  // Check whether this email already belongs to another
+  // user account before attempting registration updates.
+  //
+  // This prevents a duplicate email from reaching the
+  // users.email UNIQUE constraint inside the D1 batch.
+  // --------------------------------------------------
+
+  const existingEmailOwner = await db.prepare(
+    `SELECT user_id
+     FROM users
+     WHERE lower(trim(email)) = lower(?1)
+       AND user_id != ?2
+     LIMIT 1`
+  ).bind(
+    normalized,
+    userId
+  ).first();
+
+  if (existingEmailOwner) {
+    throw httpError(
+      "This email address is already registered. Please use another email or contact Admin.",
+      409
+    );
+  }
+
   if (row.attempt_count >= row.max_attempts) {
     throw httpError("OTP attempt limit reached.", 429);
   }
@@ -506,6 +534,229 @@ export async function verifyRegistrationOtp({
       updated.attempt_count >= updated.max_attempts ? 429 : 400
     );
   }
+
+  // --------------------------------------------------
+  // Complete registration verification in one D1 batch.
+  // --------------------------------------------------
+
+  let results;
+
+  try {
+    results = await db.batch([
+
+      // 1. Verify the email identity.
+      db.prepare(
+        `UPDATE user_auth_identities
+         SET
+           verification_status = 'VERIFIED',
+           verified_at = ?1,
+           expires_at = NULL,
+           updated_at = ?1
+         WHERE identity_id = ?2
+           AND user_id = ?3
+           AND identity_type = 'EMAIL'
+           AND identity_scope = 'GLOBAL'
+           AND identity_hash = ?4
+           AND verification_status = 'PENDING'
+           AND expires_at > ?1
+           AND EXISTS (
+             SELECT 1
+             FROM auth_otp_requests
+             WHERE otp_request_id = ?5
+               AND user_id = ?3
+               AND identity_id = ?2
+               AND destination_type = 'EMAIL'
+               AND destination_hash = ?6
+               AND otp_purpose = 'REGISTER'
+               AND consumed_at IS NULL
+               AND invalidated_at IS NULL
+               AND expires_at > ?1
+               AND attempt_count < max_attempts
+           )`
+      ).bind(
+        currentTime,
+        identityId,
+        userId,
+        identityHash,
+        row.otp_request_id,
+        destinationHash
+      ),
+
+      // 2. Store the normalized email on the user account.
+      db.prepare(
+        `UPDATE users
+         SET
+           email = ?1,
+           updated_at = ?2
+         WHERE user_id = ?3
+           AND account_status = 'DISABLED'
+           AND email IS NULL
+           AND EXISTS (
+             SELECT 1
+             FROM user_auth_identities
+             WHERE identity_id = ?4
+               AND user_id = ?3
+               AND identity_type = 'EMAIL'
+               AND identity_hash = ?5
+               AND verification_status = 'VERIFIED'
+           )
+           AND EXISTS (
+             SELECT 1
+             FROM auth_otp_requests
+             WHERE otp_request_id = ?6
+               AND user_id = ?3
+               AND identity_id = ?4
+               AND destination_hash = ?7
+               AND consumed_at IS NULL
+               AND invalidated_at IS NULL
+               AND expires_at > ?2
+               AND attempt_count < max_attempts
+           )`
+      ).bind(
+        normalized,
+        currentTime,
+        userId,
+        identityId,
+        identityHash,
+        row.otp_request_id,
+        destinationHash
+      ),
+
+      // 3. Move registration into Admin review.
+      db.prepare(
+        `UPDATE user_registration_reviews
+         SET
+           registration_status = 'PENDING_REVIEW',
+           updated_at = ?1
+         WHERE user_id = ?2
+           AND registration_status = 'AWAITING_EMAIL_VERIFICATION'
+           AND reviewed_by IS NULL
+           AND reviewed_at IS NULL
+           AND EXISTS (
+             SELECT 1
+             FROM users
+             WHERE user_id = ?2
+               AND email = ?3
+               AND account_status = 'DISABLED'
+           )
+           AND EXISTS (
+             SELECT 1
+             FROM user_auth_identities
+             WHERE identity_id = ?4
+               AND user_id = ?2
+               AND identity_type = 'EMAIL'
+               AND identity_hash = ?5
+               AND verification_status = 'VERIFIED'
+           )
+           AND EXISTS (
+             SELECT 1
+             FROM auth_otp_requests
+             WHERE otp_request_id = ?6
+               AND user_id = ?2
+               AND identity_id = ?4
+               AND destination_hash = ?7
+               AND consumed_at IS NULL
+               AND invalidated_at IS NULL
+               AND expires_at > ?1
+               AND attempt_count < max_attempts
+           )`
+      ).bind(
+        currentTime,
+        userId,
+        normalized,
+        identityId,
+        identityHash,
+        row.otp_request_id,
+        destinationHash
+      ),
+
+      // 4. Consume the OTP LAST.
+      db.prepare(
+        `UPDATE auth_otp_requests
+         SET consumed_at = ?1
+         WHERE otp_request_id = ?2
+           AND user_id = ?3
+           AND identity_id = ?4
+           AND destination_type = 'EMAIL'
+           AND destination_hash = ?5
+           AND otp_purpose = 'REGISTER'
+           AND consumed_at IS NULL
+           AND invalidated_at IS NULL`
+      ).bind(
+        currentTime,
+        row.otp_request_id,
+        userId,
+        identityId,
+        destinationHash
+      )
+    ]);
+
+  } catch (error) {
+
+    // ------------------------------------------------
+    // FIX 2:
+    // Convert duplicate users.email constraint errors
+    // into a clear HTTP 409 response.
+    // ------------------------------------------------
+
+    const errorMessage = String(error?.message ?? "");
+
+    if (
+      /UNIQUE constraint failed:\s*users\.email/i.test(errorMessage) ||
+      /SQLITE_CONSTRAINT_UNIQUE/i.test(errorMessage)
+    ) {
+      throw httpError(
+        "This email address is already registered. Please use another email or contact Admin.",
+        409
+      );
+    }
+
+    if (
+      errorMessage.includes(
+        "Registration OTP completion state is incomplete."
+      )
+    ) {
+      throw httpError(
+        "Email verification or registration update could not be completed. Please check the registration status.",
+        409
+      );
+    }
+
+    throw error;
+  }
+
+  // --------------------------------------------------
+  // Verify that all four D1 statements changed exactly
+  // one row each.
+  // --------------------------------------------------
+
+  const identityChanges = results?.[0]?.meta?.changes ?? 0;
+  const userChanges = results?.[1]?.meta?.changes ?? 0;
+  const reviewChanges = results?.[2]?.meta?.changes ?? 0;
+  const otpChanges = results?.[3]?.meta?.changes ?? 0;
+
+  if (
+    identityChanges !== 1 ||
+    userChanges !== 1 ||
+    reviewChanges !== 1 ||
+    otpChanges !== 1
+  ) {
+    throw httpError(
+      "OTP verification or registration update could not be completed. Please check the registration status.",
+      409
+    );
+  }
+
+  return {
+    verified: true,
+    destinationType: "EMAIL",
+    identityId,
+    identityStatus: "VERIFIED",
+    emailUpdated: true,
+    registrationStatus: "PENDING_REVIEW",
+    nextStep: "SET_PASSWORD"
+  };
+}
 
   // IMPORTANT:
   // All four statements execute in one D1 batch.
