@@ -119,6 +119,8 @@ The following migrations have already been applied to the remote V2 database:
 
 ## 5. Authentication Security Requirements
 
+(DNS: Freedomain.one; OTP: Brevo)
+
 The authentication implementation must follow these principles:
 
 - One individual has one `user_id`, with multiple linked login identities permitted.
