@@ -35,11 +35,14 @@ jobs:
           mkdir -p _site/v2/web
           cp -R v2/web/. _site/v2/web/
 
-      - name: Upload public folder
+      - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v4
         with:
+          name: github-pages-${{ github.run_attempt }}
           path: _site
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
+        with:
+          artifact_name: github-pages-${{ github.run_attempt }}
