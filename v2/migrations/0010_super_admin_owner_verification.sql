@@ -85,7 +85,8 @@ BEGIN
         WHEN NOT EXISTS (
             SELECT 1
             FROM super_admin_bootstrap_state s
-            INNER JOIN users u ON u.user_id = s.user_id
+            INNER JOIN users u
+                ON u.user_id = s.user_id
             WHERE s.bootstrap_id = 1
               AND s.user_id = NEW.user_id
               AND s.bootstrap_status = 'PENDING'
@@ -108,12 +109,33 @@ BEGIN
     SELECT CASE
         WHEN EXISTS (
             SELECT 1
+            FROM user_roles
+            WHERE user_id = NEW.user_id
+        )
+        THEN RAISE(ABORT, 'Bootstrap owner already has a role.')
+    END;
+
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
             FROM user_credentials
             WHERE user_id = NEW.user_id
               AND credential_type = 'PASSWORD'
               AND revoked_at IS NULL
         )
         THEN RAISE(ABORT, 'Bootstrap owner already has a password.')
+    END;
+
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM user_auth_identities
+            WHERE user_id = NEW.user_id
+              AND identity_type = 'EMAIL'
+              AND identity_scope = 'GLOBAL'
+              AND verification_status IN ('PENDING', 'VERIFIED')
+        )
+        THEN RAISE(ABORT, 'Bootstrap owner email identity already exists.')
     END;
 END;
 
