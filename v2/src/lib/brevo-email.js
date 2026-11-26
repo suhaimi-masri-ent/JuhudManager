@@ -90,6 +90,53 @@ function buildEmail(message) {
     return { subject, text, html };
   }
 
+  if (purpose === "SUPER_ADMIN_OWNER_VERIFY") {
+    if (!/^\d{6}$/.test(String(otp ?? ""))) {
+      throw new Error("A valid owner verification OTP is required.");
+    }
+
+    const subject =
+      "JuhudManager initial owner verification code";
+
+    const text = [
+      "Assalamualaikum,",
+      "",
+      "A request was made to verify ownership of the initial JuhudManager Super Admin email address.",
+      "",
+      "Your verification code is:",
+      "",
+      otp,
+      "",
+      `This code expires in ${expiresInMinutes} minutes.`,
+      "It can only be used once.",
+      "Do not share this code with anyone.",
+      "",
+      "If you did not make this request, ignore this email.",
+      "",
+      "JuhudManager"
+    ].join("\n");
+
+    const html = `
+      <div style="font-family:Arial,sans-serif;max-width:560px;margin:auto;line-height:1.6;color:#222">
+        <h2>JuhudManager</h2>
+        <p>Assalamualaikum,</p>
+        <p>A request was made to verify ownership of the initial JuhudManager Super Admin email address.</p>
+        <p>Your verification code is:</p>
+        <p style="font-size:30px;font-weight:bold;letter-spacing:6px">
+          ${escapeHtml(otp)}
+        </p>
+        <p>This code expires in
+          <strong>${escapeHtml(expiresInMinutes)} minutes</strong>.
+        </p>
+        <p>It can only be used once. Do not share this code with anyone.</p>
+        <p>If you did not make this request, ignore this email.</p>
+        <p>JuhudManager</p>
+      </div>
+    `;
+
+    return { subject, text, html };
+  }
+
   if (purpose === "PASSWORD_SETUP") {
     if (
       typeof activationToken !== "string" ||
@@ -223,6 +270,7 @@ function buildEmail(message) {
  *
  * Supported purposes:
  * - REGISTER
+ * - SUPER_ADMIN_OWNER_VERIFY
  * - PASSWORD_SETUP
  * - ACCOUNT_ACTIVATION (legacy)
  *
