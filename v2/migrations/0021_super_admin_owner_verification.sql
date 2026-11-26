@@ -137,6 +137,18 @@ BEGIN
         )
         THEN RAISE(ABORT, 'Bootstrap owner email identity already exists.')
     END;
+
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM user_auth_identities
+            WHERE identity_type = 'EMAIL'
+              AND identity_scope = 'GLOBAL'
+              AND identity_hash = NEW.identity_hash
+              AND verification_status IN ('PENDING', 'VERIFIED')
+        )
+        THEN RAISE(ABORT, 'Email identity is already in use.')
+    END;
 END;
 
 
@@ -177,37 +189,18 @@ BEGIN
 END;
 
 
--- A verified identity for the bootstrap owner must be backed
--- by an OTP consumed in the same timestamp and transaction.
-CREATE TRIGGER trg_super_admin_owner_identity_insert_guard
-BEFORE INSERT ON user_auth_identities
-WHEN NEW.user_id = '6b3b4088-7e19-4efc-a942-387c7880460c'
- AND NEW.identity_type = 'EMAIL'
- AND NEW.identity_scope = 'GLOBAL'
+-- Validate eligibility whenever an OTP is consumed.
+CREATE TRIGGER trg_super_admin_owner_otp_consume_guard
+BEFORE UPDATE OF consumed_at
+ON super_admin_owner_verification_otps
+WHEN OLD.consumed_at IS NULL
+ AND NEW.consumed_at IS NOT NULL
 BEGIN
     SELECT CASE
-        WHEN NEW.verification_status <> 'VERIFIED'
-          OR NEW.verified_at IS NULL
-          OR NEW.expires_at IS NOT NULL
-          OR NEW.revoked_at IS NOT NULL
-          OR NEW.verification_method <> 'OTP'
-          OR NEW.verified_by IS NOT NULL
-        THEN RAISE(ABORT, 'Invalid bootstrap owner email verification.')
-    END;
-
-    SELECT CASE
-        WHEN NOT EXISTS (
-            SELECT 1
-            FROM super_admin_owner_verification_otps o
-            WHERE o.bootstrap_id = 1
-              AND o.user_id = NEW.user_id
-              AND o.identity_hash = NEW.identity_hash
-              AND o.destination_encrypted = NEW.encrypted_value
-              AND o.consumed_at = NEW.verified_at
-              AND o.invalidated_at IS NULL
-              AND o.attempt_count < o.max_attempts
-        )
-        THEN RAISE(ABORT, 'A successfully consumed owner OTP is required.')
+        WHEN NEW.invalidated_at IS NOT NULL
+          OR NEW.expires_at <= NEW.consumed_at
+          OR NEW.attempt_count >= NEW.max_attempts
+        THEN RAISE(ABORT, 'Owner verification OTP is invalid or expired.')
     END;
 
     SELECT CASE
@@ -254,4 +247,100 @@ BEGIN
         )
         THEN RAISE(ABORT, 'Bootstrap owner already has a password.')
     END;
+
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM user_auth_identities
+            WHERE user_id = NEW.user_id
+              AND identity_type = 'EMAIL'
+              AND identity_scope = 'GLOBAL'
+              AND verification_status IN ('PENDING', 'VERIFIED')
+        )
+        THEN RAISE(ABORT, 'Bootstrap owner email identity already exists.')
+    END;
+
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM user_auth_identities
+            WHERE identity_type = 'EMAIL'
+              AND identity_scope = 'GLOBAL'
+              AND identity_hash = NEW.identity_hash
+              AND verification_status IN ('PENDING', 'VERIFIED')
+        )
+        THEN RAISE(ABORT, 'Email identity is already in use.')
+    END;
+END;
+
+
+-- Create the verified email identity automatically when OTP is consumed.
+-- The encrypted destination is reused exactly as stored with the OTP.
+CREATE TRIGGER trg_super_admin_owner_otp_create_identity
+AFTER UPDATE OF consumed_at
+ON super_admin_owner_verification_otps
+WHEN OLD.consumed_at IS NULL
+ AND NEW.consumed_at IS NOT NULL
+BEGIN
+    INSERT INTO user_auth_identities (
+        identity_id,
+        user_id,
+        identity_type,
+        country_code,
+        identity_scope,
+        identity_hash,
+        hash_key_version,
+        encrypted_value,
+        verification_status,
+        expires_at,
+        verified_at,
+        revoked_at,
+        revoked_by,
+        created_at,
+        updated_at,
+        verification_method,
+        verified_by
+    )
+    VALUES (
+        lower(hex(randomblob(16))),
+        NEW.user_id,
+        'EMAIL',
+        NULL,
+        'GLOBAL',
+        NEW.identity_hash,
+        NEW.destination_hash_key_version,
+        NEW.destination_encrypted,
+        'VERIFIED',
+        NULL,
+        NEW.consumed_at,
+        NULL,
+        NULL,
+        NEW.consumed_at,
+        NEW.consumed_at,
+        'OTP',
+        NULL
+    );
+
+    INSERT INTO auth_events (
+        event_id,
+        user_id,
+        session_id,
+        event_type,
+        event_status,
+        ip_address,
+        user_agent,
+        event_details,
+        created_at
+    )
+    VALUES (
+        lower(hex(randomblob(16))),
+        NEW.user_id,
+        NULL,
+        'SUPER_ADMIN_OWNER_EMAIL_VERIFIED',
+        'SUCCESS',
+        NULL,
+        NULL,
+        '{"purpose":"SUPER_ADMIN_OWNER_VERIFY","identityType":"EMAIL","identityScope":"GLOBAL"}',
+        NEW.consumed_at
+    );
 END;
