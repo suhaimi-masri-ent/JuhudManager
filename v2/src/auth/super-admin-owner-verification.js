@@ -13,6 +13,10 @@ import {
   calculateEmailHashes
 } from "./otp-common.js";
 
+import {
+  expirePendingIdentityReservations
+} from "./identity-reservations.js";
+
 const TARGET_USER_ID =
   "6b3b4088-7e19-4efc-a942-387c7880460c";
 
@@ -161,8 +165,19 @@ export async function requestSuperAdminOwnerVerification({
     delivery
   });
 
-  const target = await checkOwnerEligibility(db, env);
+const { identityHash } = await calculateEmailHashes(
+  env,
+  TARGET_EMAIL
+);
 
+await expirePendingIdentityReservations({
+  db,
+  identityType: "EMAIL",
+  identityScope: "GLOBAL",
+  identityHash
+});
+
+const target = await checkOwnerEligibility(db, env);
   const otp = generateOtp();
 
   const {
