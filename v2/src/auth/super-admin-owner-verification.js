@@ -1,6 +1,5 @@
 
 import {
-  hashValue,
   hashOtp,
   encryptValue,
   generateOtp,
@@ -21,6 +20,7 @@ const TARGET_EMAIL = "al.masri.ent@gmail.com";
 const TARGET_NAME = "JUHUD MANAGER";
 
 const OTP_PURPOSE = "SUPER_ADMIN_OWNER_VERIFY";
+
 const OTP_LIFETIME_SECONDS = 5 * 60;
 const OTP_LIFETIME_MINUTES = 5;
 const OTP_MAX_ATTEMPTS = 5;
@@ -49,16 +49,6 @@ function requireConfiguration({ db, env, delivery }) {
       503
     );
   }
-}
-
-function getRequestMetadata(request) {
-  return {
-    ipAddress:
-      request?.headers?.get("CF-Connecting-IP") ?? null,
-
-    userAgent:
-      request?.headers?.get("User-Agent") ?? null
-  };
 }
 
 async function checkOwnerEligibility(db, env) {
@@ -153,10 +143,11 @@ async function invalidateOwnerOtp(db, ownerOtpId) {
   ).run();
 }
 
+
 /**
  * Request an OTP for the immutable initial Super Admin owner.
  *
- * The destination is fixed in this module.
+ * The destination is fixed.
  * The caller cannot supply an email address or user ID.
  */
 export async function requestSuperAdminOwnerVerification({
@@ -204,9 +195,14 @@ export async function requestSuperAdminOwnerVerification({
     OTP_LIFETIME_SECONDS
   );
 
-  // Invalidate previous OTP and insert the new one
-  // within one D1 batch.
-  const results = await db.batch([
+  /*
+   * Invalidate the previous OTP and insert the new OTP
+   * in one D1 batch.
+   *
+   * The database trigger independently checks eligibility.
+   * If the new OTP insert fails, the batch is rolled back.
+   */
+  await db.batch([
     db.prepare(
       `UPDATE super_admin_owner_verification_otps
        SET invalidated_at = ?1
@@ -236,7 +232,7 @@ export async function requestSuperAdminOwnerVerification({
          last_sent_at,
          created_at
        )
-       SELECT
+       VALUES (
          ?1,
          1,
          ?2,
@@ -251,55 +247,6 @@ export async function requestSuperAdminOwnerVerification({
          ?8,
          ?9,
          ?9
-       WHERE EXISTS (
-         SELECT 1
-         FROM super_admin_bootstrap_state s
-         INNER JOIN users u
-           ON u.user_id = s.user_id
-         WHERE s.bootstrap_id = 1
-           AND s.user_id = ?2
-           AND s.bootstrap_status = 'PENDING'
-           AND u.full_name = ?10
-           AND lower(u.email) = ?11
-           AND u.account_status = 'DISABLED'
-       )
-
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_roles ur
-         WHERE ur.user_id = ?2
-       )
-
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_roles ur
-         WHERE ur.role_id = 'role-super-admin'
-       )
-
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_credentials c
-         WHERE c.user_id = ?2
-           AND c.credential_type = 'PASSWORD'
-           AND c.revoked_at IS NULL
-       )
-
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_auth_identities i
-         WHERE i.user_id = ?2
-           AND i.identity_type = 'EMAIL'
-           AND i.identity_scope = 'GLOBAL'
-           AND i.verification_status IN ('PENDING', 'VERIFIED')
-       )
-
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_auth_identities i
-         WHERE i.identity_type = 'EMAIL'
-           AND i.identity_scope = 'GLOBAL'
-           AND i.identity_hash = ?4
-           AND i.verification_status IN ('PENDING', 'VERIFIED')
        )`
     ).bind(
       ownerOtpId,
@@ -310,18 +257,9 @@ export async function requestSuperAdminOwnerVerification({
       otpHash,
       expiresAt,
       OTP_MAX_ATTEMPTS,
-      createdAt,
-      TARGET_NAME,
-      TARGET_EMAIL
+      createdAt
     )
   ]);
-
-  if ((results?.[1]?.meta?.changes ?? 0) !== 1) {
-    throw httpError(
-      "Owner verification OTP could not be created. Check bootstrap account eligibility.",
-      409
-    );
-  }
 
   try {
     await delivery.send({
@@ -350,18 +288,24 @@ export async function requestSuperAdminOwnerVerification({
   };
 }
 
+
 /**
  * Verify the OTP for the immutable initial Super Admin owner.
  *
- * On success, this function creates a VERIFIED global EMAIL
- * identity. It does not activate the account, create a password,
- * or assign any role.
+ * On successful consumption, the database trigger:
+ * - Creates the VERIFIED global EMAIL identity.
+ * - Creates the authentication audit event.
+ *
+ * This function does not:
+ * - Activate the account.
+ * - Create a password.
+ * - Assign a role.
+ * - Change the user's email.
  */
 export async function verifySuperAdminOwnerVerification({
   db,
   env,
-  otp,
-  request
+  otp
 }) {
   if (!db || typeof db.prepare !== "function") {
     throw new Error("D1 database binding is unavailable.");
@@ -445,8 +389,10 @@ export async function verifySuperAdminOwnerVerification({
       submittedOtpHash
     )
   ) {
-    // Increment failed attempt count atomically.
-    // The fifth failed attempt invalidates the OTP.
+    /*
+     * Increment failed attempts.
+     * The fifth failed attempt invalidates the OTP.
+     */
     await db.prepare(
       `UPDATE super_admin_owner_verification_otps
        SET
@@ -474,200 +420,39 @@ export async function verifySuperAdminOwnerVerification({
     );
   }
 
-  const identityId = crypto.randomUUID();
-  const eventId = crypto.randomUUID();
-
   const verifiedAt = nowIso();
 
-  const metadata = getRequestMetadata(request);
+  /*
+   * Consuming the OTP fires the database triggers.
+   *
+   * The triggers create the verified identity and audit event.
+   * If either operation fails, this UPDATE fails atomically.
+   */
+  const result = await db.prepare(
+    `UPDATE super_admin_owner_verification_otps
+     SET consumed_at = ?1
+     WHERE owner_otp_id = ?2
+       AND user_id = ?3
+       AND destination_hash = ?4
+       AND identity_hash = ?5
+       AND otp_hash = ?6
+       AND consumed_at IS NULL
+       AND invalidated_at IS NULL
+       AND expires_at > ?1
+       AND attempt_count < max_attempts`
+  ).bind(
+    verifiedAt,
+    activeOtp.owner_otp_id,
+    TARGET_USER_ID,
+    destinationHash,
+    identityHash,
+    activeOtp.otp_hash
+  ).run();
 
-  // Consume the OTP and create the verified identity
-  // within one D1 batch.
-  const results = await db.batch([
-    db.prepare(
-      `UPDATE super_admin_owner_verification_otps
-       SET consumed_at = ?1
-       WHERE owner_otp_id = ?2
-         AND user_id = ?3
-         AND destination_hash = ?4
-         AND identity_hash = ?5
-         AND otp_hash = ?6
-         AND consumed_at IS NULL
-         AND invalidated_at IS NULL
-         AND expires_at > ?1
-         AND attempt_count < max_attempts`
-    ).bind(
-      verifiedAt,
-      activeOtp.owner_otp_id,
-      TARGET_USER_ID,
-      destinationHash,
-      identityHash,
-      activeOtp.otp_hash
-    ),
-
-    db.prepare(
-      `INSERT INTO user_auth_identities (
-         identity_id,
-         user_id,
-         identity_type,
-         country_code,
-         identity_scope,
-         identity_hash,
-         hash_key_version,
-         encrypted_value,
-         verification_status,
-         expires_at,
-         verified_at,
-         revoked_at,
-         revoked_by,
-         created_at,
-         updated_at
-       )
-       SELECT
-         ?1,
-         ?2,
-         'EMAIL',
-         NULL,
-         'GLOBAL',
-         ?3,
-         1,
-         ?4,
-         'VERIFIED',
-         NULL,
-         ?5,
-         NULL,
-         NULL,
-         ?5,
-         ?5
-       WHERE EXISTS (
-         SELECT 1
-         FROM super_admin_owner_verification_otps o
-         WHERE o.owner_otp_id = ?6
-           AND o.user_id = ?2
-           AND o.consumed_at = ?5
-           AND o.invalidated_at IS NULL
-       )
-
-       AND EXISTS (
-         SELECT 1
-         FROM super_admin_bootstrap_state s
-         INNER JOIN users u
-           ON u.user_id = s.user_id
-         WHERE s.bootstrap_id = 1
-           AND s.user_id = ?2
-           AND s.bootstrap_status = 'PENDING'
-           AND u.full_name = ?7
-           AND lower(u.email) = ?8
-           AND u.account_status = 'DISABLED'
-       )
-
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_roles ur
-         WHERE ur.user_id = ?2
-       )
-
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_roles ur
-         WHERE ur.role_id = 'role-super-admin'
-       )
-
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_credentials c
-         WHERE c.user_id = ?2
-           AND c.credential_type = 'PASSWORD'
-           AND c.revoked_at IS NULL
-       )
-
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_auth_identities i
-         WHERE i.user_id = ?2
-           AND i.identity_type = 'EMAIL'
-           AND i.identity_scope = 'GLOBAL'
-           AND i.verification_status IN ('PENDING', 'VERIFIED')
-       )
-
-       AND NOT EXISTS (
-         SELECT 1
-         FROM user_auth_identities i
-         WHERE i.identity_type = 'EMAIL'
-           AND i.identity_scope = 'GLOBAL'
-           AND i.identity_hash = ?3
-           AND i.verification_status IN ('PENDING', 'VERIFIED')
-       )`
-    ).bind(
-      identityId,
-      TARGET_USER_ID,
-      identityHash,
-      await encryptValue(
-        env.ENCRYPTION_KEY,
-        TARGET_EMAIL
-      ),
-      verifiedAt,
-      activeOtp.owner_otp_id,
-      TARGET_NAME,
-      TARGET_EMAIL
-    ),
-
-    db.prepare(
-      `INSERT INTO auth_events (
-         event_id,
-         user_id,
-         session_id,
-         event_type,
-         event_status,
-         ip_address,
-         user_agent,
-         event_details,
-         created_at
-       )
-       SELECT
-         ?1,
-         ?2,
-         NULL,
-         'SUPER_ADMIN_OWNER_EMAIL_VERIFIED',
-         'SUCCESS',
-         ?3,
-         ?4,
-         ?5,
-         ?6
-       WHERE EXISTS (
-         SELECT 1
-         FROM user_auth_identities i
-         WHERE i.identity_id = ?7
-           AND i.user_id = ?2
-           AND i.verification_status = 'VERIFIED'
-           AND i.verified_at = ?6
-       )`
-    ).bind(
-      eventId,
-      TARGET_USER_ID,
-      metadata.ipAddress,
-      metadata.userAgent,
-      JSON.stringify({
-        purpose: OTP_PURPOSE,
-        identityType: "EMAIL",
-        identityScope: "GLOBAL"
-      }),
-      verifiedAt,
-      identityId
-    )
-  ]);
-
-  if ((results?.[0]?.meta?.changes ?? 0) !== 1) {
+  if ((result?.meta?.changes ?? 0) !== 1) {
     throw httpError(
       "Verification code is invalid, expired, or already used.",
       400
-    );
-  }
-
-  if ((results?.[1]?.meta?.changes ?? 0) !== 1) {
-    throw httpError(
-      "The bootstrap account is no longer eligible for verification.",
-      409
     );
   }
 
