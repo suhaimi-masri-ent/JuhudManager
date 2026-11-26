@@ -1,7 +1,13 @@
-
-name: Deploy JuhudManager
+name: Deploy JuhudManager Pages
 
 on:
+  push:
+    branches:
+      - develop
+    paths:
+      - "v1/public/**"
+      - "v2/web/**"
+      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 permissions:
@@ -31,7 +37,7 @@ jobs:
       - name: Prepare GitHub Pages site
         run: |
           mkdir -p _site
-          cp -R public/. _site/
+          cp -R v1/public/. _site/
           mkdir -p _site/v2/web
           cp -R v2/web/. _site/v2/web/
 
