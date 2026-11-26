@@ -2,6 +2,7 @@
 import { json } from "./lib/http.js";
 import { createBrevoDelivery } from "./lib/brevo-email.js";
 import { createWhatsAppCloudDelivery } from "./lib/whatsapp-cloud.js";
+
 import { handleAuthRequest } from "./routes/auth.js";
 import { handleLoginRequest } from "./routes/login.js";
 import { handlePasswordChangeRequest } from "./routes/password-change.js";
@@ -9,14 +10,20 @@ import { handleSessionRequest } from "./routes/session.js";
 import { handleProfileRequest } from "./routes/profile.js";
 import { handleAdminRegistrationRequest } from "./routes/admin-registrations.js";
 import { handleAdminRegistrationCancellationRequest } from "./routes/admin-registration-cancellation.js";
+
 import { handleSuperAdminBootstrapRequest } from "./routes/super-admin-bootstrap.js";
+import { handleSuperAdminOwnerVerificationRequest } from "./routes/super-admin-owner-verification.js";
+
 import { handleSuperAdminCountryRequest } from "./routes/super-admin-countries.js";
 import { handleSuperAdminCountryAdminRequest } from "./routes/super-admin-country-admins.js";
 import { handleSuperAdminUserRequest } from "./routes/super-admin-users.js";
+
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
 const ALLOWED_METHODS = "GET, POST, PATCH, OPTIONS";
-const ALLOWED_HEADERS = "Content-Type, Authorization, X-Super-Admin-Bootstrap-Key";
+
+const ALLOWED_HEADERS =
+  "Content-Type, Authorization, X-Super-Admin-Bootstrap-Key";
 
 export default {
   async fetch(request, env) {
@@ -52,7 +59,11 @@ export default {
 
         if (
           allowed.some(header =>
-            !["content-type", "authorization", "x-super-admin-bootstrap-key"].includes(header)
+            ![
+              "content-type",
+              "authorization",
+              "x-super-admin-bootstrap-key"
+            ].includes(header)
           )
         ) {
           return json({
@@ -97,11 +108,21 @@ export default {
       response = await handleDeliveryTest(request, env);
     } else {
       try {
-        response = await handleSuperAdminBootstrapRequest(
+        // Initial Super Admin owner email verification.
+        response = await handleSuperAdminOwnerVerificationRequest(
           request,
           env,
           url
         );
+
+        // Existing protected bootstrap process.
+        if (!response) {
+          response = await handleSuperAdminBootstrapRequest(
+            request,
+            env,
+            url
+          );
+        }
 
         if (!response) {
           response = await handleSuperAdminCountryRequest(
@@ -128,7 +149,11 @@ export default {
         }
 
         if (!response) {
-          response = await handleLoginRequest(request, env, url);
+          response = await handleLoginRequest(
+            request,
+            env,
+            url
+          );
         }
 
         if (!response) {
@@ -308,7 +333,9 @@ async function handleDeliveryTest(request, env) {
   const randomBytes = new Uint32Array(1);
   crypto.getRandomValues(randomBytes);
 
-  const otp = String(randomBytes[0] % 1000000).padStart(6, "0");
+  const otp = String(
+    randomBytes[0] % 1000000
+  ).padStart(6, "0");
 
   try {
     const delivery = channel === "EMAIL"
