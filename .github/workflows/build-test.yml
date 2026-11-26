@@ -1,16 +1,29 @@
-
 name: JuhudManager V2 - Build & Test
 
 on:
+  push:
+    branches:
+      - integration/v1-v2-separation-develop
+  pull_request:
+    branches:
+      - develop
+      - main
   workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: juhudmanager-v2-ci-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build-test:
-    name: Run Tests and Build Check
+    name: Run V2 Tests and Build Check
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: v2
 
     steps:
       - name: Checkout repository
@@ -20,15 +33,14 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
+          cache-dependency-path: v2/package-lock.json
 
-      - name: Install V2 dependencies
-        working-directory: v2
-        run: npm install --no-audit --no-fund
+      - name: Install locked dependencies
+        run: npm ci --no-audit --no-fund
 
       - name: Run unit tests
-        working-directory: v2
         run: npm test
 
       - name: Run Wrangler build dry-run
-        working-directory: v2
         run: npm run build

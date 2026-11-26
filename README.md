@@ -43,9 +43,11 @@ GitHub Actions workflows are located in `.github/workflows/`.
 - `deploy-v1-worker.yml` — deploys the V1 Cloudflare Worker from `v1/`.
 - `deploy-v2-worker.yml` — deploys the V2 Cloudflare Worker from `v2/`.
 - `migrate-v2-d1.yml` — manually applies V2 D1 migrations after explicit confirmation.
-- `build-test.yml` — manually runs V2 tests and build checks.
+- `build-test.yml` — automatically runs V2 tests and build checks on the integration branch and pull requests to `develop` or `main`; can also be started manually.
 
 A Worker deployment does not apply database migrations. Database migration and Worker deployment are separate operations.
+
+Deployment workflows are manual-only. Repository pushes, pull requests and merges must not automatically deploy Workers or publish Pages. Start a deployment deliberately through GitHub Actions after reviewing the changes.
 
 ## Important Separation Rules
 

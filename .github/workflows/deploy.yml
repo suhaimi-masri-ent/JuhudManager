@@ -1,15 +1,7 @@
 name: Deploy JuhudManager Pages
 
 on:
-  push:
-    branches:
-      - develop
-    paths:
-      - "v1/public/**"
-      - "v2/web/**"
-      - ".github/workflows/deploy.yml"
   workflow_dispatch:
-
 permissions:
   actions: read
   contents: read

@@ -1,16 +1,7 @@
 name: Deploy JuhudManager V1 Worker
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-    paths:
-      - "v1/worker/**"
-      - "v1/wrangler.jsonc"
-      - ".github/workflows/deploy-v1-worker.yml"
   workflow_dispatch:
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
