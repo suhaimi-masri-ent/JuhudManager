@@ -147,7 +147,6 @@ async function invalidateOwnerOtp(db, ownerOtpId) {
   ).run();
 }
 
-
 /**
  * Request an OTP for the immutable initial Super Admin owner.
  *
@@ -165,21 +164,6 @@ export async function requestSuperAdminOwnerVerification({
     delivery
   });
 
-const { identityHash } = await calculateEmailHashes(
-  env,
-  TARGET_EMAIL
-);
-
-await expirePendingIdentityReservations({
-  db,
-  identityType: "EMAIL",
-  identityScope: "GLOBAL",
-  identityHash
-});
-
-const target = await checkOwnerEligibility(db, env);
-  const otp = generateOtp();
-
   const {
     identityHash,
     destinationHash
@@ -187,6 +171,18 @@ const target = await checkOwnerEligibility(db, env);
     env,
     TARGET_EMAIL
   );
+
+  // Expire stale EMAIL GLOBAL reservations before eligibility checks.
+  await expirePendingIdentityReservations({
+    db,
+    identityType: "EMAIL",
+    identityScope: "GLOBAL",
+    identityHash
+  });
+
+  const target = await checkOwnerEligibility(db, env);
+
+  const otp = generateOtp();
 
   const encryptedDestination = await encryptValue(
     env.ENCRYPTION_KEY,
@@ -302,7 +298,6 @@ const target = await checkOwnerEligibility(db, env);
     expiresInMinutes: OTP_LIFETIME_MINUTES
   };
 }
-
 
 /**
  * Verify the OTP for the immutable initial Super Admin owner.
