@@ -175,3 +175,83 @@ OR (
 BEGIN
     SELECT RAISE(ABORT, 'Owner verification OTP cannot be reactivated.');
 END;
+
+
+-- A verified identity for the bootstrap owner must be backed
+-- by an OTP consumed in the same timestamp and transaction.
+CREATE TRIGGER trg_super_admin_owner_identity_insert_guard
+BEFORE INSERT ON user_auth_identities
+WHEN NEW.user_id = '6b3b4088-7e19-4efc-a942-387c7880460c'
+ AND NEW.identity_type = 'EMAIL'
+ AND NEW.identity_scope = 'GLOBAL'
+BEGIN
+    SELECT CASE
+        WHEN NEW.verification_status <> 'VERIFIED'
+          OR NEW.verified_at IS NULL
+          OR NEW.expires_at IS NOT NULL
+          OR NEW.revoked_at IS NOT NULL
+          OR NEW.verification_method <> 'OTP'
+          OR NEW.verified_by IS NOT NULL
+        THEN RAISE(ABORT, 'Invalid bootstrap owner email verification.')
+    END;
+
+    SELECT CASE
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM super_admin_owner_verification_otps o
+            WHERE o.bootstrap_id = 1
+              AND o.user_id = NEW.user_id
+              AND o.identity_hash = NEW.identity_hash
+              AND o.destination_encrypted = NEW.encrypted_value
+              AND o.consumed_at = NEW.verified_at
+              AND o.invalidated_at IS NULL
+              AND o.attempt_count < o.max_attempts
+        )
+        THEN RAISE(ABORT, 'A successfully consumed owner OTP is required.')
+    END;
+
+    SELECT CASE
+        WHEN NOT EXISTS (
+            SELECT 1
+            FROM super_admin_bootstrap_state s
+            INNER JOIN users u
+                ON u.user_id = s.user_id
+            WHERE s.bootstrap_id = 1
+              AND s.user_id = NEW.user_id
+              AND s.bootstrap_status = 'PENDING'
+              AND u.full_name = 'JUHUD MANAGER'
+              AND lower(u.email) = 'al.masri.ent@gmail.com'
+              AND u.account_status = 'DISABLED'
+        )
+        THEN RAISE(ABORT, 'Bootstrap owner is no longer eligible.')
+    END;
+
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM user_roles
+            WHERE role_id = 'role-super-admin'
+        )
+        THEN RAISE(ABORT, 'A SUPER_ADMIN already exists.')
+    END;
+
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM user_roles
+            WHERE user_id = NEW.user_id
+        )
+        THEN RAISE(ABORT, 'Bootstrap owner already has a role.')
+    END;
+
+    SELECT CASE
+        WHEN EXISTS (
+            SELECT 1
+            FROM user_credentials
+            WHERE user_id = NEW.user_id
+              AND credential_type = 'PASSWORD'
+              AND revoked_at IS NULL
+        )
+        THEN RAISE(ABORT, 'Bootstrap owner already has a password.')
+    END;
+END;
