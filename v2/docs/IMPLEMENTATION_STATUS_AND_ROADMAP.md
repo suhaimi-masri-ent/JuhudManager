@@ -1,16 +1,16 @@
-JuhudManager V2 — Implementation Status and Roadmap
+# JuhudManager V2 — Implementation Status and Roadmap
 
-Document ID: JMV2-IMP-001
-Roadmap ID: JMV2-ROADMAP-001
-Version: 1.0
-Date: 27 November 2026
-Status: Working Baseline — Implementation Tracking
+**Document ID:** JMV2-IMP-001  
+**Roadmap ID:** JMV2-ROADMAP-001  
+**Version:** 1.0  
+**Date:** 27 November 2026  
+**Status:** Working Baseline — Implementation Tracking
 
 ---
 
-PART A — IMPLEMENTATION STATUS
+# PART A — IMPLEMENTATION STATUS
 
-1. Purpose
+## 1. Purpose
 
 This document records the implementation status of JuhudManager V2 and establishes the development roadmap.
 
@@ -25,66 +25,68 @@ It separates:
 
 A successful build or test run does not prove that every functional requirement is implemented.
 
-2. Status Definitions
+## 2. Status Definitions
 
-Status| Meaning
-IMPLEMENTED — VERIFIED| Code and relevant tests have been reviewed and verified
-REPORTED SUCCESS| Success was reported, but this document has not independently revalidated it
-PARTIALLY IMPLEMENTED| Some functionality exists, but the complete requirement is not satisfied
-NOT IMPLEMENTED| Required feature has not yet been implemented
-NEEDS VERIFICATION| Existing implementation or behavior needs inspection and testing
-BLOCKED| Work cannot proceed safely until a blocker is resolved
-ON HOLD| Work is intentionally deferred
-PENDING DECISION| Implementation depends on an unresolved decision
+| Status | Meaning |
+|---|---|
+| IMPLEMENTED — VERIFIED | Code and relevant tests have been reviewed and verified |
+| REPORTED SUCCESS | Success was reported, but this document has not independently revalidated it |
+| PARTIALLY IMPLEMENTED | Some functionality exists, but the complete requirement is not satisfied |
+| NOT IMPLEMENTED | Required feature has not yet been implemented |
+| NEEDS VERIFICATION | Existing implementation or behavior needs inspection and testing |
+| BLOCKED | Work cannot proceed safely until a blocker is resolved |
+| ON HOLD | Work is intentionally deferred |
+| PENDING DECISION | Implementation depends on an unresolved decision |
 
-3. Technical Environment
+## 3. Technical Environment
 
-3.1 Repository Structure
+### 3.1 Repository Structure
 
-Repository: "suhaimi-masri-ent/JuhudManager"
+**Repository:** `suhaimi-masri-ent/JuhudManager`
 
-Current development branch context:
+**Current development branch context:**
 
-"integration/v1-v2-separation-develop"
+`integration/v1-v2-separation-develop`
 
 Relevant structure:
 
-- "v1/" — Legacy V1 application.
-- "v2/" — V2 application.
-- "v2/src/" — V2 backend.
-- "v2/web/" — V2 frontend.
-- "v2/migrations/" — V2 database migrations.
-- "v2/docs/" — V2 documentation.
+- `v1/` — Legacy V1 application.
+- `v2/` — V2 application.
+- `v2/src/` — V2 backend.
+- `v2/web/` — V2 frontend.
+- `v2/migrations/` — V2 database migrations.
+- `v2/docs/` — V2 documentation.
 
 V1 and V2 must remain separate applications with separate deployment configurations.
 
-3.2 V2 Worker and Database
+### 3.2 V2 Worker and Database
 
-Item| Recorded configuration
-Worker| "juhudmanager-v2-api"
-Worker entry point| "src/index.js"
-Configuration| "v2/wrangler.jsonc"
-D1 binding| "DB"
-Database| "juhudmanager-v2-db"
-Migration directory| "v2/migrations/"
+| Item | Recorded configuration |
+|---|---|
+| Worker | `juhudmanager-v2-api` |
+| Worker entry point | `src/index.js` |
+| Configuration | `v2/wrangler.jsonc` |
+| D1 binding | `DB` |
+| Database | `juhudmanager-v2-db` |
+| Migration directory | `v2/migrations/` |
 
-3.3 Migration Status
+### 3.3 Migration Status
 
 Recorded project state:
 
 - Migrations 0001 through 0021 exist.
-- Migration "0021_super_admin_owner_verification.sql" was reported applied remotely on 26 November 2026.
+- Migration `0021_super_admin_owner_verification.sql` was reported applied remotely on 26 November 2026.
 - The database was reported to contain 33 tables after migration 0021.
 
 These are recorded project results and must be rechecked against the remote database before a new production change.
 
 No migration should be applied merely because it appears in this document.
 
-3.4 Health and Build Results
+### 3.4 Health and Build Results
 
 Previously reported results:
 
-- Worker health endpoint returned "status: ok".
+- Worker health endpoint returned `status: ok`.
 - Database connection returned successfully.
 - GitHub Actions build and test completed successfully.
 - Test suite reported 94/94 passing.
@@ -98,36 +100,36 @@ These results do not independently prove:
 - Correct behavior across all user roles.
 - Successful deployment of every latest source change.
 
-4. Critical Blocker — Bootstrap SUPER_ADMIN
+## 4. Critical Blocker — Bootstrap SUPER_ADMIN
 
-<PRIVATE_PERSON> Status: NEEDS VERIFICATION — BLOCKING
+**Status:** NEEDS VERIFICATION — BLOCKING
 
 The bootstrap SUPER_ADMIN setup remains unresolved.
 
 Previously observed database state:
 
-- Bootstrap user "JUHUD MANAGER" exists.
-- Email identity "al.masri.ent@gmail.com" exists.
-- Account status was "DISABLED".
-- Bootstrap status was "PENDING".
+- Bootstrap user `JUHUD MANAGER` exists.
+- Email identity `al.masri.ent@gmail.com` exists.
+- Account status was `DISABLED`.
+- Bootstrap status was `PENDING`.
 - No active password was recorded.
-- No "user_roles" assignment was recorded.
+- No `user_roles` assignment was recorded.
 - Counts for owner role, super_admin role, password and verified email identity were zero in the inspected state.
 
-A separate user record named "SUPER ADMIN JUHUD MANAGER" was also observed with:
+A separate user record named `SUPER ADMIN JUHUD MANAGER` was also observed with:
 
 - Null email.
 - DISABLED account.
 - Pending global email identity.
 - Previous expired identity record.
-- Registration status "AWAITING_EMAIL_VERIFICATION".
+- Registration status `AWAITING_EMAIL_VERIFICATION`.
 
 Reported application errors:
 
-- Login or registration: "Network error interceptor".
-- Owner verification: "The designated bootstrap owner is not eligible for email verification."
+- Login or registration: `Network error interceptor`.
+- Owner verification: `The designated bootstrap owner is not eligible for email verification.`
 
-4.1 Required Resolution
+### 4.1 Required Resolution
 
 Before treating the system as operational:
 
@@ -144,31 +146,32 @@ Before treating the system as operational:
 
 Do not create duplicate bootstrap owners or manually bypass authorization checks without an approved recovery procedure.
 
-4.2 Release Impact
+### 4.2 Release Impact
 
 Bootstrap is a release blocker.
 
 Country ADMIN creation and subsequent profile-update testing should follow only after the bootstrap SUPER_ADMIN has been successfully established and verified.
 
-5. Authentication and Account Management
+## 5. Authentication and Account Management
 
-Feature| Status| Notes
-Email OTP registration| PARTIALLY IMPLEMENTED| Existing implementation and end-to-end behavior need verification
-OTP expiry and attempt limits| NEEDS VERIFICATION| Confirm all policy limits in actual runtime
-Identity reservation| NEEDS VERIFICATION| Confirm expiry and uniqueness behavior
-Password minimum length| NEEDS VERIFICATION| Confirm server-side enforcement
-Login and sessions| PARTIALLY IMPLEMENTED| Verify idle and maximum lifetime rules
-Email change OTP| NEEDS VERIFICATION| Confirm all account states and identity rules
-Password Reset| NOT IMPLEMENTED| Required feature; verified email and OTP
-Admin-assisted recovery| PENDING DECISION| Separate from normal Password Reset
-Account disablement| NEEDS VERIFICATION| Confirm session and token revocation
-Account appeal| NEEDS VERIFICATION| Confirm reviewer scope and separation
-Reactivation| NEEDS VERIFICATION| Confirm mandatory new password and audit
-WhatsApp OTP| NEEDS VERIFICATION| Verify whether any implementation exists and confirm its actual runtime status
-Two-factor authentication| NOT IMPLEMENTED| Not currently available
-Passport login| PENDING| Separate login capability
+| Feature | Status | Notes |
+|---|---|---|
+| Email OTP registration | PARTIALLY IMPLEMENTED | Existing implementation and end-to-end behavior need verification |
+| OTP expiry and attempt limits | NEEDS VERIFICATION | Confirm all policy limits in actual runtime |
+| Identity reservation | NEEDS VERIFICATION | Confirm expiry and uniqueness behavior |
+| Password minimum length | NEEDS VERIFICATION | Confirm server-side enforcement |
+| Login and sessions | PARTIALLY IMPLEMENTED | Verify idle and maximum lifetime rules |
+| Email change OTP | NEEDS VERIFICATION | Confirm all account states and identity rules |
+| Password Reset | NOT IMPLEMENTED | Required feature; verified email and OTP |
+| Admin-assisted recovery | PENDING DECISION | Separate from normal Password Reset |
+| Account disablement | NEEDS VERIFICATION | Confirm session and token revocation |
+| Account appeal | NEEDS VERIFICATION | Confirm reviewer scope and separation |
+| Reactivation | NEEDS VERIFICATION | Confirm mandatory new password and audit |
+| WhatsApp OTP | NEEDS VERIFICATION | Verify whether any implementation exists and confirm its actual runtime status |
+| Two-factor authentication | NOT IMPLEMENTED | Not currently available |
+| Passport login | PENDING | Separate login capability |
 
-5.1 Password Reset Implementation Requirements
+### 5.1 Password Reset Implementation Requirements
 
 Password Reset must:
 
@@ -176,8 +179,8 @@ Password Reset must:
 - Follow six-digit OTP policy.
 - Use five-minute validity.
 - Allow no more than five attempts.
-- OTP must be bound to the specific Password Reset transaction. OTP issued for registration or another purpose must not be accepted.  
 - Enforce sixty-second resend cooldown.
+- Bind the OTP to the specific Password Reset transaction. OTP issued for registration or another purpose must not be accepted.
 - Allow a new password only after successful verification.
 - Revoke every existing session and token.
 - Record an audit event.
@@ -185,9 +188,9 @@ Password Reset must:
 
 A user who cannot access the verified email must use a separate Admin-assisted recovery process.
 
-6. Profile Management
+## 6. Profile Management
 
-Status: NEEDS VERIFICATION
+**Status:** NEEDS VERIFICATION
 
 Required behavior:
 
@@ -200,9 +203,9 @@ Required behavior:
 
 The complete profile-update workflow must be tested after bootstrap recovery.
 
-7. Authorization and UAC
+## 7. Authorization and UAC
 
-Status: NEEDS VERIFICATION
+**Status:** NEEDS VERIFICATION
 
 The system must enforce authorization on the backend.
 
@@ -223,9 +226,9 @@ The UAC Matrix is the permission baseline.
 
 Frontend visibility is not a substitute for server-side authorization.
 
-8. Organization Structure
+## 8. Organization Structure
 
-Status: DESIGN BASELINE — IMPLEMENTATION NEEDS VERIFICATION
+**Status:** DESIGN BASELINE — IMPLEMENTATION NEEDS VERIFICATION
 
 Requirements include:
 
@@ -238,9 +241,9 @@ Requirements include:
 
 Final Markaz Negara governance and country hierarchy remain pending.
 
-9. Syukbah Management
+## 9. Syukbah Management
 
-Status: DESIGN BASELINE — IMPLEMENTATION NEEDS VERIFICATION
+**Status:** DESIGN BASELINE — IMPLEMENTATION NEEDS VERIFICATION
 
 Required functionality:
 
@@ -255,9 +258,9 @@ Required functionality:
 
 Additional country Syukbah approval and delegation details remain pending.
 
-10. Jemaah and Takaza
+## 10. Jemaah and Takaza
 
-Status: DESIGN BASELINE — IMPLEMENTATION NEEDS VERIFICATION
+**Status:** DESIGN BASELINE — IMPLEMENTATION NEEDS VERIFICATION
 
 Required functionality:
 
@@ -277,9 +280,9 @@ Required functionality:
 
 V2 must not create a separate Project Member entity.
 
-11. Amer Appointment
+## 11. Amer Appointment
 
-Status: PARTIALLY IMPLEMENTED — FULL WORKFLOW NEEDS VERIFICATION
+**Status:** PARTIALLY IMPLEMENTED — FULL WORKFLOW NEEDS VERIFICATION
 
 A foundation for Amer appointment has previously been reported.
 
@@ -300,9 +303,9 @@ The participation prerequisite is mandatory.
 
 An Amer candidate who is not yet a confirmed participant must first complete the normal participation process.
 
-12. Supervisor Appointment
+## 12. Supervisor Appointment
 
-Status: NEEDS VERIFICATION / PENDING DECISION
+**Status:** NEEDS VERIFICATION / PENDING DECISION
 
 Supervisor appointment requires:
 
@@ -316,9 +319,9 @@ Supervisor authority, scope and participant eligibility remain pending.
 
 No special Supervisor permission may be assumed.
 
-13. KAWAIF
+## 13. KAWAIF
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status:** NOT IMPLEMENTED / NEEDS VERIFICATION
 
 Required functionality:
 
@@ -332,9 +335,9 @@ Required functionality:
 - Actor and timestamp.
 - Higher-scope configuration of categories and criteria.
 
-14. TAFAKUT
+## 14. TAFAKUT
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status:** NOT IMPLEMENTED / NEEDS VERIFICATION
 
 Required functionality:
 
@@ -351,9 +354,9 @@ Required functionality:
 - Notifications and decision visibility.
 - SUSPEND and ON_HOLD handling.
 
-15. Events and Attendance
+## 15. Events and Attendance
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status:** NOT IMPLEMENTED / NEEDS VERIFICATION
 
 Required functionality:
 
@@ -367,9 +370,9 @@ Required functionality:
 
 Event templates remain pending.
 
-16. Percha
+## 16. Percha
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status:** NOT IMPLEMENTED / NEEDS VERIFICATION
 
 Required functionality:
 
@@ -381,9 +384,9 @@ Required functionality:
 - Resubmission.
 - Version and audit history.
 
-17. Kharguzari
+## 17. Kharguzari
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status:** NOT IMPLEMENTED / NEEDS VERIFICATION
 
 Required functionality:
 
@@ -395,9 +398,9 @@ Required functionality:
 - Separate follow-up comments.
 - Author editing of own comment.
 
-18. Amer Report and Completion
+## 18. Amer Report and Completion
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status:** NOT IMPLEMENTED / NEEDS VERIFICATION
 
 Required functionality:
 
@@ -410,13 +413,13 @@ Required functionality:
 
 Takaza may become COMPLETED only when all approved completion conditions are met, including the Amer report.
 
-19. Cancellation and Case Management
+## 19. Cancellation and Case Management
 
-Status: PARTIALLY DEFINED — FULL CASE MANAGEMENT ON HOLD
+**Status:** PARTIALLY DEFINED — FULL CASE MANAGEMENT ON HOLD
 
 Required immediate behavior:
 
-- Cancellation creates a "Requires Attention" case.
+- Cancellation creates a `Requires Attention` case.
 - Case identifies affected Takaza.
 - Case identifies affected Ahbab.
 - Participation is not automatically cancelled.
@@ -424,9 +427,9 @@ Required immediate behavior:
 
 Full Case Management workflow remains ON HOLD.
 
-20. Annual Archive and Annual Summary
+## 20. Annual Archive and Annual Summary
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status:** NOT IMPLEMENTED / NEEDS VERIFICATION
 
 Required functionality:
 
@@ -443,17 +446,17 @@ Required functionality:
 
 PDF and Excel export are not included in the current baseline.
 
-21. Juhud Reports
+## 21. Juhud Reports
 
-Status: SEPARATE MODULE — IMPLEMENTATION NEEDS VERIFICATION
+**Status:** SEPARATE MODULE — IMPLEMENTATION NEEDS VERIFICATION
 
 Juhud Reports is a publication module.
 
 It is not the same as Takaza operational reports or Annual Archive.
 
-22. Notification and Audit
+## 22. Notification and Audit
 
-Status: NEEDS VERIFICATION
+**Status:** NEEDS VERIFICATION
 
 Verify:
 
@@ -468,7 +471,7 @@ Verify:
 - Previous and new values.
 - Required reasons and justifications.
 
-23. Test and Quality Status
+## 23. Test and Quality Status
 
 Previously reported:
 
@@ -493,9 +496,9 @@ These are reported results, not a substitute for the following verification:
 
 ---
 
-PART B — IMPLEMENTATION ROADMAP
+# PART B — IMPLEMENTATION ROADMAP
 
-24. Roadmap Principles
+## 24. Roadmap Principles
 
 Development must follow these principles:
 
@@ -509,9 +512,9 @@ Development must follow these principles:
 - Update tests and documentation with every major change.
 - Do not claim a feature is complete without evidence.
 
-25. Phase 0 — Repository and Environment Stabilization
+## 25. Phase 0 — Repository and Environment Stabilization
 
-Priority: CRITICAL
+**Priority:** CRITICAL
 
 Tasks:
 
@@ -525,16 +528,16 @@ Tasks:
 8. Confirm production health.
 9. Preserve historical packages and documentation until audited.
 
-Exit criteria:
+**Exit criteria:**
 
 - V1 and V2 remain independently deployable.
 - No accidental V1 deployment from V2 workflow.
 - No accidental V2 deployment from V1 workflow.
 - Database and Worker configuration are confirmed.
 
-26. Phase 1 — Bootstrap and Authentication
+## 26. Phase 1 — Bootstrap and Authentication
 
-Priority: CRITICAL
+**Priority:** CRITICAL
 
 Tasks:
 
@@ -551,7 +554,7 @@ Tasks:
 11. Define separate Admin-assisted recovery.
 12. Verify profile update and protected identity fields.
 
-Exit criteria:
+**Exit criteria:**
 
 - Bootstrap SUPER_ADMIN works.
 - Country ADMIN can be created within authorized scope.
@@ -559,9 +562,9 @@ Exit criteria:
 - Password Reset passes its full security tests.
 - Profile changes preserve verification and audit history.
 
-27. Phase 2 — Authorization and Organization
+## 27. Phase 2 — Authorization and Organization
 
-Priority: HIGH
+**Priority:** HIGH
 
 Tasks:
 
@@ -574,16 +577,16 @@ Tasks:
 7. Implement Admin Markaz scope.
 8. Verify Dashboard navigation against permissions.
 
-Exit criteria:
+**Exit criteria:**
 
 - No unauthorized cross-country access.
 - Administrative roles remain distinct.
 - Organization scope is enforced by the backend.
 - Dashboard actions match actual authorization.
 
-28. Phase 3 — Syukbah Management
+## 28. Phase 3 — Syukbah Management
 
-Priority: HIGH
+**Priority:** HIGH
 
 Tasks:
 
@@ -596,15 +599,15 @@ Tasks:
 7. Implement soft deletion and audit.
 8. Resolve additional Syukbah approval rules.
 
-Exit criteria:
+**Exit criteria:**
 
 - Syukbah is independent of organization hierarchy.
 - Admin and moderator permissions are enforced.
 - Discussion and CMS remain separate.
 
-29. Phase 4 — Jemaah and Takaza Participation
+## 29. Phase 4 — Jemaah and Takaza Participation
 
-Priority: HIGH
+**Priority:** HIGH
 
 Tasks:
 
@@ -621,16 +624,16 @@ Tasks:
 11. Implement rejoining and linked history.
 12. Ensure no separate V2 Project Member entity exists.
 
-Exit criteria:
+**Exit criteria:**
 
 - Membership and participation remain separate.
 - Every participant has a valid participation record.
 - Main and Sub Takaza operate independently.
 - Participation history is retained.
 
-30. Phase 5 — KAWAIF and TAFAKUT
+## 30. Phase 5 — KAWAIF and TAFAKUT
 
-Priority: HIGH
+**Priority:** HIGH
 
 Tasks:
 
@@ -648,16 +651,16 @@ Tasks:
 12. Implement final Admin decision and justification.
 13. Implement notifications.
 
-Exit criteria:
+**Exit criteria:**
 
 - Assessment independence is enforced.
 - Old assessment versions remain available.
 - Decisions and justifications are auditable.
 - KAWAIF does not automatically determine TAFAKUT outcome.
 
-31. Phase 6 — Amer, Supervisor and Events
+## 31. Phase 6 — Amer, Supervisor and Events
 
-Priority: HIGH
+**Priority:** HIGH
 
 Tasks:
 
@@ -672,7 +675,7 @@ Tasks:
 9. Implement event reuse and creation.
 10. Implement attendance and remarks.
 
-Exit criteria:
+**Exit criteria:**
 
 - Amer must be a confirmed participant in the same Takaza before appointment becomes effective.
 - Appointment may occur before the official start date.
@@ -680,9 +683,9 @@ Exit criteria:
 - Supervisor permissions follow approved decisions.
 - Events and attendance are linked to the correct Takaza.
 
-32. Phase 7 — Percha, Kharguzari and Reporting
+## 32. Phase 7 — Percha, Kharguzari and Reporting
 
-Priority: HIGH
+**Priority:** HIGH
 
 Tasks:
 
@@ -699,7 +702,7 @@ Tasks:
 11. Implement Annual Summary.
 12. Keep Juhud Reports separate.
 
-Exit criteria:
+**Exit criteria:**
 
 - Percha amendments are independently approved.
 - Original Kharguzari records remain preserved.
@@ -707,9 +710,9 @@ Exit criteria:
 - Archive access is scope-controlled.
 - Annual Summary remains separate from operational records.
 
-33. Phase 8 — Case Management and Hardening
+## 33. Phase 8 — Case Management and Hardening
 
-Priority: AFTER CORE WORKFLOWS
+**Priority:** AFTER CORE WORKFLOWS
 
 Tasks:
 
@@ -725,24 +728,24 @@ Tasks:
 10. Perform production smoke tests.
 11. Update operational documentation.
 
-Exit criteria:
+**Exit criteria:**
 
 - Case Management follows an approved specification.
 - No unresolved critical security defect.
 - All release gates pass.
 
-34. Release Gates
+## 34. Release Gates
 
 A production release must not be considered complete until the relevant gates are satisfied.
 
-Gate A — Identity and Bootstrap
+### Gate A — Identity and Bootstrap
 
 - Bootstrap owner verified.
 - SUPER_ADMIN role verified.
 - Login tested.
 - No duplicate or ambiguous bootstrap identity.
 
-Gate B — Authorization
+### Gate B — Authorization
 
 - Backend role checks verified.
 - Country scope verified.
@@ -750,7 +753,7 @@ Gate B — Authorization
 - Cross-scope denial tested.
 - Account disablement enforcement tested.
 
-Gate C — Database
+### Gate C — Database
 
 - Migrations reviewed.
 - Migration order confirmed.
@@ -758,7 +761,7 @@ Gate C — Database
 - Backup and recovery plan considered.
 - No unauthorized schema change.
 
-Gate D — Security
+### Gate D — Security
 
 - OTP limits tested.
 - Session revocation tested.
@@ -766,7 +769,7 @@ Gate D — Security
 - Protected identity fields verified.
 - Audit records verified.
 
-Gate E — Deployment
+### Gate E — Deployment
 
 - V1 Worker remains separate.
 - V2 Worker remains separate.
@@ -774,14 +777,14 @@ Gate E — Deployment
 - Production environment variables are correct.
 - Health endpoint and database connectivity verified.
 
-Gate F — Functional Tests
+### Gate F — Functional Tests
 
 - Required workflows tested.
 - Negative authorization tests passed.
 - Relevant integration tests passed.
 - Regression tests passed.
 
-35. Non-Negotiable Requirements
+## 35. Non-Negotiable Requirements
 
 The following must not be violated during implementation:
 
@@ -790,8 +793,8 @@ The following must not be violated during implementation:
 3. Amer must already be a confirmed participant in the same Takaza before appointment becomes effective.
 4. Amer appointment may occur before the official Takaza start date.
 5. Supervisor authority must not be invented.
-6. "WITHDRAWN" and "REMOVED" remain distinct.
-7. Account "DISABLED" cannot be overridden by LIMITED access.
+6. `WITHDRAWN` and `REMOVED` remain distinct.
+7. Account `DISABLED` cannot be overridden by LIMITED access.
 8. Password Reset requires verified email OTP and revocation of all existing sessions and tokens.
 9. No Takaza completion without the required Amer report.
 10. Main and Sub Takaza lifecycle remain independent.
@@ -800,7 +803,7 @@ The following must not be violated during implementation:
 13. No implementation status may be overstated without evidence.
 14. No production migration or deployment is authorized by this document alone.
 
-36. Maintenance
+## 36. Maintenance
 
 Update this document whenever:
 
@@ -816,4 +819,4 @@ Record the date and evidence for every status change.
 
 ---
 
-End of Document
+**End of Document**
