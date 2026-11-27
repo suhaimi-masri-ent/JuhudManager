@@ -209,11 +209,11 @@ The workflow uses the V2 working directory:
 
 `v2/`
 
-The current integration branch trigger is:
+The workflow runs automatically on pushes to `main` and `v2`.
 
-`integration/v1-v2-separation-develop`
+Pull requests targeting `main` and `v2` also trigger the workflow.
 
-Pull requests targeting `develop` and `main` are also configured to run the workflow.
+The workflow can also be started manually through GitHub Actions.
 
 A successful build and test run does not prove that production deployment, database migration, bootstrap setup or every business workflow has been verified.
 
