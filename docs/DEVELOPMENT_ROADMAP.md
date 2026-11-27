@@ -52,7 +52,7 @@ The following documents are the principal V2 references:
 | `v2/docs/OPEN_DECISIONS_REGISTER.md` | Unresolved V2 decisions |
 | `v2/docs/MODULE_REQUIREMENTS.md` | Consolidated V2 functional requirements |
 | `v2/docs/V2_IMPLEMENTATION_STATUS.md` | Sole authority for V2 implementation status and development roadmap |
-| `v2/docs/Auth.md` | Authentication and account-management requirements |
+| `v2/docs/AUTH.md` | Authentication and account-management requirements |
 | `v2/docs/JMV2001-Ahbab-Profile-Account-Management.md` | Ahbab profile and account management |
 | `v2/docs/JMV2002-Organization-Structure-Governance.md` | Organisation structure and governance |
 | `v2/docs/JMV2003-Syukbah-Management.md` | Syukbah management |
@@ -340,7 +340,7 @@ Authentication and profile management are separate responsibilities.
 
 The detailed requirements are maintained in:
 
-- `v2/docs/Auth.md`
+- `v2/docs/AUTH.md`
 - `v2/docs/JMV2001-Ahbab-Profile-Account-Management.md`
 
 ### 6.2 Authentication and Password Recovery
@@ -668,7 +668,7 @@ A successful migration command does not by itself prove that all application wor
 
 ### 7.3 Authentication and Security
 
-Authentication and security requirements must follow `v2/docs/Auth.md`.
+Authentication and security requirements must follow `v2/docs/AUTH.md`.
 
 Security-sensitive operations must have appropriate:
 
@@ -940,7 +940,7 @@ The principal references are:
 - `MODULE_REQUIREMENTS.md`
 - `V2_DESIGN_CHECKPOINT.md`
 - `V2_IMPLEMENTATION_STATUS.md`
-- `Auth.md`
+- `AUTH.md`
 - `JMV2001-Ahbab-Profile-Account-Management.md`
 - `JMV2002-Organization-Structure-Governance.md`
 - `JMV2003-Syukbah-Management.md`
