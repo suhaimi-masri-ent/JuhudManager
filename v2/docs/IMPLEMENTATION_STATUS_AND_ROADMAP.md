@@ -164,7 +164,7 @@ Admin-assisted recovery| PENDING DECISION| Separate from normal Password Reset
 Account disablement| NEEDS VERIFICATION| Confirm session and token revocation
 Account appeal| NEEDS VERIFICATION| Confirm reviewer scope and separation
 Reactivation| NEEDS VERIFICATION| Confirm mandatory new password and audit
-WhatsApp OTP| NOT IMPLEMENTED| Not part of current implementation
+WhatsApp OTP| NEEDS VERIFICATION| Verify whether any implementation exists and confirm its actual runtime status
 Two-factor authentication| NOT IMPLEMENTED| Not currently available
 Passport login| PENDING| Separate login capability
 
@@ -176,6 +176,7 @@ Password Reset must:
 - Follow six-digit OTP policy.
 - Use five-minute validity.
 - Allow no more than five attempts.
+- OTP must be bound to the specific Password Reset transaction. OTP issued for registration or another purpose must not be accepted.  
 - Enforce sixty-second resend cooldown.
 - Allow a new password only after successful verification.
 - Revoke every existing session and token.
