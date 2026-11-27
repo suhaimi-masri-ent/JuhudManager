@@ -224,7 +224,7 @@ Sistem tidak boleh memadam atau menukar sejarah pelantikan secara automatik tanp
 Setiap Syukbah yang aktif dan memerlukan pentadbiran mempunyai:
 
 - Seorang Admin Syukbah.
-- Seorang atau lebih Deputy Admin Syukbah.
+- Tiada Deputy Admin yang diwajibkan. Seorang atau lebih Deputy Admin boleh dilantik mengikut keperluan dan proses yang diluluskan.
 
 Tidak boleh ada dua Admin Syukbah aktif bagi Syukbah dan skop yang sama pada masa yang sama.
 
@@ -294,6 +294,7 @@ Sistem merekodkan:
 - Status pemangkuan.
 
 Mekanisme lengkap delegation dan acting authority masih merupakan keputusan terbuka.
+Peruntukan sementara di atas bukan kelulusan muktamad kuasa pemangkuan. Tiada kuasa acting boleh dibina atau digunakan sehingga ODR-011 dimuktamadkan.
 
 Rujukan: `OPEN_DECISIONS_REGISTER.md`, ODR-011.
 
