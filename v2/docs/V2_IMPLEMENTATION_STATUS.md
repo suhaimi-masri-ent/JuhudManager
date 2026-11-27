@@ -1549,7 +1549,7 @@ Dokumen ini mesti kekal selaras dengan:
 - "MODULE_REQUIREMENTS.md"
 - "OPEN_DECISIONS_REGISTER.md"
 - "V2_DESIGN_CHECKPOINT.md"
-- "Auth.md"
+- "AUTH.md"
 - "UAC_MATRIX.md"
 - "DASHBOARD_NAVIGATION_SPEC_V2.md"
 - "JMV2001-Ahbab-Profile-Account-Management.md"
