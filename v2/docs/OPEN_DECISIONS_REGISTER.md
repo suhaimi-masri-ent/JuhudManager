@@ -422,6 +422,8 @@ It uses the registered and verified email with the existing OTP policy:
 
 Successful verification permits a new password.
 
+The OTP must be bound to the specific Password Reset transaction. OTP issued for registration or another purpose must not be accepted.
+
 All existing sessions and tokens must be revoked.
 
 An audit event and security notification are required.
