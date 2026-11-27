@@ -1,3 +1,263 @@
+
+# JuhudManager – System Realignment Design
+
+**Document:** System Realignment Design  
+**Version:** 2.0  
+**Branch:** `integration/v1-v2-separation-develop`  
+**Status:** Consolidated V2 Design Reference  
+**Last Updated:** 28 November 2026
+
+---
+
+## 1. Purpose
+
+This document describes the target system structure and operational design for JuhudManager V2.
+
+The purpose of the realignment is to ensure that the system reflects the agreed operational model, including:
+
+1. Ahbab accounts and profiles.
+2. Organization structure and governance.
+3. Takaza management.
+4. Takaza Main and Sub relationships.
+5. Takaza participation and participant lifecycle.
+6. Kawaif qualification and experience records.
+7. Tafakut assessment.
+8. Amer and Supervisor appointments.
+9. Percha and Takaza operational activities.
+10. Rekod Amal and reporting.
+11. Annual Archive.
+12. Audit, notifications and administrative controls.
+
+This document is a design reference. It does not authorise database migrations, production changes or implementation claims.
+
+All implementation must follow the approved V2 documentation and the actual verified source code and database state.
+
+## 2. Document Authority and Reconciliation
+
+This document consolidates the earlier system realignment direction with the current JuhudManager V2 design.
+
+Where an earlier concept conflicts with an approved V2 specification, the current V2 specification takes precedence.
+
+The relevant documentation includes:
+
+- `v2/docs/Auth.md`
+- `v2/docs/UAC_MATRIX.md`
+- `v2/docs/DASHBOARD_NAVIGATION_SPEC_V2.md`
+- `v2/docs/JMV2001-Ahbab-Profile-Account-Management.md`
+- `v2/docs/JMV2002-Organization-Structure-Governance.md`
+- `v2/docs/JMV2003-Syukbah-Management.md`
+- `v2/docs/JMV2004-Takaza-Management.md`
+- `v2/docs/OPEN_DECISIONS_REGISTER.md`
+- `v2/docs/V2_IMPLEMENTATION_STATUS.md`
+
+The documents have different responsibilities:
+
+| Document | Responsibility |
+|---|---|
+| System Realignment Design | Consolidated system concepts and relationships |
+| JMV2001 | Ahbab profile and account management |
+| JMV2002 | Organization structure and governance |
+| JMV2003 | Syukbah management |
+| JMV2004 | Takaza, participation and operational workflows |
+| UAC Matrix | User access control and permissions |
+| Dashboard Navigation Specification | Navigation and dashboard behaviour |
+| Open Decisions Register | Unresolved decisions |
+| V2 Implementation Status | Actual implementation status |
+
+This document must not independently redefine detailed rules already governed by the relevant V2 specification.
+
+## 3. Core Design Principles
+
+### 3.1 Separate Account, Profile, Role and Participation
+
+The system must distinguish between:
+
+- User account status.
+- Ahbab profile information.
+- Assigned system roles.
+- Organization membership or relationships.
+- Takaza participation.
+- Appointment or delegated responsibility.
+- Activity and assessment records.
+
+These are separate information dimensions.
+
+Changing one dimension must not automatically change another unless an explicitly approved workflow requires it.
+
+For example:
+
+- Disabling an account does not mean deleting its historical participation.
+- Being an Ahbab does not automatically make a person an Admin.
+- Being appointed Amer does not automatically create Takaza participation.
+- Passing a Tafakut assessment does not automatically activate participation.
+- Being a participant does not automatically grant administrative permissions.
+
+### 3.2 Preserve Historical Information
+
+Important operational records must remain traceable.
+
+The system should preserve:
+
+- Original and amended information.
+- Actor responsible for each action.
+- Date and time.
+- Reason or justification where required.
+- Previous and resulting status.
+- Relevant approval or confirmation.
+- References to related records.
+
+Historical records must not be silently overwritten or deleted.
+
+### 3.3 Human Decisions and System Processing
+
+The system may automate record creation, status calculation, notifications and workflow routing.
+
+However, automated processing must not replace an explicitly required human decision.
+
+Where an Admin decision is required, the system must not treat a system-generated recommendation or preliminary result as final approval.
+
+### 3.4 Configuration and Extensibility
+
+Where operational requirements may differ between countries, organizations or Takaza, the system should support controlled configuration.
+
+Configuration must not create uncontrolled differences in core business rules.
+
+Changes to configuration must preserve historical versions where previous records depend on them.
+
+### 3.5 Auditability
+
+Important actions must be auditable, particularly:
+
+- Account and role changes.
+- Organization assignments.
+- Takaza creation and lifecycle changes.
+- Participation decisions.
+- Kawaif updates and verification.
+- Tafakut assessments.
+- Amer and Supervisor appointments.
+- Percha amendments.
+- Activity and attendance records.
+- Withdrawal, removal and appeal decisions.
+- Archive amendments.
+
+## 4. Main System Domains
+
+JuhudManager V2 is organised around the following domains.
+
+| Domain | Main responsibility |
+|---|---|
+| Identity and Access | Authentication, accounts, roles and access control |
+| Ahbab Management | Ahbab profile, qualifications and account relationships |
+| Organization Management | Country and organization structure |
+| Syukbah Management | Syukbah records, administration and discussion |
+| Takaza Management | Main Takaza, Sub Takaza and lifecycle |
+| Participation Management | Ahbab participation and participant history |
+| Kawaif Management | Qualification and experience information |
+| Tafakut Management | Structured assessment and decisions |
+| Appointment Management | Amer and Supervisor appointments |
+| Percha Management | Percha generation and amendment |
+| Activity Management | Takaza events, attendance and activity records |
+| Reporting | Takaza reports and other operational reports |
+| Annual Archive | Historical annual records and summaries |
+| Notification Management | User-language notifications |
+| Audit Management | Historical actions and accountability |
+
+These are logical domains. They do not require a one-to-one relationship with database tables or dashboard pages.
+
+## 5. Takaza Management
+
+### 5.1 Takaza as an Operational Entity
+
+Takaza is a managed operational entity.
+
+The system must support different Takaza types and operational requirements without permanently hardcoding every possible Takaza category.
+
+Each Takaza must have its own identity, configuration, lifecycle and history.
+
+The system must distinguish between:
+
+- Takaza definition and configuration.
+- Takaza registration.
+- Takaza release.
+- Takaza participation.
+- Takaza activities.
+- Takaza reporting.
+- Takaza completion and archival.
+
+### 5.2 Main Takaza and Sub Takaza
+
+The approved V2 model supports a maximum of two Takaza levels:
+
+1. Main Takaza.
+2. Sub Takaza.
+
+A Main Takaza may have multiple Sub Takaza records.
+
+A Sub Takaza cannot have another child Takaza.
+
+Main and Sub Takaza have independent lifecycle records.
+
+The system must not automatically cancel, complete or otherwise change a Sub Takaza merely because its Main Takaza changes status, or vice versa.
+
+Main and Sub Takaza must belong to the same country.
+
+Each Main and Sub Takaza has its own appointed Amer.
+
+### 5.3 Takaza Lifecycle
+
+The approved lifecycle statuses are:
+
+| Status | Meaning |
+|---|---|
+| `DRAFT` | Takaza is being prepared |
+| `RELEASED` | Takaza has been released for the relevant operational process |
+| `ACTIVE` | Takaza is operational |
+| `ON_HOLD` | Takaza is temporarily paused |
+| `COMPLETED` | Takaza has been completed |
+| `CANCELLED` | Takaza has been cancelled |
+
+Status changes must follow the authorised workflow.
+
+A lifecycle status must not be confused with:
+
+- Participation status.
+- Amer appointment status.
+- Event or attendance status.
+- Tafakut assessment status.
+- Annual Summary status.
+
+### 5.4 Takaza Administration
+
+An authorised Takaza Admin may create and manage Main and Sub Takaza within the Admin's permitted scope.
+
+The Admin may configure the Takaza and verify or activate it without requiring SUPER_ADMIN approval for every ordinary Takaza operation.
+
+Incomplete setup should be visible through appropriate warnings.
+
+The system must enforce the Admin's country and organizational scope.
+
+### 5.5 Takaza Start and End Dates
+
+The proposed start date is not automatically a locked official date.
+
+The Amer Jemaah may agree with the proposed date or suggest another date while the date remains under discussion.
+
+After the Amer agrees, the Admin confirms and locks the official start date.
+
+Once locked, the Amer cannot change the official date through the normal process.
+
+Takaza must support a planned or fixed end date.
+
+An Admin may amend the end date with a recorded history.
+
+An Admin may also end a Takaza early with a reason.
+
+The system may automatically complete a Takaza at its end date only when the required completion conditions have been satisfied.
+
+The exact exceptional process for changing a Takaza after completion remains subject to the Open Decisions Register.
+
+
+
 # JuhudManager – System Realignment Design
 
 **Document:** System Realignment Design  
