@@ -1,10 +1,9 @@
 JUHUDMANAGER V2 — AUTHENTICATION & USER REGISTRATION SPECIFICATION
 
 Document ID: JMV2-AUTH-001
-Version: 1.0 — Consolidated Working Baseline
+Version: 1.1 — Consolidated Working Baseline
 Status: WORKING BASELINE
 Last Updated: 27 November 2026
-Suggested Filename: "Auth.md"
 Repository Path: "v2/docs/Auth.md"
 
 ---
@@ -205,21 +204,87 @@ Perubahan kata laluan mesti:
 
 6.2 Password Reset / Forgot Password
 
-<text>Status: NOT IMPLEMENTED</text>
+Status: REQUIRED — NOT IMPLEMENTED
 
-Fungsi Password Reset / Forgot Password belum dilaksanakan.
+Password Reset / Forgot Password ialah fungsi wajib dalam JuhudManager V2 tetapi belum dilaksanakan.
 
-Ia tidak boleh dianggap tersedia dalam UI, API atau dokumentasi operasi.
+Fungsi ini hendaklah tersedia melalui aliran pemulihan kendiri menggunakan e-mel yang telah didaftarkan dan disahkan.
 
-Reka bentuk masa hadapan perlu merangkumi:
+6.2.1 Eligibility
 
-- pengesahan identiti;
-- token reset sekali guna;
-- tempoh sah token;
-- pembatalan token lama;
-- penamatan sesi dan token yang berkaitan;
-- notifikasi;
-- audit.
+- Pengguna mesti mempunyai e-mel yang berdaftar dan berstatus VERIFIED.
+- OTP reset dihantar kepada e-mel tersebut.
+- E-mel yang belum disahkan tidak boleh digunakan untuk Password Reset.
+- Password Reset tidak boleh digunakan untuk mengubah identiti login atau memintas proses perubahan e-mel.
+
+6.2.2 OTP Policy
+
+Password Reset mesti menggunakan polisi OTP sedia ada:
+
+Setting| Required Value
+OTP length| 6 digits
+Expiry| 5 minutes
+Maximum attempts| 5
+Resend cooldown| 60 seconds
+
+Polisi ini mesti konsisten dengan OTP pendaftaran dari segi keselamatan asas.
+
+Walau bagaimanapun, OTP Password Reset mesti terikat kepada tujuan dan transaksi Password Reset. OTP pendaftaran atau OTP bagi proses lain tidak boleh digunakan untuk reset kata laluan.
+
+Keperluan keselamatan:
+
+- OTP dijana menggunakan sumber rawak yang selamat.
+- OTP disimpan dalam bentuk hash atau perlindungan yang sesuai.
+- OTP hanya sah untuk transaksi Password Reset yang berkaitan.
+- OTP yang telah digunakan tidak boleh digunakan semula.
+- OTP yang tamat tempoh tidak boleh diterima.
+- OTP baharu membatalkan OTP terdahulu bagi transaksi reset yang sama.
+- Percubaan berlebihan mesti disekat.
+- Rate limiting mesti digunakan.
+- OTP tidak boleh direkodkan dalam log plaintext.
+
+6.2.3 Reset Completion
+
+Selepas OTP berjaya disahkan, pengguna dibenarkan menetapkan kata laluan baharu.
+
+Kata laluan baharu mesti mematuhi Password Policy dalam Seksyen 6.
+
+Reset hanya dianggap berjaya selepas sistem mengesahkan dan menyimpan password hash baharu.
+
+6.2.4 Mandatory Security Actions
+
+Selepas Password Reset berjaya, sistem mesti:
+
+1. membatalkan semua sesi aktif pengguna;
+2. membatalkan semua refresh token dan token berkaitan yang masih sah;
+3. memastikan token lama tidak boleh digunakan untuk mendapatkan sesi baharu;
+4. merekodkan audit event Password Reset;
+5. menghantar notifikasi keselamatan kepada e-mel berdaftar pengguna;
+6. tidak memasukkan OTP atau kata laluan dalam audit log atau notifikasi.
+
+Pengguna perlu log masuk semula menggunakan kata laluan baharu.
+
+Kegagalan membatalkan sesi atau token lama tidak boleh dianggap sebagai Password Reset yang lengkap.
+
+6.2.5 Separation from Admin-Assisted Recovery
+
+Password Reset kendiri tidak sama dengan pemulihan akaun berbantukan Admin.
+
+Jika pengguna tidak lagi mempunyai akses kepada e-mel berdaftar dan disahkan, pengguna tidak boleh memintas pengesahan e-mel melalui aliran Password Reset biasa.
+
+Kes tersebut perlu menggunakan proses Admin-Assisted Account Recovery yang berasingan dan tertakluk kepada pengesahan identiti serta kuasa Admin.
+
+6.2.6 Implementation Status
+
+Component| Status
+Password Reset UI| NOT IMPLEMENTED
+Password Reset API| NOT IMPLEMENTED
+Reset OTP issuance| NOT IMPLEMENTED
+Reset OTP verification| NOT IMPLEMENTED
+New password submission| NOT IMPLEMENTED
+Revoke all sessions and tokens| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
+Security audit event| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
+Security notification| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
 
 7. OTP Policy
 
@@ -314,26 +379,41 @@ Maximum lifetime| 12 hours
 Logout| Revoke current session
 Logout all| Revoke other active sessions
 Account DISABLED| Revoke all sessions and related tokens
+Successful Password Reset| Revoke all sessions and related tokens
 
 Pengguna boleh melihat sesi sendiri dan menamatkan sesi yang tidak dikenali melalui fungsi yang disediakan.
 
 Session token perlu dilindungi dan tidak boleh disimpan atau dipaparkan dalam bentuk yang membolehkan penyalahgunaan.
 
-Perubahan kata laluan, DISABLE dan tindakan keselamatan lain mesti membatalkan sesi yang berkaitan.
+Perubahan kata laluan, Password Reset, DISABLE dan tindakan keselamatan lain mesti membatalkan sesi yang berkaitan mengikut polisi.
 
 10. Account Recovery
 
 10.1 Password Recovery
 
-Status: NOT IMPLEMENTED
+Status: REQUIRED — NOT IMPLEMENTED
 
-Password Reset / Forgot Password belum tersedia.
+Password Reset / Forgot Password ialah fungsi wajib V2.
+
+Pelaksanaannya mesti mengikuti Seksyen 6.2, termasuk:
+
+- penggunaan e-mel berdaftar dan disahkan;
+- OTP enam digit;
+- tempoh sah lima minit;
+- maksimum lima percubaan;
+- cooldown resend 60 saat;
+- penetapan kata laluan baharu selepas OTP disahkan;
+- pembatalan semua sesi dan token lama;
+- audit event;
+- notifikasi keselamatan.
+
+Fungsi ini tidak boleh ditandakan sebagai IMPLEMENTED sehingga aliran lengkap tersedia dan diuji.
 
 10.2 Recovery Without Email
 
-Status: PENDING
+Status: PENDING — SEPARATE ADMIN-ASSISTED PROCESS
 
-Jika pengguna kehilangan akses kepada e-mel, proses pemulihan perlu menggunakan pengesahan identiti oleh Admin yang diberi kuasa.
+Jika pengguna kehilangan akses kepada e-mel berdaftar, proses pemulihan perlu menggunakan pengesahan identiti oleh Admin yang diberi kuasa.
 
 Butiran proses masih belum dimuktamadkan.
 
@@ -343,7 +423,11 @@ Prinsip:
 - tindakan direkodkan;
 - Admin tidak boleh melihat kata laluan pengguna;
 - credential baharu ditetapkan melalui proses selamat;
-- sesi dan token lama dibatalkan mengikut polisi.
+- sesi dan token lama dibatalkan mengikut polisi;
+- pemulihan tidak boleh digunakan untuk memintas kawalan role, status akaun atau UAC;
+- pemulihan tidak secara automatik mengaktifkan akaun yang DISABLED atau SUSPENDED.
+
+Proses ini tidak boleh dianggap sebagai Password Reset kendiri.
 
 11. Account Status and Authentication
 
@@ -363,7 +447,7 @@ Prinsip:
 - "SUSPENDED" tertakluk kepada sekatan keselamatan yang ditetapkan.
 - Akaun yang belum diluluskan tidak menerima akses operasi.
 - Perubahan status akaun mesti direkodkan.
-- Pengaktifan semula tidak berlaku secara automatik melalui OTP atau perubahan identiti.
+- Pengaktifan semula tidak berlaku secara automatik melalui OTP, Password Reset atau perubahan identiti.
 
 Perincian pengurusan status akaun dirujuk kepada JMV2001.
 
@@ -387,6 +471,10 @@ Jadual yang dicadangkan dalam dokumen lama tidak boleh dianggap perlu diwujudkan
 
 Sebelum migration baharu, schema sebenar mesti diaudit bagi mengelakkan jadual atau data pendua.
 
+Pelaksanaan Password Reset hendaklah menggunakan struktur OTP, credential, session dan audit yang sesuai jika struktur sedia ada boleh digunakan dengan selamat.
+
+Jangan mewujudkan jadual pendua hanya kerana fungsi Password Reset memerlukan transaksi OTP yang berasingan. Pengasingan tujuan OTP mesti dikuatkuasakan melalui rekod dan validasi transaksi.
+
 13. API Responsibilities
 
 API authentication perlu meliputi fungsi berikut mengikut keperluan dan implementasi:
@@ -400,7 +488,9 @@ API authentication perlu meliputi fungsi berikut mengikut keperluan dan implemen
 - session listing;
 - session revocation;
 - identity change;
-- account recovery;
+- Password Reset request;
+- Password Reset OTP verification;
+- new password submission;
 - Admin-assisted registration;
 - Admin-assisted recovery.
 
@@ -409,6 +499,8 @@ Nama endpoint, kaedah HTTP dan request/response schema hendaklah mengikuti struk
 Endpoint yang dicadangkan dalam dokumen ini bukan bukti bahawa endpoint tersebut telah dilaksanakan.
 
 Semua endpoint terlindung mesti menguatkuasakan authentication dan authorization di backend.
+
+Password Reset endpoints mesti menguatkuasakan tujuan OTP, tempoh sah, had percubaan, cooldown dan kawalan penggunaan semula.
 
 14. Security Requirements
 
@@ -426,8 +518,14 @@ Semua endpoint terlindung mesti menguatkuasakan authentication dan authorization
 12. Semua tindakan sensitif direkodkan.
 13. Data authentication tidak boleh digunakan untuk memintas UAC.
 14. Akses Admin mesti mengikut skop dan kuasa yang dibenarkan.
+15. Password Reset mesti membatalkan semua sesi dan token lama selepas berjaya.
+16. Password Reset mesti menghasilkan audit event dan notifikasi keselamatan.
+17. OTP Password Reset mesti terikat kepada transaksi reset dan tidak boleh digunakan bagi tujuan lain.
+18. Kegagalan proses keselamatan wajib tidak boleh dilaporkan sebagai reset berjaya.
 
 15. Implementation Status
+
+Status berikut ialah baseline dokumentasi dan mesti disahkan melalui pemeriksaan kod serta ujian sebelum dianggap sebagai status teknikal muktamad.
 
 Component| Status
 Registration backend foundation| PARTIALLY IMPLEMENTED
@@ -442,7 +540,11 @@ WhatsApp OTP| NOT IMPLEMENTED / NEEDS VERIFICATION
 National ID verification| NOT IMPLEMENTED / NEEDS VERIFICATION
 Passport login| PENDING
 Admin-assisted registration| PENDING
-Password Reset / Forgot Password| NOT IMPLEMENTED
+Password Reset / Forgot Password| REQUIRED — NOT IMPLEMENTED
+Password Reset OTP flow| NOT IMPLEMENTED
+Password Reset session/token revocation| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
+Password Reset audit event| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
+Password Reset security notification| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
 Recovery without email| PENDING
 Bootstrap Super Admin| NEEDS VERIFICATION
 
@@ -457,6 +559,8 @@ Dokumen ini perlu dibaca bersama:
 - "V2_DESIGN_CHECKPOINT.md"
 - "V2_IMPLEMENTATION_STATUS.md"
 - "DASHBOARD_NAVIGATION_SPEC_V2.md"
+- "MASTER_DECISION_REGISTER.md"
+- "OPEN_DECISIONS_REGISTER.md"
 
 Jika terdapat percanggahan, keputusan terkini yang telah dipersetujui dan UAC bagi authorization menjadi rujukan penyelarasan.
 
@@ -464,15 +568,19 @@ Jika terdapat percanggahan, keputusan terkini yang telah dipersetujui dan UAC ba
 
 - Jangan menganggap semua jenis identiti mempunyai kaedah login yang sama.
 - Jangan menganggap WhatsApp OTP sudah lengkap.
-- Jangan menganggap Password Reset sudah tersedia.
+- Jangan menganggap Password Reset sudah tersedia sebelum pelaksanaan dan pengujian lengkap.
+- Jangan menganggap Password Reset kendiri boleh digunakan apabila pengguna kehilangan akses kepada e-mel berdaftar.
+- Jangan mencampurkan Password Reset dengan Admin-Assisted Account Recovery.
 - Jangan membina semula jadual yang sudah wujud tanpa audit schema.
 - Jangan mengubah polisi registration OTP semata-mata untuk menyokong fungsi lain.
 - Jangan menggunakan OTP registration sebagai pengganti automatik kepada OTP bagi proses lain.
 - Jangan menganggap pengesahan identiti memberikan role atau penyertaan.
-- Jangan menyatakan fungsi sebagai "IMPLEMENTED" tanpa bukti kod dan ujian.
+- Jangan menyatakan fungsi sebagai IMPLEMENTED tanpa bukti kod dan ujian.
+- Jangan menandakan Password Reset berjaya jika pembatalan sesi/token, audit atau notifikasi keselamatan yang diwajibkan gagal.
 
 ---
 
 Document Status: WORKING BASELINE
+Version: 1.1
 Last Updated: 27 November 2026
-Next Review: Authentication and registration implementation verification.
+Next Review: Authentication and registration implementation verification, including the complete Password Reset flow.
