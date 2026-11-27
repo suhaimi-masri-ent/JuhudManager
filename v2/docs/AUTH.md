@@ -5,7 +5,7 @@
 **Version:** 1.2 — Consolidated Working Baseline  
 **Status:** WORKING BASELINE  
 **Last Updated:** 28 November 2026  
-**Repository Path:** `v2/docs/Auth.md`
+**Repository Path:** `v2/docs/AUTH.md`
 
 ---
 
