@@ -3,11 +3,12 @@ name: JuhudManager V2 - Build & Test
 on:
   push:
     branches:
-      - integration/v1-v2-separation-develop
+      - main
+      - v2
   pull_request:
     branches:
-      - develop
       - main
+      - v2
   workflow_dispatch:
 
 permissions:
