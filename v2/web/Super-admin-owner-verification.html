@@ -1,0 +1,166 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#174b38">
+
+  <title>Super Admin Owner Verification · JuhudManager</title>
+
+  <link rel="stylesheet" href="./assets/css/app.css">
+  <script type="module" src="./assets/js/super-admin-owner-verification.js"></script>
+</head>
+
+<body>
+  <div class="page">
+
+    <aside class="hero">
+      <div class="brand">
+        <div class="brand-icon">✦</div>
+        <span>JuhudManager</span>
+      </div>
+
+      <div class="hero-content">
+        <h1>Owner<br>Verification</h1>
+        <p>
+          Secure verification for the designated initial
+          Super Admin owner.
+        </p>
+      </div>
+
+      <div class="hero-footer">
+        JuhudManager V2 · Secure Access
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="auth-card">
+
+        <div class="mobile-brand">
+          <div class="brand-icon">✦</div>
+          <span>JuhudManager</span>
+        </div>
+
+        <h2>Super Admin Owner</h2>
+
+        <p class="subtitle">
+          Verify the designated owner's email address
+          using a six-digit verification code.
+        </p>
+
+        <div
+          id="notice"
+          class="notice"
+          role="status"
+          aria-live="polite">
+        </div>
+
+        <!-- STEP 1: REQUEST OTP -->
+        <section id="requestView">
+
+          <h2>Request verification code</h2>
+
+          <p class="subtitle">
+            A verification code will be sent to the
+            designated owner's registered email address.
+          </p>
+
+          <button
+            class="primary"
+            id="requestButton"
+            type="button">
+            Send verification code
+          </button>
+
+        </section>
+
+        <!-- STEP 2: VERIFY OTP -->
+        <section id="otpView" class="hidden">
+
+          <h2>Verify email address</h2>
+
+          <p class="subtitle">
+            Enter the six-digit code sent to the
+            designated email address.
+          </p>
+
+          <form id="otpForm">
+
+            <div class="field">
+              <label for="otpCode">
+                Verification code
+              </label>
+
+              <input
+                id="otpCode"
+                type="text"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                required
+                placeholder="000000">
+            </div>
+
+            <button
+              class="primary"
+              id="verifyButton"
+              type="submit">
+              Verify email
+            </button>
+
+          </form>
+
+          <button
+            class="primary secondary"
+            id="resendButton"
+            type="button"
+            disabled>
+            Request a new code (60s)
+          </button>
+
+          <p class="small-note">
+            The code expires after five minutes.
+            Maximum five verification attempts are allowed.
+          </p>
+
+        </section>
+
+        <!-- STEP 3: COMPLETED -->
+        <section id="completeView" class="hidden">
+
+          <h2>Email verified</h2>
+
+          <p class="subtitle">
+            The designated owner's email address
+            has been successfully verified.
+          </p>
+
+          <p class="small-note">
+            This completes email verification only.
+          </p>
+
+          <p class="small-note">
+            The account has not been activated.
+            No password has been created and no
+            Super Admin role has been assigned.
+          </p>
+
+          <p class="small-note">
+            The protected Super Admin bootstrap process
+            must be completed separately.
+          </p>
+
+        </section>
+
+        <div class="footer-note">
+          JuhudManager V2 · Secure Access
+        </div>
+
+      </div>
+    </main>
+
+  </div>
+</body>
+</html>
