@@ -118,6 +118,7 @@ Implementation status must be supported by source code, test or deployment evide
   - Maximum five attempts.
   - 60-second resend cooldown.
 - Successful verification permits the user to set a new password.
+- The OTP must be bound to the specific Password Reset transaction. OTP issued for registration or another purpose must not be accepted.  
 - Successful reset must revoke all existing sessions and relevant tokens.
 - Revoked sessions and tokens must not be reusable.
 - A security audit event must be recorded.
