@@ -83,7 +83,7 @@ Status tidak boleh dinaik taraf berdasarkan kewujudan jadual database, UI atau A
 
 Kerja pemisahan V1 dan V2 telah disediakan pada branch:
 
-`integration/v1-v2-separation-develop`
+`main`
 
 Struktur repository yang disediakan:
 
@@ -168,7 +168,7 @@ V2 tidak boleh menggunakan database production V1.
 
 Branch integrasi semasa:
 
-`integration/v1-v2-separation-develop`
+`main`
 
 Sebelum merge, semak:
 
