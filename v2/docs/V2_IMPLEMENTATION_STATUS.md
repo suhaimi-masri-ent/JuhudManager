@@ -562,7 +562,8 @@ Keperluan:
 - Global Baseline Syukbah;
 - konfigurasi Syukbah negara;
 - Admin Syukbah;
-- Deputy dan acting delegation;
+- Deputy appointment dan assigned duties dalam skop yang dibenarkan;
+- acting delegation hanya selepas ODR-011 dimuktamadkan dan diluluskan;
 - moderator management;
 - discussion permissions;
 - soft deletion dan audit;
@@ -1228,7 +1229,7 @@ Pembangunan mesti mengikuti prinsip berikut:
 1. Complete UAC enforcement.
 2. Implement country scope.
 3. Implement organization hierarchy.
-4. Implement Chief Admin and Deputy structure.
+4. Implement Chief Admin and Deputy structure within confirmed requirements. Unresolved appointment, succession and acting authority rules under ODR-009 must not be assumed or implemented.
 5. Implement cross-organization support.
 6. Resolve pending governance decisions.
 7. Implement Admin Markaz scope.
@@ -1254,7 +1255,7 @@ Pembangunan mesti mengikuti prinsip berikut:
 1. Implement Global Baseline Syukbah.
 2. Implement country Syukbah activation.
 3. Implement Admin Syukbah.
-4. Implement Deputy and acting assignment.
+4. Implement Deputy appointment and explicitly assigned duties only. Acting authority must remain disabled until ODR-011 is finalized and approved.
 5. Implement moderator management.
 6. Implement discussion permissions.
 7. Implement soft deletion and audit.
