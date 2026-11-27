@@ -257,6 +257,496 @@ The system may automatically complete a Takaza at its end date only when the req
 The exact exceptional process for changing a Takaza after completion remains subject to the Open Decisions Register.
 
 
+## 6. Takaza Participation Management
+
+### 6.1 Separate Jemaah Membership and Takaza Participation
+
+Jemaah membership and Takaza participation are separate concepts.
+
+An Ahbab may be a Jemaah member without participating in every Takaza.
+
+An Ahbab may participate in multiple Takaza, subject to the applicable participation requirements.
+
+The system must maintain an individual participation record for each Ahbab and each relevant Takaza.
+
+The V1 concept of Project Member maps to Takaza Participation where relevant.
+
+V2 must not introduce a separate Project Member entity that duplicates Takaza Participation.
+
+### 6.2 Participation Methods
+
+The system must support configurable participation methods.
+
+The methods include:
+
+- `AUTOMATIC_INCLUSION`
+- `VOLUNTARY_APPLICATION`
+- `ADMIN_NOMINATION`
+- `DIRECT_ASSIGNMENT`
+
+A Takaza may use one or more methods.
+
+The methods may be combined according to the Takaza's operational requirements.
+
+Admin may configure applicable conditions for each method.
+
+The detailed consent and TAFAKUT requirements for `DIRECT_ASSIGNMENT` remain unresolved and must not be assumed to bypass normal safeguards.
+
+### 6.3 Participation Confirmation
+
+Participation must follow the applicable confirmation and approval process.
+
+For `AUTOMATIC_INCLUSION`, the system creates a candidate participation record with status `PENDING_ADMIN_CONFIRMATION`.
+
+The candidate does not become a confirmed participant until Admin confirms the participation.
+
+This rule also applies when existing Jemaah members are considered for automatic inclusion during Main Takaza formation.
+
+When an Ahbab joins a Jemaah after a Takaza has become ACTIVE, the system may create a candidate participation record for Admin confirmation.
+
+Automatic candidate creation must not be treated as automatic participant activation.
+
+### 6.4 Voluntary Application and Admin Nomination
+
+For `VOLUNTARY_APPLICATION` and `ADMIN_NOMINATION`, the system must record the relevant application or nomination.
+
+For Sub Takaza, Ahbab consent is required.
+
+TAFAKUT must be applied where required by the relevant eligibility criteria.
+
+Passing TAFAKUT does not automatically approve participation.
+
+The authorised Admin remains responsible for the final participation decision.
+
+### 6.5 Participation History
+
+Every participation record must retain its own history.
+
+The system must distinguish between:
+
+- Pending confirmation.
+- Confirmed participation.
+- Active participation.
+- Withdrawal.
+- Removal.
+- Rejoining through a new participation process.
+
+A new participation record must not silently reactivate or overwrite a previous withdrawn or removed record.
+
+### 6.6 Configuration Changes
+
+Changes to participation configuration after a Takaza reaches `RELEASED` or `ACTIVE` apply only to:
+
+- New participation candidates.
+- Applications that have not yet been decided.
+
+Changes must not retroactively rewrite the participation method or approval requirements of existing confirmed participants.
+
+Historical configuration must remain traceable.
+
+### 6.7 Capacity Management
+
+Admin may change the participation capacity at any time.
+
+If the capacity is reduced below the number of existing participants:
+
+- Existing participants remain participants.
+- The system must not automatically remove participants.
+- The system displays an over-capacity warning.
+- The new capacity applies to future participation decisions.
+
+A waiting-list feature is not part of the currently agreed requirement.
+
+### 6.8 Withdrawal
+
+An Ahbab may request withdrawal from a Takaza.
+
+The withdrawal request is not automatically final.
+
+The participation status changes to `WITHDRAWN` only after Admin confirms the withdrawal.
+
+The system must record:
+
+- Withdrawal request date and time.
+- Confirmation date and time.
+- Confirming Admin.
+- Reason or remarks, where applicable.
+- Previous participation status.
+- Related Takaza.
+
+Withdrawal must preserve the original participation history.
+
+### 6.9 Removal
+
+An authorised managing Admin may remove an Ahbab from a Takaza.
+
+Removal requires justification from at least one other Admin.
+
+The second Admin's justification is supporting input, not a veto.
+
+The managing Admin retains the final decision.
+
+The system must retain the decision history and notify the Ahbab with the reason.
+
+`REMOVED` and `WITHDRAWN` are different outcomes and must not be combined.
+
+### 6.10 Appeal
+
+An Ahbab may appeal a removal decision.
+
+The appeal is handled by an Admin with a higher or wider scope than the original managing Admin, according to the applicable governance rules.
+
+An appeal does not automatically change the participation status.
+
+If the appeal is successful, the authorised decision may overturn the removal and restore the Ahbab without requiring a new participation process.
+
+The original removal record must remain in history.
+
+If the appeal is rejected, the Ahbab may apply again through the normal participation process, including TAFAKUT where required.
+
+### 6.11 Rejoining
+
+Rejoining after `WITHDRAWN` or `REMOVED` requires a new linked participation record.
+
+The previous participation record must remain unchanged.
+
+The new participation record must retain a reference to the relevant previous record where applicable.
+
+The exact reactivation and rejoining edge cases remain subject to the Open Decisions Register.
+
+### 6.12 Transfer Between Takaza
+
+A transfer between Takaza requires:
+
+1. Consent from the relevant parties.
+2. TAFAKUT for the receiving Takaza.
+3. An Admin decision.
+4. A new participation record for the receiving Takaza.
+5. Preservation of the original participation record.
+
+A transfer must not rewrite the historical participation record of the original Takaza.
+
+---
+
+## 7. Kawaif Management
+
+### 7.1 Purpose
+
+Kawaif is a separate Ahbab profile record for qualifications, experience and relevant capabilities.
+
+Kawaif must not be treated as the same process as TAFAKUT.
+
+Kawaif provides reference information that may support operational decisions and assessment.
+
+### 7.2 Ahbab Submission
+
+Ahbab may submit and edit Kawaif information.
+
+New or amended information remains pending until verified by an authorised Admin.
+
+The system must preserve the submitted information and its verification history.
+
+### 7.3 Admin Maintenance
+
+Admin may add or update Kawaif information when information is missing, incomplete or outdated.
+
+Admin does not need to wait for Ahbab to submit an update.
+
+Every Admin-entered or amended record must include its source or basis.
+
+The system must preserve:
+
+- Previous information.
+- New information.
+- Source or basis.
+- Actor responsible.
+- Date and time.
+- Verification status.
+- Verifying Admin.
+
+### 7.4 Governance and Scope
+
+Higher or wider-scope Admin controls:
+
+- Kawaif categories.
+- Qualification criteria.
+- Eligibility requirements.
+- Scoring or evaluation configuration, where applicable.
+- Scope of applicable Kawaif information.
+
+The detailed category and criteria structure must follow the relevant approved specification.
+
+### 7.5 Relationship With TAFAKUT
+
+Kawaif information may be used as reference during TAFAKUT.
+
+Kawaif is not itself a TAFAKUT decision.
+
+A Kawaif record must not automatically cause an Ahbab to pass or fail TAFAKUT unless the applicable approved criteria explicitly require that information.
+
+---
+
+## 8. TAFAKUT Management
+
+### 8.1 Purpose
+
+TAFAKUT is the formal assessment process used to evaluate an Ahbab against the applicable requirements.
+
+TAFAKUT is separate from:
+
+- Kawaif profile information.
+- Takaza participation.
+- Admin nomination.
+- Amer appointment.
+- System-generated activity or progress reports.
+
+A TAFAKUT result supports an authorised decision but does not automatically activate participation or appointment.
+
+### 8.2 Independent Assessors
+
+Each TAFAKUT round requires exactly two independent Admin assessors.
+
+The two assessors must complete their assessments independently.
+
+Assessors must not see each other's submitted assessment before both have submitted.
+
+Completed assessment submissions are immutable.
+
+A reassessment must create a new assessment record rather than modifying a completed submission.
+
+### 8.3 Decision Rules
+
+The decision rules are:
+
+| Assessor 1 | Assessor 2 | Result |
+|---|---|---|
+| PASS | PASS | PASS |
+| FAIL | FAIL | FAIL |
+| PASS | FAIL | Requires another round |
+| FAIL | PASS | Requires another round |
+
+When the two assessors disagree, a third Admin round is required.
+
+Each additional round uses two new assessors who have not previously assessed that case.
+
+The process may continue through multiple rounds until a decision is reached under the applicable rules.
+
+### 8.4 Assessor Appointment and Replacement
+
+The higher or wider-scope Admin appoints the assessors.
+
+If an assessor becomes unable to continue, the assessor may be replaced without restarting the entire process.
+
+Completed assessment work must remain preserved.
+
+A replacement assessor must not overwrite the previous assessor's completed work.
+
+### 8.5 TAFAKUT Forms
+
+TAFAKUT forms may vary according to:
+
+- TAFAKUT Type.
+- Assessment Round.
+- Applicable criteria.
+- Required information.
+- Relevant operational scope.
+
+Higher or wider-scope Admin controls:
+
+- TAFAKUT types.
+- Form templates.
+- Criteria.
+- Questions.
+- Question ordering.
+- Input types.
+- Additional questions.
+- Form configuration.
+
+Takaza Admin selects the applicable type and round but cannot independently edit the approved form template.
+
+Every template change creates a new version.
+
+Previous versions must remain available and linked to the relevant historical assessment.
+
+### 8.6 Data Sources
+
+TAFAKUT information may come from:
+
+1. Automatically populated profile, activity or system information.
+2. Information entered by Ahbab.
+3. Assessor input.
+
+The system must identify the source of each relevant information item.
+
+Ahbab may review automatically populated information and request correction.
+
+Ahbab must not directly overwrite source information.
+
+An authorised Admin verifies corrections and updates the relevant source record.
+
+The person verifying a source correction does not have to be one of the TAFAKUT assessors.
+
+### 8.7 Ahbab Form Workflow
+
+Ahbab may:
+
+- Save a form as `DRAFT`.
+- Resume a draft.
+- Edit the draft before submission.
+- Review the completed form before submission.
+
+After submission, the form is locked.
+
+Corrections must follow the Admin-controlled correction process.
+
+For now, an opened but unsubmitted form cannot be cancelled directly by the assessor.
+
+Admin may return a form to `DRAFT` with a recorded reason.
+
+### 8.8 Assessor Submission
+
+Assessors normally submit their assessments directly.
+
+A completed assessment must remain immutable.
+
+If an assessor has not completed the assessment, Admin may manage the case through the approved workflow.
+
+A reassessment must be represented by a new assessment record.
+
+### 8.9 Ahbab Access to Results
+
+Ahbab may view the relevant comments and final decision after the TAFAKUT process is completed.
+
+The current agreed design does not provide a reply or feedback workflow for these comments.
+
+### 8.10 Notifications
+
+The system must notify:
+
+- Ahbab when a TAFAKUT form is opened.
+- Ahbab when the final decision is made.
+- Assessors when assigned to an assessment.
+
+Notifications must use the user's language preference.
+
+Automatic reminders and mandatory assessment deadlines are not part of the currently agreed requirement.
+
+### 8.11 SUSPEND and ON_HOLD
+
+`SUSPEND` and `ON_HOLD` must remain separate from account status.
+
+- `SUSPEND` affects eligibility for participation.
+- `ON_HOLD` pauses a process or decision.
+
+Neither status automatically disables login or changes the Ahbab profile or account status.
+
+### 8.12 Failure and Future Attempts
+
+A `FAIL` result is not a permanent ban.
+
+There is no agreed waiting period or maximum number of attempts.
+
+A future TAFAKUT must follow the applicable assessment workflow and preserve previous results.
+
+---
+
+## 9. Amer and Supervisor Appointments
+
+### 9.1 Amer Appointment
+
+Each Main and Sub Takaza has its own Amer.
+
+An Amer must already be a confirmed participant in the same Takaza before the appointment becomes effective.
+
+If the selected person is not yet a confirmed participant, the normal participation process must be completed first.
+
+The appointment may be made before the official Takaza start date.
+
+The appointment does not need to wait until the Takaza becomes `ACTIVE`.
+
+### 9.2 Appointment Consent
+
+Both the authorised Admin and the selected candidate must consent to the appointment.
+
+The system must record the appointment decision and relevant confirmation.
+
+### 9.3 TAFAKUT for Amer
+
+A separate TAFAKUT is not required if the candidate already has a valid prior TAFAKUT result.
+
+Suitability may be included in a subsequent TAFAKUT round where appropriate.
+
+This rule does not remove any other applicable eligibility requirement.
+
+### 9.4 Appointment Duration
+
+Amer appointment records must include:
+
+- Appointed person.
+- Takaza reference.
+- Appointment start date.
+- Appointment end date.
+- Appointing Admin.
+- Candidate consent.
+- Appointment status.
+- Relevant remarks and history.
+
+The appointment normally aligns with the Takaza duration.
+
+Admin may shorten, extend or end the appointment early.
+
+Every change must be audited.
+
+Changing an Amer appointment must not automatically change the Takaza's own dates or lifecycle status.
+
+### 9.5 Appointment Expiry
+
+If an Amer appointment expires while the Takaza remains `ACTIVE`:
+
+- The appointment ends.
+- The system notifies the relevant Admin.
+- The Takaza remains `ACTIVE`.
+- The system must not automatically cancel or complete the Takaza.
+
+Admin must manage the subsequent appointment.
+
+### 9.6 Amer Replacement
+
+Admin may replace an Amer at any time before the appointment expires.
+
+Replacement requires:
+
+- A recorded reason.
+- Justification from at least one other Admin.
+
+The second Admin's justification is supporting input, not a veto.
+
+The managing Admin retains the final decision.
+
+Previous appointments must remain in history.
+
+### 9.7 Supervisor Appointment
+
+A Supervisor may be appointed provisionally by Admin.
+
+The appointment requires consent from the Admin and selected person.
+
+The temporary duration follows the Amer appointment principles unless a more specific approved rule is introduced.
+
+Admin may shorten, extend or end the appointment early.
+
+Every change must be audited.
+
+Supervisor appointment must not change the Takaza's dates or lifecycle status.
+
+The Supervisor's exact authority, scope and whether the Supervisor must already be a participant remain unresolved.
+
+No additional authority must be inferred from the appointment alone.
+
+Existing TAFAKUT information may be considered. A separate TAFAKUT is not required under the current provisional direction.
+
+
+
 
 # JuhudManager – System Realignment Design
 
