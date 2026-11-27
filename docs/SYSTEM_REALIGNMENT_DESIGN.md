@@ -53,7 +53,7 @@ Relevant documents:
 - `v2/docs/MASTER_DECISION_REGISTER.md`
 - `v2/docs/MODULE_REQUIREMENTS.md`
 - `v2/docs/OPEN_DECISIONS_REGISTER.md`
-- `v2/docs/Auth.md`
+- `v2/docs/AUTH.md`
 - `v2/docs/UAC_MATRIX.md`
 - `v2/docs/DASHBOARD_NAVIGATION_SPEC_V2.md`
 - `v2/docs/JMV2001-Ahbab-Profile-Account-Management.md`
@@ -940,7 +940,7 @@ Relevant entities include:
 - Access Scope.
 - Audit Event.
 
-Authentication and account lifecycle rules are governed by `v2/docs/Auth.md`.
+Authentication and account lifecycle rules are governed by `v2/docs/AUTH.md`.
 
 ### 16.2 Ahbab and Profile
 
