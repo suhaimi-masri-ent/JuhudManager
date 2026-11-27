@@ -384,6 +384,7 @@ Keperluan yang telah dipersetujui:
 - maksimum lima percubaan;
 - resend cooldown 60 saat;
 - OTP sekali guna dan terasing mengikut tujuan;
+- OTP mesti terikat kepada transaksi Password Reset yang khusus; OTP pendaftaran atau tujuan lain tidak boleh diterima untuk Password Reset;
 - kata laluan baharu minimum 12 aksara;
 - membatalkan semua sesi dan token berkaitan selepas reset berjaya;
 - merekodkan audit event;
