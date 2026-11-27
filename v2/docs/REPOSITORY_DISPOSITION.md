@@ -1,38 +1,33 @@
 JuhudManager V2 — Repository Documentation Disposition
 
 Document ID: JMV2-DOC-INV-001
-Version: 1.0
-Date: 27 November 2026
-Status: Repository Documentation Working Baseline
+Version: 1.1
+Date: 28 November 2026
+Status: Current Documentation Baseline
+Repository: "suhaimi-masri-ent/JuhudManager"
+Branch Context: "integration/v1-v2-separation-develop"
 
 ---
 
 1. Purpose
 
-This document defines how JuhudManager V2 documentation should be organized, maintained and reconciled within the repository.
+This document defines how JuhudManager V2 documentation is organized, maintained and reconciled within the repository.
 
 It identifies:
 
-- New documentation to add.
+- Authoritative documentation.
 - Existing documents to retain.
-- Existing documents requiring updates.
-- Historical documents to preserve.
-- Duplicate packages requiring later review.
+- Documents requiring reconciliation.
+- Superseded documents.
+- Historical documents and archives.
+- Duplicate documentation packages.
 - Safe documentation maintenance procedures.
 
 This document does not authorize deletion, migration, deployment or production changes.
 
 2. Repository Context
 
-Repository:
-
-"suhaimi-masri-ent/JuhudManager"
-
-Development branch context:
-
-"integration/v1-v2-separation-develop"
-
-Application structure:
+The repository maintains two separate application versions.
 
 Path| Purpose
 "v1/"| Legacy V1 application
@@ -41,6 +36,10 @@ Path| Purpose
 "v2/web/"| V2 frontend
 "v2/migrations/"| V2 database migrations
 "v2/docs/"| V2 documentation
+"docs/"| Shared project-level documentation
+".github/workflows/"| Build, test and deployment workflows
+
+V1 and V2 must remain technically and operationally separate.
 
 3. Documentation Organization Principle
 
@@ -48,48 +47,99 @@ The V2 documentation convention is a flat directory:
 
 "v2/docs/"
 
-Do not create additional documentation subdirectories for the new baseline documents.
+Do not create additional documentation subdirectories for the current authoritative baseline documents.
 
-Existing "archive/" and "packages/" directories must remain intact.
+Existing directories must be preserved:
 
-Documentation must be easy to locate and must not be duplicated unnecessarily.
+- "v2/docs/archive/"
+- "v2/docs/packages/"
 
-4. New Documents to Add
+Documentation must have clearly defined authority. Multiple documents must not independently claim to be the source of truth for the same subject.
 
-The following documents are part of the consolidated documentation set.
+3.1 Documentation authority hierarchy
 
-File| Purpose
-"MASTER_DECISION_REGISTER.md"| Central register of approved and provisional decisions
-"OPEN_DECISIONS_REGISTER.md"| Unresolved decisions and required outcomes
-"MODULE_REQUIREMENTS.md"| Consolidated functional requirements
-"IMPLEMENTATION_STATUS_AND_ROADMAP.md"| Implementation tracking and development roadmap
-"REPOSITORY_DISPOSITION.md"| Documentation inventory and maintenance rules
+Subject| Authoritative document
+Approved design decisions| "MASTER_DECISION_REGISTER.md"
+Unresolved decisions| "OPEN_DECISIONS_REGISTER.md"
+Consolidated functional requirements| "MODULE_REQUIREMENTS.md"
+Authentication| "Auth.md"
+Authorization| "UAC_MATRIX.md"
+Dashboard and navigation| "DASHBOARD_NAVIGATION_SPEC_V2.md"
+Ahbab profile and account| "JMV2001-Ahbab-Profile-Account-Management.md"
+Organization governance| "JMV2002-Organization-Structure-Governance.md"
+Syukbah| "JMV2003-Syukbah-Management.md"
+Takaza| "JMV2004-Takaza-Management.md"
+Design checkpoint| "V2_DESIGN_CHECKPOINT.md"
+Implementation status and roadmap| "V2_IMPLEMENTATION_STATUS.md"
+Repository documentation organization| "REPOSITORY_DISPOSITION.md"
 
-These files should be added to "v2/docs/".
+The implementation status document does not override approved design decisions or functional requirements.
 
-5. Existing V2 Documents to Retain
+4. Consolidated Documentation Set
 
-The following existing documents must be preserved.
+The following documents form the current V2 documentation baseline.
 
-Existing file| Required treatment
+File| Required treatment
+"MASTER_DECISION_REGISTER.md"| Retain as authoritative approved-decision register
+"OPEN_DECISIONS_REGISTER.md"| Retain as authoritative unresolved-decision register
+"MODULE_REQUIREMENTS.md"| Retain as consolidated requirements
+"REPOSITORY_DISPOSITION.md"| Maintain repository documentation rules
 "Auth.md"| Retain and reconcile with current authentication requirements
-"JMV2001-Ahbab-Profile-Account-Management.md"| Retain and reconcile with current profile and account decisions
-"JMV2002-Organization-Structure-Governance.md"| Retain and reconcile with current governance decisions
-"JMV2003-Syukbah-Management.md"| Retain and reconcile with current Syukbah decisions
-"JMV2004-Takaza-Management.md"| Retain and reconcile with current Takaza decisions
-"UAC_MATRIX.md"| Retain and reconcile with the latest permission baseline
-"DASHBOARD_NAVIGATION_SPEC_V2.md"| Retain and reconcile with UAC and module behavior
-"V2_DESIGN_CHECKPOINT.md"| Update with current repository and design status
-"V2_IMPLEMENTATION_STATUS.md"| Reconcile with the consolidated implementation status
-"JMV2-AUDIT-HANDOVER-2026-11-24.md"| Preserve as historical handover
+"UAC_MATRIX.md"| Retain as authorization baseline
+"DASHBOARD_NAVIGATION_SPEC_V2.md"| Retain and reconcile with UAC and module behaviour
+"JMV2001-Ahbab-Profile-Account-Management.md"| Retain as profile and account specification
+"JMV2002-Organization-Structure-Governance.md"| Retain as organization specification
+"JMV2003-Syukbah-Management.md"| Retain as Syukbah specification
+"JMV2004-Takaza-Management.md"| Retain as Takaza specification
+"V2_DESIGN_CHECKPOINT.md"| Maintain as design and project checkpoint
+"V2_IMPLEMENTATION_STATUS.md"| Maintain as the single implementation status and roadmap source
 
-Do not blindly overwrite the existing module specifications.
+These documents must remain consistent with each other.
 
-Preserve useful details, document IDs and history while reconciling conflicts.
+Do not blindly overwrite module specifications. Preserve useful details, document IDs, decisions and historical context.
+
+5. Superseded Documentation
+
+5.1 Singular Open Decision Register
+
+File:
+
+"v2/docs/OPEN_DECISION_REGISTER.md"
+
+Treatment:
+
+- Superseded by "OPEN_DECISIONS_REGISTER.md".
+- Not an authoritative source for current unresolved decisions.
+- Preserve temporarily for historical comparison.
+- Review before any archival or removal.
+- Do not delete without explicit approval.
+
+5.2 Previous Implementation Status and Roadmap
+
+File:
+
+"v2/docs/IMPLEMENTATION_STATUS_AND_ROADMAP.md"
+
+Treatment:
+
+- Its functional purpose has been consolidated into "V2_IMPLEMENTATION_STATUS.md".
+- It is no longer the authoritative implementation status or roadmap.
+- Preserve temporarily for historical comparison.
+- Do not independently update its implementation status.
+- Review before archival or removal.
+- Do not delete without explicit approval.
+
+5.3 Current source of truth
+
+The sole authoritative implementation status and roadmap document is:
+
+"v2/docs/V2_IMPLEMENTATION_STATUS.md"
+
+All implementation progress, blockers, verification evidence, development phases and release gates must be maintained there.
 
 6. Existing Root-Level Documentation
 
-The root "docs/" directory contains project-level documentation.
+The root "docs/" directory contains project-level documentation shared across V1 and V2.
 
 6.1 Master Development Roadmap
 
@@ -100,12 +150,11 @@ File:
 Treatment:
 
 - Retain as the master development roadmap covering V1 and V2.
-- Reconcile its V2 section with the current V2 decisions.
+- Reconcile its V2 section with current V2 decisions.
 - Keep V1-specific requirements within their historical or V1 scope.
 - Correct references that incorrectly describe V2 Project Member as a separate entity.
-- Reflect the current migration and implementation evidence carefully.
-
-Do not replace the project-level roadmap with a V2-only document.
+- Reflect current migration and implementation evidence carefully.
+- Do not replace this project-level roadmap with a V2-only document.
 
 6.2 Pre-Master Roadmap
 
@@ -131,10 +180,9 @@ Treatment:
 - Treat as a project-level design reference.
 - Preserve historical design context.
 - Reconcile conflicting concepts against the latest approved V2 decisions.
-- Correct the Percha spelling where required.
+- Correct Percha spelling where required.
 - Make clear that design documentation does not authorize database migrations or production changes.
-
-This file must not be moved or duplicated automatically into "v2/docs/".
+- Do not move or duplicate it automatically into "v2/docs/".
 
 6.4 D1 Read-Only Console Guide
 
@@ -145,18 +193,27 @@ File:
 Treatment:
 
 - Retain.
-- Keep its operational guidance separate from functional requirements.
+- Keep operational guidance separate from functional requirements.
 - Ensure read-only database guidance remains clear.
 
 6.5 Root and Application READMEs
 
-Preserve:
+Preserve all three:
 
 - "README.md"
 - "v1/README.md"
 - "v2/README.md"
 
-Reconcile links and descriptions where necessary.
+Their responsibilities are different:
+
+File| Responsibility
+Root "README.md"| Repository structure, V1/V2 separation and shared workflows
+"v1/README.md"| V1 application documentation
+"v2/README.md"| V2 architecture, infrastructure, development and documentation references
+
+The root README and V2 README have been reconciled with the current repository documentation structure on the integration branch.
+
+Future updates must preserve their separate purposes.
 
 Do not describe unimplemented V2 features as available.
 
@@ -172,10 +229,9 @@ Treatment:
 
 - Preserve as a historical snapshot.
 - Retain its original date and findings.
-- Do not use it as the current migration status without reconciliation.
-- Add a later status reference where appropriate.
-
-The document predates the reported remote application of migration 0021.
+- Do not treat it as the current implementation status.
+- Use it for historical comparison only.
+- The document predates the reported remote application of migration 0021.
 
 7.2 Existing Archive Directory
 
@@ -183,7 +239,7 @@ Path:
 
 "v2/docs/archive/"
 
-Existing historical packages:
+Known historical documents:
 
 - "V2_IMPLEMENTATION_STATUS_PACKAGE_2026-11-19.md"
 - "V2_IMPLEMENTATION_STATUS_PACKAGE_ROOT_2026-11-19.md"
@@ -193,6 +249,7 @@ Treatment:
 - Preserve.
 - Do not delete or overwrite.
 - Use for historical comparison only.
+- Do not treat archived status as current implementation evidence.
 
 7.3 Existing Packages Directory
 
@@ -200,7 +257,7 @@ Path:
 
 "v2/docs/packages/"
 
-Existing packages:
+Known packages:
 
 - "JuhudManager_V2_Auth_Package.zip"
 - "JuhudManager_V2_Foundation_Package.zip"
@@ -214,7 +271,7 @@ Treatment:
 
 8. Duplicate Root-Level ZIP Packages
 
-The repository also contains root-level copies of:
+The repository also contains:
 
 - "docs/JuhudManager_V2_Auth_Package.zip"
 - "docs/JuhudManager_V2_Foundation_Package.zip"
@@ -223,29 +280,67 @@ The recorded file hashes indicate that these match their respective copies under
 
 Recommended future treatment:
 
-- Keep the canonical V2 package copies under "v2/docs/packages/".
+- Keep "v2/docs/packages/" as the canonical location for V2-specific historical packages.
 - Consider removing root-level duplicates only after explicit approval.
-- Do not delete either copy as part of this documentation update without confirmation.
+- Do not delete either copy as part of routine documentation maintenance.
+- Verify file hashes again before any future removal.
 
-9. V2 README Reconciliation
+No duplicate package is authorized for deletion by this document.
+
+9. README Reconciliation
+
+9.1 Root README
+
+File:
+
+"README.md"
+
+Current treatment:
+
+- Describes the V1/V2 repository separation.
+- Identifies the major application directories.
+- Lists the principal V2 documentation.
+- Identifies the authoritative decision and implementation status documents.
+- Describes the separate deployment workflows.
+- Documents the Pages paths and migration safeguards.
+
+Future changes must keep the repository description consistent with actual workflow files and directory structure.
+
+9.2 V2 README
 
 File:
 
 "v2/README.md"
 
-Required updates:
+Current treatment:
 
-1. Confirm the migration list includes migrations 0001 through 0021 where applicable.
-2. Verify migration files against the actual repository.
-3. Record migration 0021 remote application as reported until independently checked.
-4. Do not claim Password Reset is available.
-5. State that Password Reset is required but not yet implemented.
-6. Keep WhatsApp OTP marked as not implemented.
-7. Keep two-factor authentication marked as not implemented.
-8. Keep Passport login pending.
-9. Describe Amer appointment foundation separately from the complete Amer workflow.
-10. Identify the bootstrap SUPER_ADMIN issue as a blocker requiring verification.
-11. Preserve the V1/V2 deployment separation.
+- Describes the V2 architecture and infrastructure.
+- Identifies the V2 Worker and D1 database.
+- References migrations 0001 through 0021.
+- Distinguishes historical migration and health-check reports from fresh verification.
+- Identifies Password Reset as required but not implemented.
+- Identifies the bootstrap SUPER_ADMIN issue as requiring verification.
+- Documents authorization and module boundaries.
+- Describes separate V1/V2 deployment.
+- Identifies the authoritative V2 documentation.
+
+Future updates must preserve these distinctions.
+
+The V2 README is an orientation document. It does not replace the detailed specifications or implementation status document.
+
+9.3 README maintenance rule
+
+Any change affecting:
+
+- repository structure;
+- Worker configuration;
+- database configuration;
+- migration range;
+- deployment workflow;
+- documentation authority;
+- feature availability;
+
+must be checked against the relevant repository files before updating a README.
 
 10. Authentication Documentation Reconciliation
 
@@ -253,18 +348,19 @@ File:
 
 "v2/docs/Auth.md"
 
-Required updates:
+Required baseline:
 
 - Keep authentication separate from authorization.
 - Preserve identity and account-status distinctions.
 - Document the existing OTP policy.
 - Document session timeout requirements.
-- Add Password Reset as a required but unimplemented feature.
+- Include Password Reset as required but not implemented.
 - Include session and token revocation after successful Password Reset.
 - Include audit and security notification.
-- Keep Admin-assisted recovery separate from Password Reset.
+- Keep Admin-Assisted Account Recovery separate from Password Reset.
 - Preserve WhatsApp OTP and two-factor authentication as unimplemented.
-- Preserve Passport login as pending.
+- Preserve Passport login as pending until implemented and verified.
+- Do not imply that password recovery is already available.
 
 11. Module Specification Reconciliation
 
@@ -343,6 +439,7 @@ Ensure:
 - DISABLED cannot be overridden by LIMITED access.
 - Admin Markaz, Admin Syukbah and Admin Takaza permissions are separate.
 - Pending decisions are not represented as approved permissions.
+- Functional appointments are not treated as global core roles.
 
 12.2 Dashboard and Navigation
 
@@ -353,6 +450,7 @@ Ensure:
 - Unauthorized actions are blocked by the backend.
 - Pending modules are not presented as fully functional.
 - Navigation remains consistent with module availability.
+- Resource-level permission is enforced by the backend.
 
 13. Design Checkpoint Reconciliation
 
@@ -360,7 +458,7 @@ File:
 
 "v2/docs/V2_DESIGN_CHECKPOINT.md"
 
-Required updates:
+Required treatment:
 
 - Record the current V1/V2 repository separation.
 - Remove stale statements that V1 relocation has not started where the current branch confirms the directory structure.
@@ -377,9 +475,14 @@ File:
 
 "v2/docs/V2_IMPLEMENTATION_STATUS.md"
 
-Required updates:
+This is the sole authoritative implementation status and roadmap document.
 
-- Align with the consolidated implementation status.
+It must:
+
+- Record repository and infrastructure status.
+- Record Worker and D1 status.
+- Track migration evidence.
+- Record authentication and authorization status.
 - Record the bootstrap SUPER_ADMIN blocker.
 - Record Password Reset as required but not implemented.
 - Distinguish reported tests from independently verified results.
@@ -387,6 +490,10 @@ Required updates:
 - Identify Supervisor, KAWAIF and TAFAKUT status accurately.
 - Record reporting and archive work as outstanding where applicable.
 - Keep Case Management ON HOLD.
+- Maintain the development phases and release gates.
+- Preserve the distinction between design approval, implementation and deployment.
+
+No other document should independently maintain a competing implementation roadmap.
 
 15. Project-Level System Design Precedence
 
@@ -395,40 +502,43 @@ Required updates:
 When it conflicts with a later explicitly approved V2 requirement:
 
 1. Identify the conflicting statements.
-2. Record the current approved decision.
-3. Update the affected V2 specification.
-4. Update the project-level reference where appropriate.
-5. Preserve historical context.
-6. Record any migration or implementation impact separately.
+2. Check the Master Decision Register.
+3. Record the current approved decision.
+4. Update the affected V2 specification.
+5. Update the project-level reference where appropriate.
+6. Preserve historical context.
+7. Record migration or implementation impact separately.
 
 No design document alone authorizes database or production changes.
 
-16. Recommended Documentation Application Order
+16. Documentation Maintenance Order
 
-Apply the documentation changes in this order:
+For future documentation reconciliation, follow this order:
 
 1. Preserve a backup or Git commit of the current documentation.
-2. Add the five new consolidated documents.
-3. Reconcile "Auth.md".
-4. Reconcile JMV2001.
-5. Reconcile JMV2002.
-6. Reconcile JMV2003.
-7. Reconcile JMV2004.
-8. Reconcile UAC Matrix.
-9. Reconcile Dashboard and Navigation.
-10. Update V2 Implementation Status.
-11. Update V2 Design Checkpoint.
-12. Reconcile the root Master Development Roadmap.
-13. Update "v2/README.md".
-14. Update documentation links.
-15. Review the complete diff.
-16. Commit only after review and explicit user approval.
+2. Review the Master Decision Register.
+3. Review the Open Decisions Register.
+4. Review Module Requirements.
+5. Reconcile Auth.
+6. Reconcile JMV2001.
+7. Reconcile JMV2002.
+8. Reconcile JMV2003.
+9. Reconcile JMV2004.
+10. Reconcile UAC Matrix.
+11. Reconcile Dashboard and Navigation.
+12. Update V2 Implementation Status.
+13. Update V2 Design Checkpoint.
+14. Reconcile the root Master Development Roadmap where required.
+15. Reconcile root and V2 READMEs where required.
+16. Review documentation links and references.
+17. Review the complete diff.
+18. Commit only after review and explicit user approval.
 
 No deployment is required merely to publish documentation changes.
 
 17. Documentation Quality Checks
 
-Before committing, confirm:
+Before treating a documentation set as reconciled, confirm:
 
 - No conflicting account status definitions.
 - No conflict between LIMITED and DISABLED.
@@ -444,6 +554,9 @@ Before committing, confirm:
 - Historical documents remain preserved.
 - README links point to existing files.
 - No feature is described as implemented without evidence.
+- Implementation status is maintained only in "V2_IMPLEMENTATION_STATUS.md".
+- Superseded documents are not accidentally treated as authoritative.
+- V1 and V2 remain separate in documentation and deployment instructions.
 
 18. Change Control
 
@@ -451,14 +564,39 @@ Any future documentation change must:
 
 - Preserve relevant history.
 - Identify the affected document.
-- Update version and date.
+- Update version and date where applicable.
 - Record the reason for change.
 - Reconcile dependent documents.
 - Review authorization impact.
 - Review implementation impact.
+- Preserve unresolved decisions until formally resolved.
+- Avoid silently removing approved requirements.
 
-Do not silently remove approved requirements.
+18.1 Archival and deletion controls
+
+Archiving and deletion are separate actions from documentation reconciliation.
+
+No file should be deleted solely because:
+
+- it is older;
+- it is duplicated;
+- another document has replaced its function;
+- it appears unused;
+- it contains historical implementation status.
+
+Before archival or deletion:
+
+1. Identify the file and its current purpose.
+2. Compare its contents with the authoritative document.
+3. Preserve unique historical information.
+4. Confirm whether the file is referenced by another document or workflow.
+5. Obtain explicit approval.
+6. Record the action.
 
 ---
 
-End of Document
+Document Status: CURRENT DOCUMENTATION BASELINE
+Version: 1.1
+Last Updated: 28 November 2026
+
+Repository rule: Preserve history, maintain a single source of truth for each subject, and never confuse documented requirements with verified implementation.
