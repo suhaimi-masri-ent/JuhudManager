@@ -416,7 +416,7 @@ Sub Takaza boleh menggunakan mana-mana kaedah penyertaan yang dibenarkan.
 Pemindahan peserta ke Takaza alternatif memerlukan:
 
 - Persetujuan pihak yang berkaitan.
-- TAFAKUT baharu bagi Takaza penerima jika diwajibkan.
+- TAFAKUT baharu bagi Takaza penerima.
 - Keputusan Admin.
 - Rekod penyertaan baharu.
 - Rekod penyertaan asal dikekalkan.
@@ -898,7 +898,7 @@ Ahbab boleh membuat rayuan terhadap keputusan penyingkiran.
 Peraturan:
 
 - Rayuan diputuskan oleh Admin dengan skop lebih tinggi atau lebih luas.
-- Admin yang membuat keputusan asal tidak boleh menjadi satu-satunya pihak yang menyemak rayuan terhadap keputusannya sendiri.
+- Admin yang membuat keputusan penyingkiran asal tidak boleh menjadi penyemak rayuan terhadap keputusan tersebut.
 - Rayuan tidak secara automatik mengubah status penyertaan.
 - Jika rayuan diluluskan, keputusan penyingkiran boleh dibatalkan.
 - Penyertaan boleh dipulihkan tanpa memulakan proses penyertaan baharu, tertakluk kepada keputusan rayuan.
@@ -1092,8 +1092,10 @@ Amer boleh mengakses rekod yang dibenarkan untuk menyediakan laporan penuh Takaz
 - Laporan asal kekal sebagai rekod sejarah.
 - Akses kepada laporan tertakluk kepada UAC dan skop Takaza.
 - Admin tidak boleh mengubah laporan asal secara senyap.
-- Pembetulan yang dibenarkan mesti mengekalkan nilai asal dan sejarah tindakan.
-
+- Sebarang pembetulan selepas penghantaran mesti direkodkan sebagai rekod pembetulan berasingan.
+- Rekod Kharguzari asal mesti kekal immutable dan tidak boleh ditulis ganti.
+- Rekod pembetulan mesti menyimpan nilai asal, nilai pembetulan, pelaku, tarikh dan masa serta sebab pembetulan.
+- 
 ### 20.3 Akses
 
 - Ahbab hanya boleh melihat Kharguzari sendiri.
