@@ -189,7 +189,7 @@ All GitHub Actions workflows are maintained in:
 
 | Workflow | Purpose | Trigger |
 |---|---|---|
-| `build-test.yml` | V2 unit tests and build verification | Push to integration branch, PR to `develop` or `main`, or manual |
+| `build-test.yml` | V2 unit tests and build verification | Push to `main` or `v2`, PR to `main` or `v2`, or manual |
 | `deploy.yml` | Publishes V1 and V2 frontends to GitHub Pages | Manual |
 | `deploy-v1-worker.yml` | Deploys V1 Cloudflare Worker | Manual |
 | `deploy-v2-worker.yml` | Deploys V2 Cloudflare Worker | Manual |
