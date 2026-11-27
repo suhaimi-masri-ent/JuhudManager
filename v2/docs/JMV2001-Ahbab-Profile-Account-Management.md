@@ -161,13 +161,12 @@ Peraturan:
 - OTP perubahan e-mel mesti terikat kepada transaksi perubahan e-mel.
 - OTP daripada pendaftaran atau Password Reset tidak boleh digunakan untuk mengesahkan perubahan e-mel.
 
-Permohonan perubahan e-mel boleh diproses bagi akaun berstatus:
+Permohonan perubahan e-mel boleh diproses bagi:
 
-- `ACTIVE`
-- `LIMITED`
-- `DISABLED`
+- Akaun berstatus `ACTIVE`, tertakluk kepada access level yang diberikan seperti `FULL` atau `LIMITED`.
+- Akaun berstatus `DISABLED`, tertakluk kepada pengesahan identiti dan kawalan keselamatan.
 
-Kelayakan tersebut tertakluk kepada pengesahan identiti dan kawalan keselamatan yang berkaitan.
+Akaun berstatus `SUSPENDED` tidak termasuk dalam kelayakan ini sehingga polisi khusus diluluskan.
 
 Kebenaran menukar e-mel tidak bermaksud akaun `DISABLED` atau `SUSPENDED` boleh login atau mendapat akses operasi.
 
