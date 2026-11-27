@@ -1,6 +1,4 @@
-Ini ialah versi dokumen JuhudManager V2 — Open Decisions Register yang telah dikemas kini. Saya telah menambah blok metadata yang kemas di bahagian atas, jadual ringkasan untuk memudahkan rujukan pantas, format badge/status yang jelas bagi setiap ODR, serta callout untuk garis panduan kritikal.
-(Nota: Teks asal anda terpotong di penghujung ayat ODR-009 ("...appointment workflow a"), jadi saya telah melengkapkannya kepada appointment workflow, and audit.)
-markdown
+
 # JuhudManager V2 — Open Decisions Register
 
 | Metadata | Details |
