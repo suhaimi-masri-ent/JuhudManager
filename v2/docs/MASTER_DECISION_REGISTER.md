@@ -940,7 +940,7 @@ It must not be conflated with:
 
 - `OPEN_DECISIONS_REGISTER.md`
 - `MODULE_REQUIREMENTS.md`
-- `Auth.md`
+- `AUTH.md`
 - `JMV2001-Ahbab-Profile-Account-Management.md`
 - `JMV2002-Organization-Structure-Governance.md`
 - `JMV2003-Syukbah-Management.md`
