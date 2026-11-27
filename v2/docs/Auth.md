@@ -1,255 +1,478 @@
-JuhudManager V2
+JUHUDMANAGER V2 — AUTHENTICATION & USER REGISTRATION SPECIFICATION
 
-Authentication & User Registration Specification
-
-Version: 0.1 – Draft for Review
-Date: 20 November 2026
-Status: Design Phase
+Document ID: JMV2-AUTH-001
+Version: 1.0 — Consolidated Working Baseline
+Status: WORKING BASELINE
+Last Updated: 27 November 2026
+Suggested Filename: "Auth.md"
+Repository Path: "v2/docs/Auth.md"
 
 ---
 
-1. Objectives
+1. Purpose
 
-Membangunkan sistem Authentication yang menyokong pengguna Malaysia dan antarabangsa dengan pelbagai kaedah login, pengesahan identiti, pendaftaran sendiri dan pendaftaran berbantukan Admin.
+Dokumen ini menetapkan asas pengesahan pengguna, pendaftaran akaun, identiti login, OTP, kata laluan, sesi dan pemulihan akaun bagi JuhudManager V2.
 
-Prinsip utama:
+Authentication bertanggungjawab mengesahkan identiti pengguna dan mengurus sesi.
 
-- One individual = One User ID.
-- Multiple login identities may belong to one user.
-- Identity uniqueness must be enforced.
-- Authentication and user profile are separate concerns.
-- All sensitive administrative actions must be auditable.
+Authorization pula menentukan tindakan yang boleh dilakukan berdasarkan role, access level, skop organisasi dan hubungan pengguna dengan rekod.
 
-2. Registration Methods
+Kedua-duanya mesti dilaksanakan secara berasingan.
 
-2.1 Self-Registration
+2. Core Principles
 
-Pengguna boleh mendaftar sendiri.
+1. Seorang individu mempunyai satu "user_id" utama.
+2. Seseorang boleh mempunyai lebih daripada satu identiti login yang sah.
+3. Identiti yang sama tidak boleh didaftarkan kepada dua akaun berlainan.
+4. Authentication dan Ahbab Profile ialah komponen berasingan.
+5. Role dan access level ialah konsep berasingan.
+6. Akaun yang belum diluluskan tidak mendapat akses operasi secara automatik.
+7. Semua tindakan sensitif perlu mempunyai audit trail.
+8. Data identiti dan credential mesti dilindungi.
+9. Admin tidak boleh melihat kata laluan tetap pengguna.
+10. Pengesahan identiti tidak bermaksud pengguna secara automatik mendapat role atau penyertaan Takaza.
 
-Maklumat wajib:
+3. User Account and Identity
 
-- Full name
-- National ID / NRIC / equivalent national identity document
-- Country code
-- Email address
-- WhatsApp number
+3.1 User Account
 
-Pengesahan:
+Setiap individu mempunyai satu rekod akaun utama dengan "user_id" yang unik.
 
-- Email OTP
-- WhatsApp OTP
-- Identity uniqueness check
+Rekod akaun menjadi rujukan kepada:
 
-Akaun hanya diaktifkan selepas proses pengesahan yang ditetapkan selesai.
+- identiti login;
+- credential;
+- sesi;
+- profil Ahbab;
+- role;
+- hubungan organisasi;
+- Jemaah Membership;
+- Takaza Participation;
+- sejarah dan audit.
 
-2.2 Foreign Users
+3.2 Identity Types
 
-Warga asing menggunakan proses yang sama.
+Jenis identiti yang perlu disokong:
 
-National ID mengikut negara masing-masing.
+- "NATIONAL_ID"
+- "EMAIL"
+- "WHATSAPP"
+- "PASSPORT"
+
+Identiti ini tidak semestinya mempunyai kaedah pengesahan yang sama.
+
+3.3 Identity Uniqueness
+
+Peraturan asas:
+
+- National ID unik mengikut jenis identiti dan negara pengeluar.
+- Passport unik mengikut jenis identiti dan negara pengeluar.
+- E-mel unik secara global selepas normalisasi.
+- WhatsApp unik secara global menggunakan format E.164.
+
+Identiti yang telah dikaitkan dengan akaun lain tidak boleh digunakan untuk pendaftaran akaun baharu.
+
+3.4 Identity Status
+
+Status identiti perlu membezakan keadaan seperti:
+
+- "PENDING"
+- "VERIFIED"
+- "REVOKED"
+
+Identiti yang belum disahkan tidak boleh digunakan seolah-olah sudah disahkan.
+
+Butiran status tambahan boleh ditentukan mengikut keperluan teknikal tanpa mengubah prinsip ini.
+
+4. Registration
+
+4.1 Self-Registration
+
+Pendaftaran kendiri menggunakan pengesahan e-mel OTP sebagai asas aliran pendaftaran semasa.
+
+Maklumat identiti dan profil yang diperlukan perlu dikumpulkan mengikut borang pendaftaran serta peraturan identiti.
+
+Pendaftaran kendiri mesti:
+
+1. mewujudkan rekod pendaftaran;
+2. menyemak keunikan identiti;
+3. menghantar OTP e-mel;
+4. mengesahkan OTP;
+5. mengemas kini status pengesahan;
+6. meneruskan proses semakan dan pengaktifan mengikut polisi pendaftaran.
+
+Pengesahan e-mel tidak dengan sendirinya memberikan role Admin atau Super Admin.
+
+4.2 Registration Review
+
+Status pendaftaran perlu dibezakan daripada status akaun.
+
+Contoh status pendaftaran:
+
+- "AWAITING_EMAIL_VERIFICATION"
+- "PENDING_REVIEW"
+- "APPROVED"
+- "REJECTED"
+
+Nama status sebenar hendaklah mengikut schema dan implementasi yang digunakan.
+
+Keputusan pendaftaran oleh Admin mesti direkodkan bersama:
+
+- Admin ID;
+- masa keputusan;
+- keputusan;
+- sebab jika diperlukan.
+
+Pendaftaran yang ditolak tidak boleh menerima akses operasi.
+
+4.3 Access Before Approval
+
+Pengguna yang belum mendapat kelulusan operasi hanya menerima akses terhad yang dibenarkan.
+
+"LIMITED" bukan role.
+
+Akses terhad tidak boleh membenarkan pengguna mengakses Jemaah, Takaza, Rekod Amal atau fungsi operasi yang belum diluluskan.
+
+Butiran akses terperinci ditentukan oleh JMV2001 dan UAC Matrix.
+
+4.4 Foreign Users
+
+Sistem perlu menyokong identiti kebangsaan pengguna antarabangsa.
 
 Contoh:
 
-- Malaysia: NATIONAL_ID + MY
-- Indonesia: NATIONAL_ID + ID
-- Singapore: NATIONAL_ID + SG
+- Malaysia: National ID dengan negara pengeluar "MY";
+- Indonesia: National ID dengan negara pengeluar "ID";
+- Singapore: National ID dengan negara pengeluar "SG".
 
-Email dan WhatsApp diwajibkan untuk self-registration.
+Format dan pengesahan identiti hendaklah mengambil kira negara pengeluar.
 
-Passport ialah identiti tambahan atau backup, bukan pengganti wajib kepada National ID dalam aliran pendaftaran ini.
+Passport boleh disimpan sebagai identiti tambahan mengikut polisi yang diluluskan.
 
-2.3 Admin-Assisted Registration
+Passport tidak boleh dianggap sebagai pengganti automatik National ID dalam pendaftaran tanpa keputusan khusus.
 
-Admin boleh membantu mendaftarkan individu yang tidak mempunyai email atau WhatsApp.
+4.5 Admin-Assisted Registration
 
-Ciri-ciri:
+Pendaftaran berbantukan Admin perlu disokong sebagai keperluan reka bentuk, khususnya bagi individu yang tidak mempunyai akses kepada e-mel atau WhatsApp.
 
-- Admin memasukkan maklumat pengguna.
-- Admin mengesahkan identiti berdasarkan dokumen yang sesuai.
-- Akaun menggunakan password authentication.
-- Pengguna boleh menambah email atau WhatsApp kemudian.
-- Permanent password tidak boleh diketahui atau dilihat oleh Admin.
-- Gunakan temporary setup credential atau proses penetapan password yang selamat.
+Namun, aliran penuh dan kaedah pengesahan alternatif masih memerlukan perincian.
 
-Semua tindakan direkodkan dalam audit log.
+Prinsip keselamatan:
 
-3. Login Methods
+- Admin tidak boleh mengetahui kata laluan tetap pengguna.
+- Credential sementara tidak boleh menjadi kata laluan kekal yang diketahui Admin.
+- Penetapan credential mesti menggunakan proses yang selamat.
+- Semua tindakan Admin direkodkan.
 
-Method| Authentication
-Email| OTP
-WhatsApp| OTP
-National ID / NRIC| Password
-Passport| Password
+5. Login Methods
 
-Password merupakan pilihan tambahan untuk semua pengguna.
+Sistem perlu membezakan identiti yang disimpan daripada kaedah login yang benar-benar telah dilaksanakan.
 
-Pengguna OTP-only tidak diwajibkan menetapkan password.
+Jenis login yang boleh dipertimbangkan:
 
-Semua login methods mesti merujuk kepada satu "user_id".
+Identity| Authentication Method| Status
+Email| OTP atau kaedah yang diluluskan| OTP registration implemented; login flow needs verification
+WhatsApp| OTP| NOT IMPLEMENTED / NEEDS VERIFICATION
+National ID| Password| NEEDS VERIFICATION
+Passport| Password| PENDING
 
-4. Identity Management
+Satu "user_id" boleh mempunyai beberapa identiti login.
 
-Cadangan jadual: "user_auth_identities".
+Identiti yang belum disahkan tidak boleh digunakan untuk login.
 
-Column| Description
-identity_id| Primary key
-user_id| FK to users
-identity_type| NATIONAL_ID, EMAIL, WHATSAPP, PASSPORT
-country_code| Country of identity
-identity_hash| Keyed hash for lookup
-encrypted_value| Encrypted original value, where required
-verification_status| PENDING, VERIFIED, REVOKED
-verified_at| Verification timestamp
-created_at| Creation timestamp
-updated_at| Last update timestamp
+Password tidak diwajibkan untuk semua pengguna secara automatik sehingga polisi login bagi setiap jenis akaun dimuktamadkan.
 
-4.1 Uniqueness
+6. Password Policy
 
-- National ID: unique by identity type, issuing country and identity hash.
-- Passport: unique by identity type, issuing country and identity hash.
-- Email: globally unique after normalization.
-- WhatsApp: globally unique using E.164 normalization.
+AGREED
 
-An identity already associated with another account cannot be registered again.
+- Minimum 12 aksara.
+- Kata laluan disimpan menggunakan algoritma hashing yang sesuai.
+- Argon2id boleh digunakan jika disokong oleh persekitaran pelaksanaan.
+- Kata laluan plaintext tidak boleh disimpan.
+- Admin tidak boleh melihat kata laluan pengguna.
+- Kata laluan sementara, jika digunakan, mesti melalui proses penetapan yang selamat.
 
-4.2 National ID Changes
+6.1 Password Change
 
-- User cannot change National ID directly.
-- User submits a request to Admin.
-- Admin verifies the replacement document.
-- Old identity is marked REVOKED.
-- New identity is linked to the same "user_id".
-- Change is recorded in "audit_logs".
+Perubahan kata laluan mesti:
 
-4.3 Email and WhatsApp Changes
+- mengesahkan pengguna yang membuat permintaan;
+- menyimpan hash baharu;
+- membatalkan sesi atau token yang perlu dibatalkan;
+- merekodkan tindakan keselamatan;
+- tidak mendedahkan kata laluan lama atau baharu dalam log.
 
-- User can initiate changes independently.
-- New identity must pass OTP verification.
-- Existing identity remains active until verification succeeds.
-- Old identity is deactivated only after successful verification.
-- Changes are recorded in "audit_logs".
+6.2 Password Reset / Forgot Password
 
-4.4 Passport Changes
+<text>Status: NOT IMPLEMENTED</text>
 
-Passport can be added, replaced or revoked without changing the user's "user_id".
+Fungsi Password Reset / Forgot Password belum dilaksanakan.
 
-5. Password Policy
+Ia tidak boleh dianggap tersedia dalam UI, API atau dokumentasi operasi.
 
-- Minimum 12 characters.
-- Optional for all users.
-- Password stored using a suitable password hashing algorithm, preferably Argon2id.
-- No administrator can view a user's permanent password.
-- Admin-assisted accounts use a secure temporary setup process.
+Reka bentuk masa hadapan perlu merangkumi:
 
-6. OTP Policy
+- pengesahan identiti;
+- token reset sekali guna;
+- tempoh sah token;
+- pembatalan token lama;
+- penamatan sesi dan token yang berkaitan;
+- notifikasi;
+- audit.
 
-Setting| Initial Value
+7. OTP Policy
+
+AGREED — CURRENT BASELINE
+
+Setting| Value
 OTP length| 6 digits
 Expiry| 5 minutes
 Maximum attempts| 5
 Resend cooldown| 60 seconds
-Repeated failures| Temporary cooldown
-New OTP issued| Previous OTP invalidated
+Identity reservation| 15 minutes
 
-OTP values must be stored as hashes.
+Keperluan keselamatan:
 
-Rate limiting and abuse prevention are required.
+- OTP dijana menggunakan sumber rawak yang selamat.
+- OTP disimpan dalam bentuk hash atau perlindungan yang sesuai.
+- OTP yang telah digunakan tidak boleh digunakan semula.
+- OTP baharu membatalkan OTP terdahulu bagi proses yang sama.
+- Percubaan berlebihan perlu disekat.
+- Rate limiting perlu digunakan.
+- OTP tidak boleh dimasukkan dalam log plaintext.
 
-7. Session Policy
+7.1 Email OTP
+
+Email OTP ialah kaedah pengesahan yang telah digunakan dalam asas pendaftaran V2.
+
+Penghantaran e-mel menggunakan sender yang dikonfigurasi:
+
+"noreply@m.juhud.run.place"
+
+Pengesahan production perlu merangkumi penghantaran, tamat tempoh, percubaan salah, resend dan penggunaan semula OTP.
+
+7.2 WhatsApp OTP
+
+WhatsApp OTP belum disahkan sebagai aliran authentication yang lengkap.
+
+Kewujudan integrasi WhatsApp bagi sesuatu fungsi tidak membuktikan semua login dan pengesahan identiti WhatsApp telah tersedia.
+
+Kaedah dan skop penggunaannya perlu disahkan secara berasingan.
+
+8. Identity Changes
+
+8.1 National ID Changes
+
+Ahbab tidak boleh menukar National ID secara terus.
+
+Perubahan memerlukan:
+
+1. permohonan perubahan;
+2. dokumen pengenalan baharu;
+3. pengesahan Admin yang dibenarkan;
+4. pembatalan atau penamatan identiti lama;
+5. pautan identiti baharu kepada "user_id" yang sama;
+6. audit trail.
+
+Identiti lama tidak boleh dipadam sehingga kehilangan sejarah.
+
+8.2 Email Changes
+
+WORKING BASELINE — Refer to JMV2001
+
+- Perubahan e-mel memerlukan OTP bagi e-mel baharu.
+- E-mel lama kekal aktif sehingga pengesahan berjaya.
+- E-mel baharu hanya digunakan selepas OTP berjaya disahkan.
+- Perubahan direkodkan dalam audit.
+
+Kelayakan permohonan perubahan e-mel boleh melibatkan akaun "ACTIVE", "DISABLED" dan "LIMITED".
+
+Kelayakan tersebut tidak mengaktifkan akaun atau memberikan akses tambahan.
+
+Semakan Admin perlu mengikuti skop kuasa yang berkenaan.
+
+8.3 WhatsApp Changes
+
+Perubahan nombor WhatsApp memerlukan pengesahan nombor baharu melalui kaedah yang diluluskan.
+
+Pelaksanaan dan skop OTP WhatsApp masih memerlukan pengesahan.
+
+8.4 Passport Changes
+
+Passport boleh ditambah, diganti atau ditamatkan sebagai identiti tambahan.
+
+Perubahan tidak mewujudkan "user_id" baharu.
+
+9. Session Management
+
+AGREED — CURRENT BASELINE
 
 Setting| Policy
 Idle timeout| 30 minutes
 Maximum lifetime| 12 hours
 Logout| Revoke current session
-Logout all devices| Supported
-Password change| Revoke other sessions
-Account suspended| Revoke all sessions
+Logout all| Revoke other active sessions
+Account DISABLED| Revoke all sessions and related tokens
 
-Users can view active sessions/devices and terminate unfamiliar sessions.
+Pengguna boleh melihat sesi sendiri dan menamatkan sesi yang tidak dikenali melalui fungsi yang disediakan.
 
-8. Account Recovery
+Session token perlu dilindungi dan tidak boleh disimpan atau dipaparkan dalam bentuk yang membolehkan penyalahgunaan.
 
-If a user loses access to all registered login methods:
+Perubahan kata laluan, DISABLE dan tindakan keselamatan lain mesti membatalkan sesi yang berkaitan.
 
-- Admin becomes the final recovery channel.
-- Admin verifies the user's identity.
-- Recovery action must be auditable.
-- Recovery must not expose or disclose the existing password.
-- A secure credential reset or setup process is required.
+10. Account Recovery
 
-9. Proposed Database Structure
+10.1 Password Recovery
 
-Existing foundation tables remain unchanged.
+Status: NOT IMPLEMENTED
 
-Proposed new tables:
+Password Reset / Forgot Password belum tersedia.
 
-Table| Responsibility
-user_auth_identities| Login and identity records
-user_credentials| Password hashes and credential status
-auth_otp_requests| OTP lifecycle and verification
-user_sessions| Active and revoked sessions
-auth_events| Authentication and security events
+10.2 Recovery Without Email
 
-Existing "users" remains the main user account table.
+Status: PENDING
 
-Existing "audit_logs" remains the audit record for administrative and business changes.
+Jika pengguna kehilangan akses kepada e-mel, proses pemulihan perlu menggunakan pengesahan identiti oleh Admin yang diberi kuasa.
 
-10. Proposed API Endpoints
+Butiran proses masih belum dimuktamadkan.
 
-Endpoint| Purpose
-POST /auth/register| Self-registration
-POST /auth/otp/request| Request OTP
-POST /auth/otp/verify| Verify OTP
-POST /auth/login/otp| OTP login initiation
-POST /auth/login/password| Password login
-POST /auth/logout| Logout
-POST /auth/logout-all| Revoke all sessions
-POST /auth/refresh| Refresh session
-GET /auth/sessions| View active sessions
-DELETE /auth/sessions/:id| Revoke selected session
-POST /auth/recovery| Account recovery request
-POST /auth/identity/change| Request identity/contact change
-POST /admin/users/register| Admin-assisted registration
-POST /admin/users/:id/recovery| Admin-assisted account recovery
+Prinsip:
 
-All protected endpoints must enforce authentication and authorization.
+- identiti mesti disahkan;
+- tindakan direkodkan;
+- Admin tidak boleh melihat kata laluan pengguna;
+- credential baharu ditetapkan melalui proses selamat;
+- sesi dan token lama dibatalkan mengikut polisi.
 
-11. Security Requirements
+11. Account Status and Authentication
 
-- Use HTTPS.
-- Store passwords using secure password hashing.
-- Use keyed HMAC for sensitive identity lookup.
-- Encrypt sensitive identity values that must be recoverable.
-- Never store plaintext OTP.
-- Use cryptographically secure random tokens.
-- Store session token hashes rather than raw tokens.
-- Implement rate limits and temporary lockouts.
-- Prevent account enumeration.
-- Record important authentication and identity events.
-- Apply least-privilege access controls.
-- Never expose sensitive identity values in logs or API responses.
+Authentication perlu memeriksa status akaun sebelum memberikan sesi atau akses.
 
-12. Implementation Sequence
+Status akaun yang digunakan dalam reka bentuk:
 
-1. Finalize database schema.
-2. Review and approve SQL design.
-3. Create "0002_authentication.sql".
-4. Apply migration to V2 D1 only when explicitly approved.
-5. Implement Authentication API.
-6. Implement registration and login workflows.
-7. Implement session management.
-8. Implement account recovery.
-9. Test using dummy accounts and data.
-10. Security review before production readiness.
+- "ACTIVE"
+- "DISABLED"
+- "SUSPENDED"
 
-13. Scope Restrictions
+Status pendaftaran adalah berasingan.
 
-- V1 remains untouched.
-- Existing V2 foundation migration remains unchanged.
-- Existing V2 API is not deployed as part of this design approval.
-- No real user information is to be inserted during development.
-- No production activation without explicit approval.
+Prinsip:
+
+- "DISABLED" tidak boleh login.
+- "SUSPENDED" tertakluk kepada sekatan keselamatan yang ditetapkan.
+- Akaun yang belum diluluskan tidak menerima akses operasi.
+- Perubahan status akaun mesti direkodkan.
+- Pengaktifan semula tidak berlaku secara automatik melalui OTP atau perubahan identiti.
+
+Perincian pengurusan status akaun dirujuk kepada JMV2001.
+
+12. Proposed Data Responsibilities
+
+Nama jadual sebenar hendaklah mengikut schema V2 yang telah dilaksanakan.
+
+Secara konsep, data authentication merangkumi:
+
+Data Area| Responsibility
+Users| Rekod akaun utama
+User Roles| Role pengguna
+Authentication Identities| Identiti login
+Credentials| Credential dan password hash
+OTP Requests| Kitar hayat OTP
+Sessions| Sesi aktif dan dibatalkan
+Authentication Events| Peristiwa keselamatan
+Audit Logs| Audit tindakan Admin dan tindakan penting
+
+Jadual yang dicadangkan dalam dokumen lama tidak boleh dianggap perlu diwujudkan semula jika fungsi yang sama sudah diliputi oleh schema semasa.
+
+Sebelum migration baharu, schema sebenar mesti diaudit bagi mengelakkan jadual atau data pendua.
+
+13. API Responsibilities
+
+API authentication perlu meliputi fungsi berikut mengikut keperluan dan implementasi:
+
+- registration;
+- OTP request;
+- OTP verification;
+- login;
+- logout;
+- session refresh;
+- session listing;
+- session revocation;
+- identity change;
+- account recovery;
+- Admin-assisted registration;
+- Admin-assisted recovery.
+
+Nama endpoint, kaedah HTTP dan request/response schema hendaklah mengikuti struktur API sebenar.
+
+Endpoint yang dicadangkan dalam dokumen ini bukan bukti bahawa endpoint tersebut telah dilaksanakan.
+
+Semua endpoint terlindung mesti menguatkuasakan authentication dan authorization di backend.
+
+14. Security Requirements
+
+1. Semua komunikasi menggunakan HTTPS.
+2. Password disimpan sebagai hash.
+3. OTP tidak disimpan dalam plaintext.
+4. Token rawak menggunakan sumber kriptografi yang selamat.
+5. Session token dilindungi daripada pendedahan.
+6. Data identiti sensitif dienkripsi jika perlu disimpan dalam bentuk yang boleh dibaca semula.
+7. Lookup identiti sensitif menggunakan mekanisme keyed hash yang sesuai.
+8. Rate limiting dan kawalan percubaan berulang dilaksanakan.
+9. Respons tidak mendedahkan sama ada identiti tertentu telah didaftarkan secara tidak perlu.
+10. Log tidak boleh mendedahkan National ID, password, OTP atau token.
+11. Authorization diperiksa pada backend.
+12. Semua tindakan sensitif direkodkan.
+13. Data authentication tidak boleh digunakan untuk memintas UAC.
+14. Akses Admin mesti mengikut skop dan kuasa yang dibenarkan.
+
+15. Implementation Status
+
+Component| Status
+Registration backend foundation| PARTIALLY IMPLEMENTED
+Email OTP registration| PARTIALLY IMPLEMENTED
+Email delivery| PARTIALLY IMPLEMENTED / NEEDS PRODUCTION VERIFICATION
+Account activation| PARTIALLY IMPLEMENTED
+Login backend| PARTIALLY IMPLEMENTED
+Session foundation| PARTIALLY IMPLEMENTED
+Session policy enforcement| NEEDS VERIFICATION
+Email change| NEEDS VERIFICATION
+WhatsApp OTP| NOT IMPLEMENTED / NEEDS VERIFICATION
+National ID verification| NOT IMPLEMENTED / NEEDS VERIFICATION
+Passport login| PENDING
+Admin-assisted registration| PENDING
+Password Reset / Forgot Password| NOT IMPLEMENTED
+Recovery without email| PENDING
+Bootstrap Super Admin| NEEDS VERIFICATION
+
+Status ini perlu diselaraskan dengan "V2_IMPLEMENTATION_STATUS.md".
+
+16. Related Documents
+
+Dokumen ini perlu dibaca bersama:
+
+- "JMV2001-Ahbab-Profile-Account-Management.md"
+- "UAC_MATRIX.md"
+- "V2_DESIGN_CHECKPOINT.md"
+- "V2_IMPLEMENTATION_STATUS.md"
+- "DASHBOARD_NAVIGATION_SPEC_V2.md"
+
+Jika terdapat percanggahan, keputusan terkini yang telah dipersetujui dan UAC bagi authorization menjadi rujukan penyelarasan.
+
+17. Working Rules
+
+- Jangan menganggap semua jenis identiti mempunyai kaedah login yang sama.
+- Jangan menganggap WhatsApp OTP sudah lengkap.
+- Jangan menganggap Password Reset sudah tersedia.
+- Jangan membina semula jadual yang sudah wujud tanpa audit schema.
+- Jangan mengubah polisi registration OTP semata-mata untuk menyokong fungsi lain.
+- Jangan menggunakan OTP registration sebagai pengganti automatik kepada OTP bagi proses lain.
+- Jangan menganggap pengesahan identiti memberikan role atau penyertaan.
+- Jangan menyatakan fungsi sebagai "IMPLEMENTED" tanpa bukti kod dan ujian.
 
 ---
 
-End of Draft Specification
+Document Status: WORKING BASELINE
+Last Updated: 27 November 2026
+Next Review: Authentication and registration implementation verification.
