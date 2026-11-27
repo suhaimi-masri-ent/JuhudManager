@@ -1,14 +1,15 @@
-JUHUDMANAGER V2 — AUTHENTICATION & USER REGISTRATION SPECIFICATION
 
-Document ID: JMV2-AUTH-001
-Version: 1.1 — Consolidated Working Baseline
-Status: WORKING BASELINE
-Last Updated: 27 November 2026
-Repository Path: "v2/docs/Auth.md"
+# JUHUDMANAGER V2 — AUTHENTICATION & USER REGISTRATION SPECIFICATION
+
+**Document ID:** JMV2-AUTH-001  
+**Version:** 1.2 — Consolidated Working Baseline  
+**Status:** WORKING BASELINE  
+**Last Updated:** 28 November 2026  
+**Repository Path:** `v2/docs/Auth.md`
 
 ---
 
-1. Purpose
+## 1. Purpose
 
 Dokumen ini menetapkan asas pengesahan pengguna, pendaftaran akaun, identiti login, OTP, kata laluan, sesi dan pemulihan akaun bagi JuhudManager V2.
 
@@ -18,9 +19,9 @@ Authorization pula menentukan tindakan yang boleh dilakukan berdasarkan role, ac
 
 Kedua-duanya mesti dilaksanakan secara berasingan.
 
-2. Core Principles
+## 2. Core Principles
 
-1. Seorang individu mempunyai satu "user_id" utama.
+1. Seorang individu mempunyai satu `user_id` utama.
 2. Seseorang boleh mempunyai lebih daripada satu identiti login yang sah.
 3. Identiti yang sama tidak boleh didaftarkan kepada dua akaun berlainan.
 4. Authentication dan Ahbab Profile ialah komponen berasingan.
@@ -30,12 +31,14 @@ Kedua-duanya mesti dilaksanakan secara berasingan.
 8. Data identiti dan credential mesti dilindungi.
 9. Admin tidak boleh melihat kata laluan tetap pengguna.
 10. Pengesahan identiti tidak bermaksud pengguna secara automatik mendapat role atau penyertaan Takaza.
+11. Password Reset tidak boleh digunakan untuk mengubah status akaun atau memintas proses pengaktifan semula.
+12. Pemulihan credential dan pemulihan status akaun ialah dua proses yang berasingan.
 
-3. User Account and Identity
+## 3. User Account and Identity
 
-3.1 User Account
+### 3.1 User Account
 
-Setiap individu mempunyai satu rekod akaun utama dengan "user_id" yang unik.
+Setiap individu mempunyai satu rekod akaun utama dengan `user_id` yang unik.
 
 Rekod akaun menjadi rujukan kepada:
 
@@ -49,18 +52,18 @@ Rekod akaun menjadi rujukan kepada:
 - Takaza Participation;
 - sejarah dan audit.
 
-3.2 Identity Types
+### 3.2 Identity Types
 
 Jenis identiti yang perlu disokong:
 
-- "NATIONAL_ID"
-- "EMAIL"
-- "WHATSAPP"
-- "PASSPORT"
+- `NATIONAL_ID`
+- `EMAIL`
+- `WHATSAPP`
+- `PASSPORT`
 
 Identiti ini tidak semestinya mempunyai kaedah pengesahan yang sama.
 
-3.3 Identity Uniqueness
+### 3.3 Identity Uniqueness
 
 Peraturan asas:
 
@@ -71,21 +74,21 @@ Peraturan asas:
 
 Identiti yang telah dikaitkan dengan akaun lain tidak boleh digunakan untuk pendaftaran akaun baharu.
 
-3.4 Identity Status
+### 3.4 Identity Status
 
 Status identiti perlu membezakan keadaan seperti:
 
-- "PENDING"
-- "VERIFIED"
-- "REVOKED"
+- `PENDING`
+- `VERIFIED`
+- `REVOKED`
 
 Identiti yang belum disahkan tidak boleh digunakan seolah-olah sudah disahkan.
 
 Butiran status tambahan boleh ditentukan mengikut keperluan teknikal tanpa mengubah prinsip ini.
 
-4. Registration
+## 4. Registration
 
-4.1 Self-Registration
+### 4.1 Self-Registration
 
 Pendaftaran kendiri menggunakan pengesahan e-mel OTP sebagai asas aliran pendaftaran semasa.
 
@@ -102,16 +105,16 @@ Pendaftaran kendiri mesti:
 
 Pengesahan e-mel tidak dengan sendirinya memberikan role Admin atau Super Admin.
 
-4.2 Registration Review
+### 4.2 Registration Review
 
 Status pendaftaran perlu dibezakan daripada status akaun.
 
 Contoh status pendaftaran:
 
-- "AWAITING_EMAIL_VERIFICATION"
-- "PENDING_REVIEW"
-- "APPROVED"
-- "REJECTED"
+- `AWAITING_EMAIL_VERIFICATION`
+- `PENDING_REVIEW`
+- `APPROVED`
+- `REJECTED`
 
 Nama status sebenar hendaklah mengikut schema dan implementasi yang digunakan.
 
@@ -124,25 +127,25 @@ Keputusan pendaftaran oleh Admin mesti direkodkan bersama:
 
 Pendaftaran yang ditolak tidak boleh menerima akses operasi.
 
-4.3 Access Before Approval
+### 4.3 Access Before Approval
 
 Pengguna yang belum mendapat kelulusan operasi hanya menerima akses terhad yang dibenarkan.
 
-"LIMITED" bukan role.
+`LIMITED` bukan role.
 
 Akses terhad tidak boleh membenarkan pengguna mengakses Jemaah, Takaza, Rekod Amal atau fungsi operasi yang belum diluluskan.
 
 Butiran akses terperinci ditentukan oleh JMV2001 dan UAC Matrix.
 
-4.4 Foreign Users
+### 4.4 Foreign Users
 
 Sistem perlu menyokong identiti kebangsaan pengguna antarabangsa.
 
 Contoh:
 
-- Malaysia: National ID dengan negara pengeluar "MY";
-- Indonesia: National ID dengan negara pengeluar "ID";
-- Singapore: National ID dengan negara pengeluar "SG".
+- Malaysia: National ID dengan negara pengeluar `MY`;
+- Indonesia: National ID dengan negara pengeluar `ID`;
+- Singapore: National ID dengan negara pengeluar `SG`.
 
 Format dan pengesahan identiti hendaklah mengambil kira negara pengeluar.
 
@@ -150,7 +153,7 @@ Passport boleh disimpan sebagai identiti tambahan mengikut polisi yang diluluska
 
 Passport tidak boleh dianggap sebagai pengganti automatik National ID dalam pendaftaran tanpa keputusan khusus.
 
-4.5 Admin-Assisted Registration
+### 4.5 Admin-Assisted Registration
 
 Pendaftaran berbantukan Admin perlu disokong sebagai keperluan reka bentuk, khususnya bagi individu yang tidak mempunyai akses kepada e-mel atau WhatsApp.
 
@@ -163,27 +166,28 @@ Prinsip keselamatan:
 - Penetapan credential mesti menggunakan proses yang selamat.
 - Semua tindakan Admin direkodkan.
 
-5. Login Methods
+## 5. Login Methods
 
 Sistem perlu membezakan identiti yang disimpan daripada kaedah login yang benar-benar telah dilaksanakan.
 
 Jenis login yang boleh dipertimbangkan:
 
-Identity| Authentication Method| Status
-Email| OTP atau kaedah yang diluluskan| OTP registration implemented; login flow needs verification
-WhatsApp| OTP| NOT IMPLEMENTED / NEEDS VERIFICATION
-National ID| Password| NEEDS VERIFICATION
-Passport| Password| PENDING
+| Identity | Authentication Method | Status |
+|---|---|---|
+| Email | OTP atau kaedah yang diluluskan | OTP registration implemented; login flow needs verification |
+| WhatsApp | OTP | NOT IMPLEMENTED / NEEDS VERIFICATION |
+| National ID | Password | NEEDS VERIFICATION |
+| Passport | Password | PENDING |
 
-Satu "user_id" boleh mempunyai beberapa identiti login.
+Satu `user_id` boleh mempunyai beberapa identiti login.
 
 Identiti yang belum disahkan tidak boleh digunakan untuk login.
 
 Password tidak diwajibkan untuk semua pengguna secara automatik sehingga polisi login bagi setiap jenis akaun dimuktamadkan.
 
-6. Password Policy
+## 6. Password Policy
 
-AGREED
+**Status: AGREED**
 
 - Minimum 12 aksara.
 - Kata laluan disimpan menggunakan algoritma hashing yang sesuai.
@@ -192,7 +196,7 @@ AGREED
 - Admin tidak boleh melihat kata laluan pengguna.
 - Kata laluan sementara, jika digunakan, mesti melalui proses penetapan yang selamat.
 
-6.1 Password Change
+### 6.1 Password Change
 
 Perubahan kata laluan mesti:
 
@@ -202,30 +206,33 @@ Perubahan kata laluan mesti:
 - merekodkan tindakan keselamatan;
 - tidak mendedahkan kata laluan lama atau baharu dalam log.
 
-6.2 Password Reset / Forgot Password
+### 6.2 Password Reset / Forgot Password
 
-Status: REQUIRED — NOT IMPLEMENTED
+**Status: REQUIRED — NOT IMPLEMENTED**
 
 Password Reset / Forgot Password ialah fungsi wajib dalam JuhudManager V2 tetapi belum dilaksanakan.
 
 Fungsi ini hendaklah tersedia melalui aliran pemulihan kendiri menggunakan e-mel yang telah didaftarkan dan disahkan.
 
-6.2.1 Eligibility
+#### 6.2.1 Eligibility
 
-- Pengguna mesti mempunyai e-mel yang berdaftar dan berstatus VERIFIED.
+- Pengguna mesti mempunyai e-mel yang berdaftar dan berstatus `VERIFIED`.
 - OTP reset dihantar kepada e-mel tersebut.
 - E-mel yang belum disahkan tidak boleh digunakan untuk Password Reset.
 - Password Reset tidak boleh digunakan untuk mengubah identiti login atau memintas proses perubahan e-mel.
+- Password Reset hanya memulihkan credential login.
+- Password Reset tidak mengubah status akaun, status pendaftaran, role, access level atau kelayakan penyertaan.
 
-6.2.2 OTP Policy
+#### 6.2.2 OTP Policy
 
 Password Reset mesti menggunakan polisi OTP sedia ada:
 
-Setting| Required Value
-OTP length| 6 digits
-Expiry| 5 minutes
-Maximum attempts| 5
-Resend cooldown| 60 seconds
+| Setting | Required Value |
+|---|---|
+| OTP length | 6 digits |
+| Expiry | 5 minutes |
+| Maximum attempts | 5 |
+| Resend cooldown | 60 seconds |
 
 Polisi ini mesti konsisten dengan OTP pendaftaran dari segi keselamatan asas.
 
@@ -243,7 +250,7 @@ Keperluan keselamatan:
 - Rate limiting mesti digunakan.
 - OTP tidak boleh direkodkan dalam log plaintext.
 
-6.2.3 Reset Completion
+#### 6.2.3 Reset Completion
 
 Selepas OTP berjaya disahkan, pengguna dibenarkan menetapkan kata laluan baharu.
 
@@ -251,7 +258,7 @@ Kata laluan baharu mesti mematuhi Password Policy dalam Seksyen 6.
 
 Reset hanya dianggap berjaya selepas sistem mengesahkan dan menyimpan password hash baharu.
 
-6.2.4 Mandatory Security Actions
+#### 6.2.4 Mandatory Security Actions
 
 Selepas Password Reset berjaya, sistem mesti:
 
@@ -266,7 +273,27 @@ Pengguna perlu log masuk semula menggunakan kata laluan baharu.
 
 Kegagalan membatalkan sesi atau token lama tidak boleh dianggap sebagai Password Reset yang lengkap.
 
-6.2.5 Separation from Admin-Assisted Recovery
+#### 6.2.5 Separation from Account Status and Reactivation
+
+Password Reset hanya memulihkan credential login.
+
+Password Reset tidak boleh:
+
+- menukar akaun `DISABLED` kepada `ACTIVE`;
+- menukar akaun `SUSPENDED` kepada `ACTIVE`;
+- membatalkan tindakan disable atau suspend;
+- memberikan semula role atau access level;
+- meluluskan pendaftaran yang belum diluluskan;
+- memulihkan kelayakan penyertaan secara automatik;
+- memintas proses semakan atau rayuan.
+
+Jika akaun berstatus `DISABLED` atau `SUSPENDED`, pengguna masih tertakluk kepada status tersebut selepas Password Reset selesai.
+
+Pengguna hanya boleh mendapat akses semula selepas proses pengaktifan semula atau semakan status yang berasingan diluluskan oleh pihak berkuasa yang dibenarkan.
+
+Password Reset tidak boleh dianggap sebagai permohonan atau kelulusan pengaktifan semula.
+
+#### 6.2.6 Separation from Admin-Assisted Recovery
 
 Password Reset kendiri tidak sama dengan pemulihan akaun berbantukan Admin.
 
@@ -274,28 +301,34 @@ Jika pengguna tidak lagi mempunyai akses kepada e-mel berdaftar dan disahkan, pe
 
 Kes tersebut perlu menggunakan proses Admin-Assisted Account Recovery yang berasingan dan tertakluk kepada pengesahan identiti serta kuasa Admin.
 
-6.2.6 Implementation Status
+Proses Admin-Assisted Account Recovery juga tidak boleh mengaktifkan semula akaun secara automatik.
 
-Component| Status
-Password Reset UI| NOT IMPLEMENTED
-Password Reset API| NOT IMPLEMENTED
-Reset OTP issuance| NOT IMPLEMENTED
-Reset OTP verification| NOT IMPLEMENTED
-New password submission| NOT IMPLEMENTED
-Revoke all sessions and tokens| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
-Security audit event| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
-Security notification| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
+#### 6.2.7 Implementation Status
 
-7. OTP Policy
+| Component | Status |
+|---|---|
+| Password Reset UI | NOT IMPLEMENTED |
+| Password Reset API | NOT IMPLEMENTED |
+| Reset OTP issuance | NOT IMPLEMENTED |
+| Reset OTP verification | NOT IMPLEMENTED |
+| New password submission | NOT IMPLEMENTED |
+| Revoke all sessions and tokens | REQUIRED — NOT IMPLEMENTED FOR RESET FLOW |
+| Security audit event | REQUIRED — NOT IMPLEMENTED FOR RESET FLOW |
+| Security notification | REQUIRED — NOT IMPLEMENTED FOR RESET FLOW |
+| Account status preservation | REQUIRED |
+| Automatic account reactivation | PROHIBITED |
 
-AGREED — CURRENT BASELINE
+## 7. OTP Policy
 
-Setting| Value
-OTP length| 6 digits
-Expiry| 5 minutes
-Maximum attempts| 5
-Resend cooldown| 60 seconds
-Identity reservation| 15 minutes
+**Status: AGREED — CURRENT BASELINE**
+
+| Setting | Value |
+|---|---|
+| OTP length | 6 digits |
+| Expiry | 5 minutes |
+| Maximum attempts | 5 |
+| Resend cooldown | 60 seconds |
+| Identity reservation | 15 minutes |
 
 Keperluan keselamatan:
 
@@ -307,17 +340,17 @@ Keperluan keselamatan:
 - Rate limiting perlu digunakan.
 - OTP tidak boleh dimasukkan dalam log plaintext.
 
-7.1 Email OTP
+### 7.1 Email OTP
 
 Email OTP ialah kaedah pengesahan yang telah digunakan dalam asas pendaftaran V2.
 
 Penghantaran e-mel menggunakan sender yang dikonfigurasi:
 
-"noreply@m.juhud.run.place"
+`noreply@m.juhud.run.place`
 
 Pengesahan production perlu merangkumi penghantaran, tamat tempoh, percubaan salah, resend dan penggunaan semula OTP.
 
-7.2 WhatsApp OTP
+### 7.2 WhatsApp OTP
 
 WhatsApp OTP belum disahkan sebagai aliran authentication yang lengkap.
 
@@ -325,9 +358,9 @@ Kewujudan integrasi WhatsApp bagi sesuatu fungsi tidak membuktikan semua login d
 
 Kaedah dan skop penggunaannya perlu disahkan secara berasingan.
 
-8. Identity Changes
+## 8. Identity Changes
 
-8.1 National ID Changes
+### 8.1 National ID Changes
 
 Ahbab tidak boleh menukar National ID secara terus.
 
@@ -337,49 +370,50 @@ Perubahan memerlukan:
 2. dokumen pengenalan baharu;
 3. pengesahan Admin yang dibenarkan;
 4. pembatalan atau penamatan identiti lama;
-5. pautan identiti baharu kepada "user_id" yang sama;
+5. pautan identiti baharu kepada `user_id` yang sama;
 6. audit trail.
 
 Identiti lama tidak boleh dipadam sehingga kehilangan sejarah.
 
-8.2 Email Changes
+### 8.2 Email Changes
 
-WORKING BASELINE — Refer to JMV2001
+**Status: WORKING BASELINE — Refer to JMV2001**
 
 - Perubahan e-mel memerlukan OTP bagi e-mel baharu.
 - E-mel lama kekal aktif sehingga pengesahan berjaya.
 - E-mel baharu hanya digunakan selepas OTP berjaya disahkan.
 - Perubahan direkodkan dalam audit.
 
-Kelayakan permohonan perubahan e-mel boleh melibatkan akaun "ACTIVE", "DISABLED" dan "LIMITED".
+Kelayakan permohonan perubahan e-mel boleh melibatkan akaun `ACTIVE`, `DISABLED` dan `LIMITED`.
 
 Kelayakan tersebut tidak mengaktifkan akaun atau memberikan akses tambahan.
 
 Semakan Admin perlu mengikuti skop kuasa yang berkenaan.
 
-8.3 WhatsApp Changes
+### 8.3 WhatsApp Changes
 
 Perubahan nombor WhatsApp memerlukan pengesahan nombor baharu melalui kaedah yang diluluskan.
 
 Pelaksanaan dan skop OTP WhatsApp masih memerlukan pengesahan.
 
-8.4 Passport Changes
+### 8.4 Passport Changes
 
 Passport boleh ditambah, diganti atau ditamatkan sebagai identiti tambahan.
 
-Perubahan tidak mewujudkan "user_id" baharu.
+Perubahan tidak mewujudkan `user_id` baharu.
 
-9. Session Management
+## 9. Session Management
 
-AGREED — CURRENT BASELINE
+**Status: AGREED — CURRENT BASELINE**
 
-Setting| Policy
-Idle timeout| 30 minutes
-Maximum lifetime| 12 hours
-Logout| Revoke current session
-Logout all| Revoke other active sessions
-Account DISABLED| Revoke all sessions and related tokens
-Successful Password Reset| Revoke all sessions and related tokens
+| Setting | Policy |
+|---|---|
+| Idle timeout | 30 minutes |
+| Maximum lifetime | 12 hours |
+| Logout | Revoke current session |
+| Logout all | Revoke other active sessions |
+| Account DISABLED | Revoke all sessions and related tokens |
+| Successful Password Reset | Revoke all sessions and related tokens |
 
 Pengguna boleh melihat sesi sendiri dan menamatkan sesi yang tidak dikenali melalui fungsi yang disediakan.
 
@@ -387,11 +421,13 @@ Session token perlu dilindungi dan tidak boleh disimpan atau dipaparkan dalam be
 
 Perubahan kata laluan, Password Reset, DISABLE dan tindakan keselamatan lain mesti membatalkan sesi yang berkaitan mengikut polisi.
 
-10. Account Recovery
+Pembatalan sesi tidak mengubah status akaun. Pengaktifan semula akaun memerlukan proses berasingan.
 
-10.1 Password Recovery
+## 10. Account Recovery
 
-Status: REQUIRED — NOT IMPLEMENTED
+### 10.1 Password Recovery
+
+**Status: REQUIRED — NOT IMPLEMENTED**
 
 Password Reset / Forgot Password ialah fungsi wajib V2.
 
@@ -407,11 +443,15 @@ Pelaksanaannya mesti mengikuti Seksyen 6.2, termasuk:
 - audit event;
 - notifikasi keselamatan.
 
+Password Recovery hanya memulihkan credential.
+
+Ia tidak mengubah status akaun, status pendaftaran, role, access level atau kelayakan penyertaan.
+
 Fungsi ini tidak boleh ditandakan sebagai IMPLEMENTED sehingga aliran lengkap tersedia dan diuji.
 
-10.2 Recovery Without Email
+### 10.2 Recovery Without Email
 
-Status: PENDING — SEPARATE ADMIN-ASSISTED PROCESS
+**Status: PENDING — SEPARATE ADMIN-ASSISTED PROCESS**
 
 Jika pengguna kehilangan akses kepada e-mel berdaftar, proses pemulihan perlu menggunakan pengesahan identiti oleh Admin yang diberi kuasa.
 
@@ -425,47 +465,68 @@ Prinsip:
 - credential baharu ditetapkan melalui proses selamat;
 - sesi dan token lama dibatalkan mengikut polisi;
 - pemulihan tidak boleh digunakan untuk memintas kawalan role, status akaun atau UAC;
-- pemulihan tidak secara automatik mengaktifkan akaun yang DISABLED atau SUSPENDED.
+- pemulihan tidak secara automatik mengaktifkan akaun yang `DISABLED` atau `SUSPENDED`;
+- pemulihan credential tidak menggantikan proses pengaktifan semula akaun.
 
 Proses ini tidak boleh dianggap sebagai Password Reset kendiri.
 
-11. Account Status and Authentication
+### 10.3 Account Reactivation
+
+**Status: SEPARATE PROCESS**
+
+Pengaktifan semula akaun yang `DISABLED` atau `SUSPENDED` mesti dikendalikan melalui proses pengurusan status akaun yang berasingan.
+
+Prinsip:
+
+- Password Reset tidak mengaktifkan semula akaun.
+- OTP tidak mengaktifkan semula akaun.
+- Perubahan identiti tidak mengaktifkan semula akaun.
+- Admin mesti mempunyai kuasa dan skop yang sah untuk membuat keputusan pengaktifan semula.
+- Keputusan, sebab, pihak yang meluluskan dan masa tindakan mesti direkodkan.
+- Tiada pengaktifan semula automatik.
+
+Butiran kuasa dan proses pengurusan status akaun dirujuk kepada JMV2001 dan dokumen UAC berkaitan.
+
+## 11. Account Status and Authentication
 
 Authentication perlu memeriksa status akaun sebelum memberikan sesi atau akses.
 
 Status akaun yang digunakan dalam reka bentuk:
 
-- "ACTIVE"
-- "DISABLED"
-- "SUSPENDED"
+- `ACTIVE`
+- `DISABLED`
+- `SUSPENDED`
 
 Status pendaftaran adalah berasingan.
 
 Prinsip:
 
-- "DISABLED" tidak boleh login.
-- "SUSPENDED" tertakluk kepada sekatan keselamatan yang ditetapkan.
+- `DISABLED` tidak boleh login.
+- `SUSPENDED` tertakluk kepada sekatan keselamatan yang ditetapkan.
 - Akaun yang belum diluluskan tidak menerima akses operasi.
 - Perubahan status akaun mesti direkodkan.
 - Pengaktifan semula tidak berlaku secara automatik melalui OTP, Password Reset atau perubahan identiti.
+- Password Reset tidak membatalkan status `DISABLED` atau `SUSPENDED`.
+- Credential yang berjaya dipulihkan tidak memberikan hak untuk menggunakan fungsi operasi jika status akaun masih menyekat akses.
 
 Perincian pengurusan status akaun dirujuk kepada JMV2001.
 
-12. Proposed Data Responsibilities
+## 12. Proposed Data Responsibilities
 
 Nama jadual sebenar hendaklah mengikut schema V2 yang telah dilaksanakan.
 
 Secara konsep, data authentication merangkumi:
 
-Data Area| Responsibility
-Users| Rekod akaun utama
-User Roles| Role pengguna
-Authentication Identities| Identiti login
-Credentials| Credential dan password hash
-OTP Requests| Kitar hayat OTP
-Sessions| Sesi aktif dan dibatalkan
-Authentication Events| Peristiwa keselamatan
-Audit Logs| Audit tindakan Admin dan tindakan penting
+| Data Area | Responsibility |
+|---|---|
+| Users | Rekod akaun utama |
+| User Roles | Role pengguna |
+| Authentication Identities | Identiti login |
+| Credentials | Credential dan password hash |
+| OTP Requests | Kitar hayat OTP |
+| Sessions | Sesi aktif dan dibatalkan |
+| Authentication Events | Peristiwa keselamatan |
+| Audit Logs | Audit tindakan Admin dan tindakan penting |
 
 Jadual yang dicadangkan dalam dokumen lama tidak boleh dianggap perlu diwujudkan semula jika fungsi yang sama sudah diliputi oleh schema semasa.
 
@@ -475,7 +536,7 @@ Pelaksanaan Password Reset hendaklah menggunakan struktur OTP, credential, sessi
 
 Jangan mewujudkan jadual pendua hanya kerana fungsi Password Reset memerlukan transaksi OTP yang berasingan. Pengasingan tujuan OTP mesti dikuatkuasakan melalui rekod dan validasi transaksi.
 
-13. API Responsibilities
+## 13. API Responsibilities
 
 API authentication perlu meliputi fungsi berikut mengikut keperluan dan implementasi:
 
@@ -492,7 +553,8 @@ API authentication perlu meliputi fungsi berikut mengikut keperluan dan implemen
 - Password Reset OTP verification;
 - new password submission;
 - Admin-assisted registration;
-- Admin-assisted recovery.
+- Admin-assisted recovery;
+- account reactivation workflow.
 
 Nama endpoint, kaedah HTTP dan request/response schema hendaklah mengikuti struktur API sebenar.
 
@@ -502,7 +564,9 @@ Semua endpoint terlindung mesti menguatkuasakan authentication dan authorization
 
 Password Reset endpoints mesti menguatkuasakan tujuan OTP, tempoh sah, had percubaan, cooldown dan kawalan penggunaan semula.
 
-14. Security Requirements
+Endpoint Password Reset tidak boleh mengubah status akaun atau memberikan role dan access level.
+
+## 14. Security Requirements
 
 1. Semua komunikasi menggunakan HTTPS.
 2. Password disimpan sebagai hash.
@@ -522,65 +586,78 @@ Password Reset endpoints mesti menguatkuasakan tujuan OTP, tempoh sah, had percu
 16. Password Reset mesti menghasilkan audit event dan notifikasi keselamatan.
 17. OTP Password Reset mesti terikat kepada transaksi reset dan tidak boleh digunakan bagi tujuan lain.
 18. Kegagalan proses keselamatan wajib tidak boleh dilaporkan sebagai reset berjaya.
+19. Password Reset tidak boleh menukar status akaun.
+20. Password Reset tidak boleh mengaktifkan semula akaun `DISABLED` atau `SUSPENDED`.
+21. Account reactivation mesti melalui proses berasingan dengan kuasa dan audit yang sesuai.
+22. Pemulihan credential tidak boleh memberikan role, access level atau kelayakan penyertaan secara automatik.
 
-15. Implementation Status
+## 15. Implementation Status
 
 Status berikut ialah baseline dokumentasi dan mesti disahkan melalui pemeriksaan kod serta ujian sebelum dianggap sebagai status teknikal muktamad.
 
-Component| Status
-Registration backend foundation| PARTIALLY IMPLEMENTED
-Email OTP registration| PARTIALLY IMPLEMENTED
-Email delivery| PARTIALLY IMPLEMENTED / NEEDS PRODUCTION VERIFICATION
-Account activation| PARTIALLY IMPLEMENTED
-Login backend| PARTIALLY IMPLEMENTED
-Session foundation| PARTIALLY IMPLEMENTED
-Session policy enforcement| NEEDS VERIFICATION
-Email change| NEEDS VERIFICATION
-WhatsApp OTP| NOT IMPLEMENTED / NEEDS VERIFICATION
-National ID verification| NOT IMPLEMENTED / NEEDS VERIFICATION
-Passport login| PENDING
-Admin-assisted registration| PENDING
-Password Reset / Forgot Password| REQUIRED — NOT IMPLEMENTED
-Password Reset OTP flow| NOT IMPLEMENTED
-Password Reset session/token revocation| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
-Password Reset audit event| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
-Password Reset security notification| REQUIRED — NOT IMPLEMENTED FOR RESET FLOW
-Recovery without email| PENDING
-Bootstrap Super Admin| NEEDS VERIFICATION
+| Component | Status |
+|---|---|
+| Registration backend foundation | PARTIALLY IMPLEMENTED |
+| Email OTP registration | PARTIALLY IMPLEMENTED |
+| Email delivery | PARTIALLY IMPLEMENTED / NEEDS PRODUCTION VERIFICATION |
+| Account activation | PARTIALLY IMPLEMENTED |
+| Login backend | PARTIALLY IMPLEMENTED |
+| Session foundation | PARTIALLY IMPLEMENTED |
+| Session policy enforcement | NEEDS VERIFICATION |
+| Email change | NEEDS VERIFICATION |
+| WhatsApp OTP | NOT IMPLEMENTED / NEEDS VERIFICATION |
+| National ID verification | NOT IMPLEMENTED / NEEDS VERIFICATION |
+| Passport login | PENDING |
+| Admin-assisted registration | PENDING |
+| Password Reset / Forgot Password | REQUIRED — NOT IMPLEMENTED |
+| Password Reset OTP flow | NOT IMPLEMENTED |
+| Password Reset session/token revocation | REQUIRED — NOT IMPLEMENTED FOR RESET FLOW |
+| Password Reset audit event | REQUIRED — NOT IMPLEMENTED FOR RESET FLOW |
+| Password Reset security notification | REQUIRED — NOT IMPLEMENTED FOR RESET FLOW |
+| Password Reset account-status preservation | REQUIRED |
+| Account reactivation workflow | SEPARATE PROCESS — NEEDS VERIFICATION |
+| Recovery without email | PENDING |
+| Bootstrap Super Admin | NEEDS VERIFICATION |
 
-Status ini perlu diselaraskan dengan "V2_IMPLEMENTATION_STATUS.md".
+Status ini perlu diselaraskan dengan `V2_IMPLEMENTATION_STATUS.md`.
 
-16. Related Documents
+Tiada fungsi boleh dinaik taraf kepada IMPLEMENTED hanya berdasarkan spesifikasi atau kewujudan endpoint. Pengesahan perlu dibuat melalui pemeriksaan kod, ujian dan bukti operasi yang berkaitan.
+
+## 16. Related Documents
 
 Dokumen ini perlu dibaca bersama:
 
-- "JMV2001-Ahbab-Profile-Account-Management.md"
-- "UAC_MATRIX.md"
-- "V2_DESIGN_CHECKPOINT.md"
-- "V2_IMPLEMENTATION_STATUS.md"
-- "DASHBOARD_NAVIGATION_SPEC_V2.md"
-- "MASTER_DECISION_REGISTER.md"
-- "OPEN_DECISIONS_REGISTER.md"
+- `JMV2001-Ahbab-Profile-Account-Management.md`
+- `UAC_MATRIX.md`
+- `V2_DESIGN_CHECKPOINT.md`
+- `V2_IMPLEMENTATION_STATUS.md`
+- `DASHBOARD_NAVIGATION_SPEC_V2.md`
+- `MASTER_DECISION_REGISTER.md`
+- `OPEN_DECISIONS_REGISTER.md`
 
 Jika terdapat percanggahan, keputusan terkini yang telah dipersetujui dan UAC bagi authorization menjadi rujukan penyelarasan.
 
-17. Working Rules
+## 17. Working Rules
 
 - Jangan menganggap semua jenis identiti mempunyai kaedah login yang sama.
 - Jangan menganggap WhatsApp OTP sudah lengkap.
 - Jangan menganggap Password Reset sudah tersedia sebelum pelaksanaan dan pengujian lengkap.
 - Jangan menganggap Password Reset kendiri boleh digunakan apabila pengguna kehilangan akses kepada e-mel berdaftar.
 - Jangan mencampurkan Password Reset dengan Admin-Assisted Account Recovery.
+- Jangan mencampurkan pemulihan credential dengan pengaktifan semula akaun.
+- Jangan menganggap Password Reset boleh mengaktifkan akaun `DISABLED` atau `SUSPENDED`.
+- Jangan menganggap OTP atau perubahan identiti boleh mengaktifkan semula akaun.
 - Jangan membina semula jadual yang sudah wujud tanpa audit schema.
 - Jangan mengubah polisi registration OTP semata-mata untuk menyokong fungsi lain.
 - Jangan menggunakan OTP registration sebagai pengganti automatik kepada OTP bagi proses lain.
 - Jangan menganggap pengesahan identiti memberikan role atau penyertaan.
 - Jangan menyatakan fungsi sebagai IMPLEMENTED tanpa bukti kod dan ujian.
 - Jangan menandakan Password Reset berjaya jika pembatalan sesi/token, audit atau notifikasi keselamatan yang diwajibkan gagal.
+- Jangan membenarkan pemulihan credential memintas proses rayuan, semakan atau kelulusan status akaun.
 
 ---
 
-Document Status: WORKING BASELINE
-Version: 1.1
-Last Updated: 27 November 2026
-Next Review: Authentication and registration implementation verification, including the complete Password Reset flow.
+**Document Status:** WORKING BASELINE  
+**Version:** 1.2  
+**Last Updated:** 28 November 2026  
+**Next Review:** Authentication and registration implementation verification, including the complete Password Reset flow and separation of credential recovery from account reactivation.
