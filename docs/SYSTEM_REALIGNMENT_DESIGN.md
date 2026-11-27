@@ -2,7 +2,7 @@
 # JuhudManager – System Realignment Design
 
 **Document:** System Realignment Design  
-**Version:** 2.1  
+**Version:** 2.2  
 **Branch:** `integration/v1-v2-separation-develop`  
 **Status:** Consolidated V2 Design Reference — Reconciled with Current V2 Baselines  
 **Last Updated:** 28 November 2026
@@ -149,7 +149,9 @@ Important auditable actions include:
 - Takaza creation and lifecycle changes.
 - Participation decisions.
 - KAWAIF updates and verification.
-- TAFAKUT assessments.
+- TAFAKUT assessments and final decisions.
+- Managing Admin decisions that differ from the assessment outcome.
+- Mandatory justifications associated with final Admin decisions.
 - Amer and Supervisor appointments.
 - Percha amendments.
 - Activity and attendance records.
@@ -430,32 +432,77 @@ A TAFAKUT result supports an authorized decision but does not automatically acti
 
 ### 8.2 Independent Assessors
 
-Each TAFAKUT round requires exactly two independent Admin assessors.
+Each TAFAKUT assessment round requires exactly two independent Admin assessors.
 
 Assessors work independently and must not see each other's submitted assessment before both have submitted.
 
 Completed submissions are immutable. Reassessment creates a new assessment record.
 
-### 8.3 Decision Rules
+An assessor must not edit, replace or overwrite another assessor's submitted assessment.
 
-| Assessor 1 | Assessor 2 | Result |
+### 8.3 Initial Assessment Decision Rules
+
+The initial two-assessor decision matrix is:
+
+| Assessor 1 | Assessor 2 | Assessment Outcome |
 |---|---|---|
 | PASS | PASS | PASS |
 | FAIL | FAIL | FAIL |
-| PASS | FAIL | Requires another round |
-| FAIL | PASS | Requires another round |
+| PASS | FAIL | Third Admin required |
+| FAIL | PASS | Third Admin required |
 
-Disagreement requires another round with two new assessors who have not previously assessed the case.
+Rules:
 
-The process may continue through multiple rounds until a decision is reached under the applicable rules.
+- PASS + PASS produces an assessment outcome of PASS.
+- FAIL + FAIL produces an assessment outcome of FAIL.
+- Any disagreement between the two assessors requires a third Admin.
+- The third Admin is appointed by the authorized higher or wider-scope Admin.
+- The third Admin's involvement must be recorded as part of the assessment decision history.
 
-### 8.4 Assessor Appointment and Replacement
+The disagreement process must not be incorrectly treated as permission for either original assessor to change their submitted assessment.
+
+### 8.4 Additional Assessment Rounds
+
+Where an additional assessment round is required:
+
+- Exactly two assessors are assigned for that additional round.
+- Both assessors must be new to the candidate's previous assessment rounds.
+- An assessor who has previously assessed the same candidate must not be reused in a subsequent additional round.
+- The higher or wider-scope Admin appoints the assessors.
+- Previous assessments and decisions remain preserved.
+- The process may continue through additional rounds under the applicable rules.
+- There is no fixed maximum number of assessment rounds.
+
+The third Admin required to resolve an initial disagreement and the two new assessors assigned to a subsequent additional round are distinct workflow requirements. They must not be merged or confused.
+
+### 8.5 Final Managing Admin Decision
+
+The managing Admin may make a final decision that differs from the assessment majority.
+
+This authority is a separate decision layer from the independent assessor process.
+
+Requirements:
+
+- The managing Admin must have authority within the applicable administrative scope.
+- The managing Admin may decide differently from the assessment majority.
+- A written or recorded justification is mandatory whenever the final decision differs from the assessment majority.
+- The final decision must be explicitly recorded as the managing Admin's decision.
+- The justification must be linked to the relevant TAFAKUT case and assessment records.
+- The system must retain the original assessment submissions and their outcomes.
+- The final Admin decision must not overwrite, alter or delete any assessor submission.
+- The decision history must identify the responsible managing Admin and the date/time of the decision.
+
+The existence of this final decision authority does not remove the requirement for independent assessors, the third Admin disagreement process or new assessors in additional rounds.
+
+### 8.6 Assessor Appointment and Replacement
 
 Higher or wider-scope Admin appoints assessors.
 
 If an assessor cannot continue, the assessor may be replaced without restarting the entire process. Completed assessment work remains preserved and must not be overwritten.
 
-### 8.5 TAFAKUT Forms
+A replacement must not invalidate completed independent assessment work unless a separate authorized decision explicitly requires otherwise.
+
+### 8.7 TAFAKUT Forms
 
 Forms may vary by TAFAKUT Type, assessment Round, criteria, required information and operational scope.
 
@@ -471,7 +518,7 @@ Takaza Admin selects the applicable type and round but cannot independently edit
 
 Every template change creates a new version. Previous versions remain available and linked to historical assessments.
 
-### 8.6 Data Sources
+### 8.8 Data Sources
 
 TAFAKUT information may come from:
 
@@ -485,7 +532,7 @@ Ahbab may review automatically populated information and request correction but 
 
 An authorized Admin verifies corrections and updates the source record. The verifier need not be a TAFAKUT assessor.
 
-### 8.7 Ahbab Form Workflow
+### 8.9 Ahbab Form Workflow
 
 Ahbab may save a draft, resume and edit before submission.
 
@@ -493,19 +540,19 @@ After submission, the form is locked. Corrections must go through Admin.
 
 An Admin may return a form to `DRAFT` with a recorded reason.
 
-### 8.8 Assessor Submission
+### 8.10 Assessor Submission
 
 Assessors submit their own assessments.
 
 Completed submissions are immutable. An opened but unsubmitted form is not cancelled through an assumed workflow; any permitted Admin return to draft must be recorded.
 
-### 8.9 Ahbab Access to Results
+### 8.11 Ahbab Access to Results
 
 Ahbab may view relevant comments and the final decision after the assessment is complete.
 
 A reply or feedback workflow is not included in the current baseline.
 
-### 8.10 Notifications
+### 8.12 Notifications
 
 Required notifications include:
 
@@ -517,7 +564,7 @@ Notifications use the user's selected language.
 
 Automatic reminders and mandatory deadlines are not included unless separately approved.
 
-### 8.11 SUSPEND and ON_HOLD
+### 8.13 SUSPEND and ON_HOLD
 
 `SUSPEND` and `ON_HOLD` are separate from account status.
 
@@ -526,7 +573,7 @@ Automatic reminders and mandatory deadlines are not included unless separately a
 
 Neither status automatically disables login or changes the Ahbab profile or account status.
 
-### 8.12 Failure and Future Attempts
+### 8.14 Failure and Future Attempts
 
 A `FAIL` result is not a permanent ban.
 
@@ -963,6 +1010,8 @@ Relevant entities include:
 - TAFAKUT Assessor Assignment.
 - TAFAKUT Assessment.
 - TAFAKUT Decision.
+- TAFAKUT Final Admin Decision.
+- TAFAKUT Decision Justification.
 
 ### 16.7 Appointments
 
@@ -1015,10 +1064,14 @@ At minimum:
 6. Appointment status is not confused with Takaza status.
 7. TAFAKUT assessments preserve assessor identity and submission history.
 8. Completed assessments are not silently edited.
-9. Percha amendment proposals and decisions remain traceable.
-10. Annual Archive corrections preserve original information.
-11. Important Admin actions create audit records.
-12. Access control is enforced at API and data-access layers, not only in the user interface.
+9. TAFAKUT disagreement and additional-round history must be retained.
+10. A final Managing Admin decision must be separately recorded from the assessor outcome.
+11. A justification must be retained whenever the Managing Admin's final decision differs from the assessment majority.
+12. The system must preserve the identity of the managing Admin, decision date/time, final decision and linked assessment records.
+13. Percha amendment proposals and decisions remain traceable.
+14. Annual Archive corrections preserve original information.
+15. Important Admin actions create audit records.
+16. Access control is enforced at API and data-access layers, not only in the user interface.
 
 ## 18. Migration and Compatibility Principles
 
@@ -1122,5 +1175,5 @@ Unresolved decisions are maintained in `v2/docs/OPEN_DECISIONS_REGISTER.md`.
 ---
 
 **Document Status:** Consolidated V2 Design Reference — Reconciled with Current V2 Baselines  
-**Version:** 2.1  
+**Version:** 2.2  
 **Last Updated:** 28 November 2026
