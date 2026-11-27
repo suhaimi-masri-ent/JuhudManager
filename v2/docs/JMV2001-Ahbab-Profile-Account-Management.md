@@ -168,6 +168,7 @@ Permohonan perubahan e-mel boleh diproses bagi:
 
 Akaun berstatus `SUSPENDED` tidak termasuk dalam kelayakan ini sehingga polisi khusus diluluskan.
 
+Permohonan perubahan e-mel bagi akaun `DISABLED` mesti menggunakan proses atau endpoint khusus yang dibenarkan. Kebenaran ini tidak memberikan akses kepada fungsi login atau operasi biasa.
 Kebenaran menukar e-mel tidak bermaksud akaun `DISABLED` atau `SUSPENDED` boleh login atau mendapat akses operasi.
 
 Perubahan e-mel juga tidak mengaktifkan semula akaun.
