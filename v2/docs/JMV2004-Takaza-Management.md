@@ -939,7 +939,7 @@ Pemindahan peserta ke Takaza lain bukan perubahan biasa pada rekod penyertaan as
 Pemindahan memerlukan:
 
 1. Persetujuan pihak yang berkaitan.
-2. TAFAKUT baharu bagi Takaza penerima jika diwajibkan.
+2. TAFAKUT baharu bagi Takaza penerima.
 3. Keputusan Admin.
 4. Rekod penyertaan baharu.
 5. Rekod penyertaan asal dikekalkan.
