@@ -8,8 +8,6 @@
 
 ---
 
----
-
 # 1. Purpose and Scope
 
 This document consolidates the functional requirements for the principal JuhudManager V2 modules.
