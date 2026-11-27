@@ -1,15 +1,16 @@
-JUHUDMANAGER V2 — IMPLEMENTATION STATUS AND ROADMAP
 
-Document ID: JMV2-IMP-001
-Roadmap ID: JMV2-ROADMAP-001
-Version: 3.0
-Date: 28 November 2026
-Status: WORKING BASELINE — Implementation Tracking
-Repository Path: "v2/docs/V2_IMPLEMENTATION_STATUS.md"
+# JUHUDMANAGER V2 — IMPLEMENTATION STATUS AND ROADMAP
+
+Document ID: JMV2-IMP-001  
+Roadmap ID: JMV2-ROADMAP-001  
+Version: 3.0  
+Date: 28 November 2026  
+Status: WORKING BASELINE — Implementation Tracking  
+Repository Path: `v2/docs/V2_IMPLEMENTATION_STATUS.md`
 
 ---
 
-1. Purpose and Authority
+## 1. Purpose and Authority
 
 Dokumen ini ialah rujukan utama bagi status pelaksanaan dan roadmap pembangunan JuhudManager V2.
 
@@ -25,12 +26,12 @@ Dokumen ini merekodkan:
 - fasa pembangunan seterusnya;
 - release gates dan syarat pengesahan.
 
-Dokumen ini menggabungkan fungsi terdahulu "V2_IMPLEMENTATION_STATUS.md" dan "IMPLEMENTATION_STATUS_AND_ROADMAP.md".
+Dokumen ini menggabungkan fungsi terdahulu `V2_IMPLEMENTATION_STATUS.md` dan `IMPLEMENTATION_STATUS_AND_ROADMAP.md`.
 
 Mulai versi ini:
 
-1. "V2_IMPLEMENTATION_STATUS.md" ialah sumber utama status pelaksanaan dan roadmap.
-2. "IMPLEMENTATION_STATUS_AND_ROADMAP.md" dianggap dokumen terdahulu yang telah digantikan dari segi fungsi dokumentasi.
+1. `V2_IMPLEMENTATION_STATUS.md` ialah sumber utama status pelaksanaan dan roadmap.
+2. `IMPLEMENTATION_STATUS_AND_ROADMAP.md` dianggap dokumen terdahulu yang telah digantikan dari segi fungsi dokumentasi.
 3. Dokumen lama tidak perlu dipadam sehingga semakan dan pengarkiban repository dilaksanakan.
 4. Spesifikasi modul kekal sebagai rujukan keperluan dan tingkah laku sistem.
 5. Master Decision Register kekal sebagai rujukan keputusan reka bentuk.
@@ -40,51 +41,53 @@ Keputusan reka bentuk yang telah diluluskan tidak boleh dianggap sebagai fungsi 
 
 ---
 
-2. Status Definitions
+## 2. Status Definitions
 
-Status| Meaning
-IMPLEMENTED| Pelaksanaan telah disahkan pada skop yang dinyatakan
-PARTIALLY IMPLEMENTED| Sebahagian fungsi tersedia tetapi belum lengkap
-IN PROGRESS| Pelaksanaan sedang berjalan
-NOT IMPLEMENTED| Belum dilaksanakan
-NEEDS VERIFICATION| Memerlukan pemeriksaan kod, ujian atau persekitaran
-ON HOLD| Kerja ditangguhkan sementara
-DEPRECATED| Pelaksanaan atau pendekatan lama tidak lagi digunakan
-NOT APPLICABLE| Tidak berkaitan dengan skop berkenaan
-REPORTED PASS| Keputusan lulus telah dilaporkan tetapi belum disahkan semula
-DEPLOYED| Telah disahkan dalam environment yang dinyatakan
-BLOCKED| Kerja tidak boleh diteruskan dengan selamat sehingga blocker diselesaikan
-PENDING DECISION| Memerlukan keputusan reka bentuk sebelum pelaksanaan
+| Status | Meaning |
+|---|---|
+| IMPLEMENTED | Pelaksanaan telah disahkan pada skop yang dinyatakan |
+| PARTIALLY IMPLEMENTED | Sebahagian fungsi tersedia tetapi belum lengkap |
+| IN PROGRESS | Pelaksanaan sedang berjalan |
+| NOT IMPLEMENTED | Belum dilaksanakan |
+| NEEDS VERIFICATION | Memerlukan pemeriksaan kod, ujian atau persekitaran |
+| ON HOLD | Kerja ditangguhkan sementara |
+| DEPRECATED | Pelaksanaan atau pendekatan lama tidak lagi digunakan |
+| NOT APPLICABLE | Tidak berkaitan dengan skop berkenaan |
+| REPORTED PASS | Keputusan lulus telah dilaporkan tetapi belum disahkan semula |
+| DEPLOYED | Telah disahkan dalam environment yang dinyatakan |
+| BLOCKED | Kerja tidak boleh diteruskan dengan selamat sehingga blocker diselesaikan |
+| PENDING DECISION | Memerlukan keputusan reka bentuk sebelum pelaksanaan |
 
-2.1 Status Scope
+### 2.1 Status Scope
 
 Status mesti menyatakan skop sebenar.
 
 Contoh:
 
-- "IMPLEMENTED — SCHEMA FOUNDATION" tidak bermaksud keseluruhan workflow modul telah lengkap.
-- "PARTIALLY IMPLEMENTED — AUTHENTICATION" tidak bermaksud semua authentication flow telah diuji.
-- "REPORTED PASS" tidak sama dengan pengesahan terkini.
-- "DEPLOYED" mesti menyatakan environment yang telah disahkan.
+- `IMPLEMENTED — SCHEMA FOUNDATION` tidak bermaksud keseluruhan workflow modul telah lengkap.
+- `PARTIALLY IMPLEMENTED — AUTHENTICATION` tidak bermaksud semua authentication flow telah diuji.
+- `REPORTED PASS` tidak sama dengan pengesahan terkini.
+- `DEPLOYED` mesti menyatakan environment yang telah disahkan.
 
 Status tidak boleh dinaik taraf berdasarkan kewujudan jadual database, UI atau API semata-mata.
 
 ---
 
-PART A — CURRENT IMPLEMENTATION STATUS
+# PART A — CURRENT IMPLEMENTATION STATUS
 
-3. Repository and Architecture
+## 3. Repository and Architecture
 
-3.1 V1/V2 Separation
+### 3.1 V1/V2 Separation
 
-Status: PARTIALLY IMPLEMENTED — NEEDS FINAL VERIFICATION
+**Status: PARTIALLY IMPLEMENTED — NEEDS FINAL VERIFICATION**
 
 Kerja pemisahan V1 dan V2 telah disediakan pada branch:
 
-"integration/v1-v2-separation-develop"
+`integration/v1-v2-separation-develop`
 
 Struktur repository yang disediakan:
 
+```text
 JuhudManager/
 ├── v1/
 │   ├── public/
@@ -101,6 +104,7 @@ JuhudManager/
 ├── .github/
 │   └── workflows/
 └── README.md
+```
 
 Perkara yang telah disediakan:
 
@@ -110,7 +114,7 @@ Perkara yang telah disediakan:
 - struktur Pages yang menggabungkan output V1 dan V2;
 - workflow migration V2 yang berasingan;
 - dokumentasi asas pemisahan;
-- ".gitignore" untuk mengabaikan direktori "node_modules".
+- `.gitignore` untuk mengabaikan direktori `node_modules`.
 
 Pengesahan akhir masih diperlukan bagi:
 
@@ -125,11 +129,11 @@ Pengesahan akhir masih diperlukan bagi:
 
 Pemisahan pada integration branch tidak bermaksud perubahan telah digabungkan ke branch production.
 
-3.2 V1 Preservation
+### 3.2 V1 Preservation
 
-Status: NEEDS VERIFICATION
+**Status: NEEDS VERIFICATION**
 
-V1 telah dipindahkan ke struktur "v1/".
+V1 telah dipindahkan ke struktur `v1/`.
 
 Backup branch dan tag pemeliharaan V1 telah disediakan sebelum kerja pemisahan.
 
@@ -144,9 +148,9 @@ Pengesahan perlu memastikan:
 
 V1 tidak boleh dianggap selamat untuk diarkibkan sepenuhnya sehingga pengesahan ini selesai.
 
-3.3 V2 Isolation
+### 3.3 V2 Isolation
 
-Status: IMPLEMENTED — FOUNDATION
+**Status: IMPLEMENTED — FOUNDATION**
 
 V2 mempunyai:
 
@@ -158,13 +162,13 @@ V2 mempunyai:
 
 V2 tidak boleh menggunakan database production V1.
 
-3.4 Branch and Repository Controls
+### 3.4 Branch and Repository Controls
 
-Status: NEEDS VERIFICATION
+**Status: NEEDS VERIFICATION**
 
 Branch integrasi semasa:
 
-"integration/v1-v2-separation-develop"
+`integration/v1-v2-separation-develop`
 
 Sebelum merge, semak:
 
@@ -178,42 +182,44 @@ Sebelum merge, semak:
 
 ---
 
-4. Cloudflare Worker and Database Foundation
+## 4. Cloudflare Worker and Database Foundation
 
-4.1 V2 Worker
+### 4.1 V2 Worker
 
-Status: IMPLEMENTED — FOUNDATION
+**Status: IMPLEMENTED — FOUNDATION**
 
 Maklumat konfigurasi:
 
-Item| Value
-Worker| "juhudmanager-v2-api"
-Main entry| "src/index.js"
-Configuration| "v2/wrangler.jsonc"
-D1 binding| "DB"
-Compatibility date| "2026-11-20"
-Environment| Production
+| Item | Value |
+|---|---|
+| Worker | `juhudmanager-v2-api` |
+| Main entry | `src/index.js` |
+| Configuration | `v2/wrangler.jsonc` |
+| D1 binding | `DB` |
+| Compatibility date | `2026-11-20` |
+| Environment | Production |
 
 Health endpoint pernah memberikan keputusan:
 
-- status "ok";
-- service "juhudmanager-v2-api";
+- status `ok`;
+- service `juhudmanager-v2-api`;
 - environment production;
 - database connected.
 
 Keputusan tersebut ialah pengesahan pada masa pemeriksaan terdahulu. Ia bukan jaminan bahawa semua API, authorization dan modul perniagaan telah berfungsi.
 
-4.2 V2 D1 Database
+### 4.2 V2 D1 Database
 
-Status: IMPLEMENTED — FOUNDATION
+**Status: IMPLEMENTED — FOUNDATION**
 
-Item| Value
-Database| "juhudmanager-v2-db"
-Database ID| "4a4e736b-83ee-4889-bfbb-7fe189f92b5f"
+| Item | Value |
+|---|---|
+| Database | `juhudmanager-v2-db` |
+| Database ID | `4a4e736b-83ee-4889-bfbb-7fe189f92b5f` |
 
 Migration yang dilaporkan telah digunakan sehingga:
 
-"0021_super_admin_owner_verification.sql"
+`0021_super_admin_owner_verification.sql`
 
 Migration 0021 dilaporkan berjaya digunakan pada 26 November 2026.
 
@@ -228,9 +234,9 @@ Pengesahan akhir masih perlu memastikan:
 - data dan trigger berada dalam keadaan konsisten;
 - migration V2 tidak pernah diarahkan kepada database V1.
 
-4.3 Migration Safety
+### 4.3 Migration Safety
 
-Status: IMPLEMENTED — PROCESS FOUNDATION
+**Status: IMPLEMENTED — PROCESS FOUNDATION**
 
 Migration V2 mesti:
 
@@ -243,26 +249,27 @@ Migration V2 mesti:
 
 Workflow migration yang tersedia tidak bermaksud setiap migration telah melalui pengesahan penuh semua kes penggunaan.
 
-4.4 V1 Infrastructure
+### 4.4 V1 Infrastructure
 
-Status: NEEDS VERIFICATION
+**Status: NEEDS VERIFICATION**
 
 Maklumat konfigurasi V1:
 
-Item| Value
-Worker| "juhudmanager-api-test"
-Configuration| "v1/wrangler.jsonc"
-Main entry| "worker/src/index.js"
-D1 database| "juhudmanager-db"
-D1 ID| "7846a32c-60b4-41a3-9c85-41fbabe544d9"
+| Item | Value |
+|---|---|
+| Worker | `juhudmanager-api-test` |
+| Configuration | `v1/wrangler.jsonc` |
+| Main entry | `worker/src/index.js` |
+| D1 database | `juhudmanager-db` |
+| D1 ID | `7846a32c-60b4-41a3-9c85-41fbabe544d9` |
 
 Pengesahan diperlukan untuk memastikan Worker, Pages dan database V1 kekal berasingan daripada V2.
 
 ---
 
-5. Database Schema Foundation
+## 5. Database Schema Foundation
 
-Status: PARTIALLY IMPLEMENTED
+**Status: PARTIALLY IMPLEMENTED**
 
 Asas schema yang telah dikenal pasti termasuk:
 
@@ -287,11 +294,11 @@ Pengesahan diperlukan bagi setiap jadual, foreign key, index, trigger dan domain
 
 ---
 
-6. Authentication and Account Management
+## 6. Authentication and Account Management
 
-6.1 Registration
+### 6.1 Registration
 
-Status: PARTIALLY IMPLEMENTED
+**Status: PARTIALLY IMPLEMENTED**
 
 Asas pendaftaran melalui e-mel dan pengesahan OTP telah dilaksanakan pada skop yang dilaporkan.
 
@@ -306,15 +313,15 @@ Polisi reka bentuk:
 
 Pengesahan keseluruhan aliran pendaftaran, termasuk kes khas dan bootstrap owner, masih diperlukan.
 
-6.2 Email OTP and Activation
+### 6.2 Email OTP and Activation
 
-Status: PARTIALLY IMPLEMENTED — NEEDS PRODUCTION VERIFICATION
+**Status: PARTIALLY IMPLEMENTED — NEEDS PRODUCTION VERIFICATION**
 
 Asas penghantaran OTP dan pengaktifan akaun melalui e-mel telah disediakan.
 
 Sender:
 
-"noreply@m.juhud.run.place"
+`noreply@m.juhud.run.place`
 
 Penghantaran dan pengesahan OTP perlu diuji semula dalam keadaan production, termasuk:
 
@@ -326,9 +333,9 @@ Penghantaran dan pengesahan OTP perlu diuji semula dalam keadaan production, ter
 - OTP untuk tujuan transaksi berbeza;
 - identity reservation tamat tempoh.
 
-6.3 Login and Sessions
+### 6.3 Login and Sessions
 
-Status: PARTIALLY IMPLEMENTED
+**Status: PARTIALLY IMPLEMENTED**
 
 Backend asas login dan session telah dilaksanakan.
 
@@ -351,11 +358,11 @@ Pengesahan penuh perlu merangkumi:
 - logout;
 - logout semua sesi.
 
-6.4 Email Change
+### 6.4 Email Change
 
-Status: NEEDS VERIFICATION
+**Status: NEEDS VERIFICATION**
 
-Reka bentuk membenarkan proses pertukaran e-mel bagi akaun "FULL", "LIMITED" dan "DISABLED", tertakluk kepada pengesahan identiti dan OTP.
+Reka bentuk membenarkan proses pertukaran e-mel bagi akaun `FULL`, `LIMITED` dan `DISABLED`, tertakluk kepada pengesahan identiti dan OTP.
 
 Kebenaran menukar e-mel tidak mengaktifkan semula akaun atau memberikan akses tambahan.
 
@@ -363,9 +370,9 @@ Password reset atau email change tidak boleh mengaktifkan semula akaun DISABLED 
 
 Pelaksanaan keseluruhan perlu disahkan.
 
-6.5 Password Reset / Forgot Password
+### 6.5 Password Reset / Forgot Password
 
-Status: NOT IMPLEMENTED — REQUIRED
+**Status: NOT IMPLEMENTED — REQUIRED**
 
 Fungsi Password Reset / Forgot Password belum dilaksanakan.
 
@@ -388,11 +395,12 @@ Password Reset tidak boleh mengaktifkan semula akaun DISABLED atau SUSPENDED.
 
 Fungsi ini tidak boleh dipaparkan atau didokumenkan sebagai tersedia sehingga dilaksanakan dan diuji.
 
-6.6 Admin-Assisted Account Recovery
+### 6.6 Admin-Assisted Account Recovery
 
-Status: PENDING IMPLEMENTATION / POLICY DETAIL
+**Status: PENDING IMPLEMENTATION / POLICY DETAIL**
 
 Proses ini berasingan daripada Password Reset biasa.
+
 
 Ia diperlukan apabila pengguna tidak lagi mempunyai akses kepada e-mel yang telah disahkan.
 
@@ -400,39 +408,39 @@ Prosedur dan kuasa Admin mesti ditentukan melalui spesifikasi dan keputusan yang
 
 Jangan mereka proses pemulihan atau memintas pengesahan identiti secara manual.
 
-6.7 Bootstrap Super Admin
+### 6.7 Bootstrap Super Admin
 
-Status: NEEDS VERIFICATION — BLOCKING FOR INITIAL ADMIN SETUP
+**Status: NEEDS VERIFICATION — BLOCKING FOR INITIAL ADMIN SETUP**
 
 Proses bootstrap Super Admin masih belum disahkan berjaya.
 
 Keadaan yang dilaporkan sebelum ini:
 
-Rekod "JUHUD MANAGER":
+Rekod `JUHUD MANAGER`:
 
-- e-mel "al.masri.ent@gmail.com";
-- account status "DISABLED";
-- bootstrap status "PENDING";
+- e-mel `al.masri.ent@gmail.com`;
+- account status `DISABLED`;
+- bootstrap status `PENDING`;
 - tiada active password;
-- tiada "user_roles";
+- tiada `user_roles`;
 - kiraan owner role, super_admin role, password dan email identity aktif ialah sifar.
 
-Rekod berasingan "SUPER ADMIN JUHUD MANAGER":
+Rekod berasingan `SUPER ADMIN JUHUD MANAGER`:
 
 - e-mel kosong;
-- account status "DISABLED";
-- global email identity berstatus "PENDING";
-- terdapat identity terdahulu berstatus "EXPIRED";
-- registration status "AWAITING_EMAIL_VERIFICATION".
+- account status `DISABLED`;
+- global email identity berstatus `PENDING`;
+- terdapat identity terdahulu berstatus `EXPIRED`;
+- registration status `AWAITING_EMAIL_VERIFICATION`.
 
 Ralat aplikasi yang pernah dilaporkan:
 
-- Login atau registration: "Network error interceptor".
-- Owner verification: "The designated bootstrap owner is not eligible for email verification."
+- Login atau registration: `Network error interceptor`.
+- Owner verification: `The designated bootstrap owner is not eligible for email verification.`
 
 Keadaan ini perlu diperiksa semula kerana ia menggambarkan keadaan pada pemeriksaan terdahulu, bukan pengesahan keadaan terkini.
 
-Required Resolution
+**Required Resolution**
 
 1. Periksa rekod bootstrap user dan identity semasa.
 2. Sahkan designated owner identity.
@@ -461,17 +469,17 @@ Urutan ujian:
 
 ---
 
-7. Authorization and UAC
+## 7. Authorization and UAC
 
-Status: PARTIALLY IMPLEMENTED — NEEDS VERIFICATION
+**Status: PARTIALLY IMPLEMENTED — NEEDS VERIFICATION**
 
 Asas role dan authorization telah disediakan.
 
 Model core role yang dipersetujui:
 
-- "SUPER_ADMIN"
-- "ADMIN"
-- "AHBAB"
+- `SUPER_ADMIN`
+- `ADMIN`
+- `AHBAB`
 
 Amer, Supervisor, Admin Syukbah, Admin Takaza, Deputy, Moderator dan TAFAKUT Assessor ialah functional appointments atau delegation, bukan core role global.
 
@@ -494,15 +502,15 @@ Pengesahan penuh perlu memastikan:
 
 Account status, access level, core role, appointment dan resource permission ialah dimensi yang berbeza.
 
-"UAC_MATRIX.md" ialah rujukan reka bentuk. Ia tidak membuktikan setiap permission telah dilaksanakan.
+`UAC_MATRIX.md` ialah rujukan reka bentuk. Ia tidak membuktikan setiap permission telah dilaksanakan.
 
 Frontend visibility tidak boleh menggantikan server-side authorization.
 
 ---
 
-8. Profile and Account Management
+## 8. Profile and Account Management
 
-Status: NEEDS VERIFICATION
+**Status: NEEDS VERIFICATION**
 
 Keperluan:
 
@@ -519,9 +527,9 @@ Profile-update workflow penuh perlu diuji selepas bootstrap recovery.
 
 ---
 
-9. Organization Structure
+## 9. Organization Structure
 
-Status: DESIGN BASELINE — IMPLEMENTATION NEEDS VERIFICATION
+**Status: DESIGN BASELINE — IMPLEMENTATION NEEDS VERIFICATION**
 
 Keperluan:
 
@@ -544,9 +552,9 @@ Cross-organization support memerlukan persetujuan kedua-dua Chief Admin, task, s
 
 ---
 
-10. Syukbah Management
+## 10. Syukbah Management
 
-Status: DESIGN BASELINE — IMPLEMENTATION NEEDS VERIFICATION
+**Status: DESIGN BASELINE — IMPLEMENTATION NEEDS VERIFICATION**
 
 Keperluan:
 
@@ -574,9 +582,9 @@ Keputusan tambahan Country Syukbah approval, Deputy/acting delegation dan eligib
 
 ---
 
-11. Jemaah and Membership
+## 11. Jemaah and Membership
 
-Status: PARTIALLY IMPLEMENTED — SCHEMA FOUNDATION
+**Status: PARTIALLY IMPLEMENTED — SCHEMA FOUNDATION**
 
 Asas schema Jemaah dan Jemaah Membership telah dilaporkan tersedia.
 
@@ -593,13 +601,13 @@ Belum disahkan sebagai lengkap:
 
 Jemaah Membership mesti kekal berasingan daripada Takaza Participation.
 
-V2 tidak boleh mewujudkan entiti "Project Member" yang berasingan.
+V2 tidak boleh mewujudkan entiti `Project Member` yang berasingan.
 
 ---
 
-12. Takaza and Participation
+## 12. Takaza and Participation
 
-Status: PARTIALLY IMPLEMENTED — SCHEMA FOUNDATION
+**Status: PARTIALLY IMPLEMENTED — SCHEMA FOUNDATION**
 
 Asas schema Takaza dan Takaza Participation telah disediakan.
 
@@ -627,19 +635,19 @@ Perkara yang belum boleh dianggap lengkap:
 
 Status Takaza yang dipersetujui:
 
-- "DRAFT"
-- "RELEASED"
-- "ACTIVE"
-- "ON_HOLD"
-- "COMPLETED"
-- "CANCELLED"
+- `DRAFT`
+- `RELEASED`
+- `ACTIVE`
+- `ON_HOLD`
+- `COMPLETED`
+- `CANCELLED`
 
 Kaedah penyertaan:
 
-- "AUTOMATIC_INCLUSION"
-- "VOLUNTARY_APPLICATION"
-- "ADMIN_NOMINATION"
-- "DIRECT_ASSIGNMENT"
+- `AUTOMATIC_INCLUSION`
+- `VOLUNTARY_APPLICATION`
+- `ADMIN_NOMINATION`
+- `DIRECT_ASSIGNMENT`
 
 Prinsip penting:
 
@@ -655,15 +663,15 @@ Prinsip penting:
 - WITHDRAWN dan REMOVED kekal sebagai status berbeza;
 - transfer dan rejoining mesti mengekalkan sejarah.
 
-Spesifikasi penuh terdapat dalam "JMV2004-Takaza-Management.md".
+Spesifikasi penuh terdapat dalam `JMV2004-Takaza-Management.md`.
 
 Pelaksanaan masih perlu dibuat dan diuji.
 
 ---
 
-13. Amer Appointment
+## 13. Amer Appointment
 
-Status: PARTIALLY IMPLEMENTED — FOUNDATION
+**Status: PARTIALLY IMPLEMENTED — FOUNDATION**
 
 Asas pelantikan Amer telah disediakan.
 
@@ -692,9 +700,9 @@ Asas teknikal pelantikan tidak membuktikan keseluruhan proses persetujuan, justi
 
 ---
 
-14. Supervisor Appointment
+## 14. Supervisor Appointment
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status: NOT IMPLEMENTED / NEEDS VERIFICATION**
 
 Reka bentuk sementara menetapkan:
 
@@ -712,9 +720,9 @@ Tiada fungsi tambahan atau permission khas boleh dianggap tersedia tanpa keputus
 
 ---
 
-15. KAWAIF
+## 15. KAWAIF
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status: NOT IMPLEMENTED / NEEDS VERIFICATION**
 
 KAWAIF telah ditetapkan sebagai rekod kelayakan dan pengalaman Ahbab.
 
@@ -738,9 +746,9 @@ Jangan menganggap pengiraan kelayakan telah tersedia hanya kerana maklumat KAWAI
 
 ---
 
-16. TAFAKUT
+## 16. TAFAKUT
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status: NOT IMPLEMENTED / NEEDS VERIFICATION**
 
 Enjin penilaian TAFAKUT penuh belum disahkan tersedia.
 
@@ -779,9 +787,9 @@ Kriteria, pemarkahan dan formula kelayakan tidak boleh direka secara automatik t
 
 ---
 
-17. Rekod Amal
+## 17. Rekod Amal
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status: NOT IMPLEMENTED / NEEDS VERIFICATION**
 
 Rekod Amal telah ditetapkan sebagai sumber rasmi rekod aktiviti dan pengalaman Ahbab.
 
@@ -794,6 +802,7 @@ Keperluan:
 - sejarah;
 - hubungan dengan TAFAKUT;
 - hubungan dengan laporan;
+
 - kawalan pemilikan dan akses;
 - pengiraan kemajuan jika ditetapkan.
 
@@ -801,9 +810,9 @@ Rekod asal dan sejarah pembetulan mesti dikekalkan.
 
 ---
 
-18. Takaza Events and Attendance
+## 18. Takaza Events and Attendance
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status: NOT IMPLEMENTED / NEEDS VERIFICATION**
 
 Reka bentuk membenarkan acara Takaza diwujudkan oleh Admin atau dirujuk daripada rekod Aktiviti Khidmat sedia ada.
 
@@ -826,9 +835,9 @@ Event templates masih memerlukan keputusan.
 
 ---
 
-19. Percha, Kharguzari and Reports
+## 19. Percha, Kharguzari and Reports
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status: NOT IMPLEMENTED / NEEDS VERIFICATION**
 
 Fungsi berikut belum disahkan lengkap:
 
@@ -840,7 +849,7 @@ Fungsi berikut belum disahkan lengkap:
 - Kharguzari individu;
 - komen susulan;
 - laporan penuh Amer;
-- status laporan "OVERDUE";
+- status laporan `OVERDUE`;
 - lanjutan masa laporan;
 - syarat penyelesaian Takaza.
 
@@ -860,9 +869,9 @@ Laporan operasi Takaza mesti kekal berasingan daripada Juhud Reports CMS dan Ann
 
 ---
 
-20. Comments and Discussion
+## 20. Comments and Discussion
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status: NOT IMPLEMENTED / NEEDS VERIFICATION**
 
 Keperluan reka bentuk:
 
@@ -879,9 +888,9 @@ Pelaksanaan penuh belum disahkan.
 
 ---
 
-21. Notifications
+## 21. Notifications
 
-Status: PARTIALLY IMPLEMENTED — NEEDS VERIFICATION
+**Status: PARTIALLY IMPLEMENTED — NEEDS VERIFICATION**
 
 Penghantaran e-mel untuk proses pengesahan akaun telah disediakan pada skop yang dilaporkan.
 
@@ -904,11 +913,11 @@ Peringatan automatik dan deadline tambahan tidak boleh dianggap tersedia tanpa k
 
 ---
 
-22. Case Management
+## 22. Case Management
 
-Status: ON HOLD
+**Status: ON HOLD**
 
-Reka bentuk menetapkan bahawa pembatalan Takaza menghasilkan rekod "Requires Attention" secara automatik.
+Reka bentuk menetapkan bahawa pembatalan Takaza menghasilkan rekod `Requires Attention` secara automatik.
 
 Perkara yang telah dipersetujui:
 
@@ -932,9 +941,9 @@ Jangan menganggap keseluruhan Case Management tersedia hanya kerana rekod Requir
 
 ---
 
-23. Annual Archive and Reporting
+## 23. Annual Archive and Reporting
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status: NOT IMPLEMENTED / NEEDS VERIFICATION**
 
 Keperluan reka bentuk:
 
@@ -947,7 +956,7 @@ Keperluan reka bentuk:
 - ringkasan negara;
 - ringkasan Main Takaza;
 - ringkasan Sub Takaza;
-- status ringkasan "DRAFT", "INTERIM", "FINAL";
+- status ringkasan `DRAFT`, `INTERIM`, `FINAL`;
 - catatan Admin;
 - sejarah pindaan.
 
@@ -963,9 +972,9 @@ Annual Summary ialah rekod ringkasan berasingan daripada transaksi operasi Takaz
 
 ---
 
-24. Juhud Reports CMS
+## 24. Juhud Reports CMS
 
-Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+**Status: NOT IMPLEMENTED / NEEDS VERIFICATION**
 
 Juhud Reports ialah modul penerbitan berasingan daripada laporan operasi Takaza dan Annual Archive.
 
@@ -986,9 +995,9 @@ Pelaksanaan penuh belum disahkan.
 
 ---
 
-25. Audit and History
+## 25. Audit and History
 
-Status: PARTIALLY IMPLEMENTED — NEEDS COMPLETENESS VERIFICATION
+**Status: PARTIALLY IMPLEMENTED — NEEDS COMPLETENESS VERIFICATION**
 
 Asas audit telah disediakan.
 
@@ -1017,11 +1026,11 @@ Audit mesti mengekalkan actor, timestamp, old/new values dan reason apabila diwa
 
 ---
 
-26. Frontend and Integration
+## 26. Frontend and Integration
 
-Status: NEEDS VERIFICATION
+**Status: NEEDS VERIFICATION**
 
-Direktori "v2/web/" telah disediakan.
+Direktori `v2/web/` telah disediakan.
 
 Pengesahan diperlukan bagi:
 
@@ -1048,13 +1057,13 @@ Backend mesti mengesahkan setiap tindakan.
 
 ---
 
-27. Automated Tests and Build
+## 27. Automated Tests and Build
 
-Status: REPORTED PASS — SCOPE LIMITED
+**Status: REPORTED PASS — SCOPE LIMITED**
 
 Keputusan ujian yang dilaporkan sebelum ini:
 
-- "npm test": 94/94 tests passed;
+- `npm test`: 94/94 tests passed;
 - GitHub Actions build and test: success;
 - Worker dry-run/build: pernah dilaporkan berjaya;
 - Worker health: success;
@@ -1077,7 +1086,7 @@ Ia tidak membuktikan:
 
 Ujian perlu dikembangkan seiring pelaksanaan modul.
 
-27.1 Required Test Coverage
+### 27.1 Required Test Coverage
 
 Ujian seterusnya perlu meliputi:
 
@@ -1098,9 +1107,9 @@ Ujian seterusnya perlu meliputi:
 15. Production smoke tests.
 16. V1/V2 deployment separation tests.
 
-27.2 Development Environment Note
+### 27.2 Development Environment Note
 
-Persekitaran Android Termux pernah menghadapi isu platform "workerd" ketika menjalankan build secara tempatan.
+Persekitaran Android Termux pernah menghadapi isu platform `workerd` ketika menjalankan build secara tempatan.
 
 GitHub Actions merupakan laluan build dan test yang digunakan untuk pengesahan projek.
 
@@ -1108,28 +1117,29 @@ Kegagalan platform Android tidak boleh disalah anggap sebagai kegagalan build pr
 
 ---
 
-28. Current Known Blockers and Risks
+## 28. Current Known Blockers and Risks
 
-Item| Status| Impact
-Bootstrap Super Admin| NEEDS VERIFICATION| Pentadbiran awal belum boleh dianggap selesai
-Password Reset| NOT IMPLEMENTED| Pemulihan kata laluan belum tersedia
-Admin-assisted recovery| PENDING IMPLEMENTATION / POLICY DETAIL| Pemulihan e-mel tidak boleh dianggap tersedia
-Full UAC enforcement| NEEDS VERIFICATION| Risiko akses tanpa kebenaran
-V1/V2 deployment| NEEDS VERIFICATION| Pengasingan deployment perlu diuji
-Full Takaza workflow| NOT IMPLEMENTED / NEEDS VERIFICATION| Operasi Takaza belum lengkap
-KAWAIF and TAFAKUT| NOT IMPLEMENTED / NEEDS VERIFICATION| Penilaian kelayakan belum lengkap
-Rekod Amal| NOT IMPLEMENTED / NEEDS VERIFICATION| Rekod aktiviti belum lengkap
-Case Management| ON HOLD| Pengurusan kes belum lengkap
-Frontend integration| NEEDS VERIFICATION| Pengalaman pengguna belum disahkan
-Production integration| NEEDS VERIFICATION| Ujian end-to-end masih diperlukan
-Audit completeness| NEEDS VERIFICATION| Semua tindakan penting belum disahkan menghasilkan audit
-Juhud Reports CMS| NOT IMPLEMENTED / NEEDS VERIFICATION| Penerbitan laporan belum lengkap
+| Item | Status | Impact |
+|---|---|---|
+| Bootstrap Super Admin | NEEDS VERIFICATION | Pentadbiran awal belum boleh dianggap selesai |
+| Password Reset | NOT IMPLEMENTED | Pemulihan kata laluan belum tersedia |
+| Admin-assisted recovery | PENDING IMPLEMENTATION / POLICY DETAIL | Pemulihan e-mel tidak boleh dianggap tersedia |
+| Full UAC enforcement | NEEDS VERIFICATION | Risiko akses tanpa kebenaran |
+| V1/V2 deployment | NEEDS VERIFICATION | Pengasingan deployment perlu diuji |
+| Full Takaza workflow | NOT IMPLEMENTED / NEEDS VERIFICATION | Operasi Takaza belum lengkap |
+| KAWAIF and TAFAKUT | NOT IMPLEMENTED / NEEDS VERIFICATION | Penilaian kelayakan belum lengkap |
+| Rekod Amal | NOT IMPLEMENTED / NEEDS VERIFICATION | Rekod aktiviti belum lengkap |
+| Case Management | ON HOLD | Pengurusan kes belum lengkap |
+| Frontend integration | NEEDS VERIFICATION | Pengalaman pengguna belum disahkan |
+| Production integration | NEEDS VERIFICATION | Ujian end-to-end masih diperlukan |
+| Audit completeness | NEEDS VERIFICATION | Semua tindakan penting belum disahkan menghasilkan audit |
+| Juhud Reports CMS | NOT IMPLEMENTED / NEEDS VERIFICATION | Penerbitan laporan belum lengkap |
 
 ---
 
-PART B — IMPLEMENTATION ROADMAP
+# PART B — IMPLEMENTATION ROADMAP
 
-29. Roadmap Principles
+## 29. Roadmap Principles
 
 Pembangunan mesti mengikuti prinsip berikut:
 
@@ -1147,11 +1157,11 @@ Pembangunan mesti mengikuti prinsip berikut:
 
 ---
 
-30. Phase 0 — Repository and Environment Stabilization
+## 30. Phase 0 — Repository and Environment Stabilization
 
-Priority: CRITICAL
+**Priority: CRITICAL**
 
-Tasks:
+**Tasks:**
 
 1. Confirm V1 and V2 directory separation.
 2. Confirm separate Wrangler configurations.
@@ -1165,7 +1175,7 @@ Tasks:
 10. Verify backup branch and V1 preservation tag.
 11. Review repository documentation and remove duplicate sources of truth only after approval.
 
-Exit criteria:
+**Exit criteria:**
 
 - V1 and V2 remain independently deployable.
 - No accidental V1 deployment from V2 workflow.
@@ -1176,11 +1186,11 @@ Exit criteria:
 
 ---
 
-31. Phase 1 — Bootstrap and Authentication
+## 31. Phase 1 — Bootstrap and Authentication
 
-Priority: CRITICAL
+**Priority: CRITICAL**
 
-Tasks:
+**Tasks:**
 
 1. Resolve bootstrap SUPER_ADMIN.
 2. Verify owner email identity.
@@ -1194,10 +1204,9 @@ Tasks:
 10. Implement Password Reset.
 11. Define and implement separate Admin-assisted recovery.
 12. Verify profile update and protected identity fields.
-13. Verify email change for eligible account states.
-14. Verify security notifications and audit records.
 
-Exit criteria:
+
+**Exit criteria:**
 
 - Bootstrap SUPER_ADMIN works.
 - No duplicate or ambiguous bootstrap identity remains.
@@ -1209,11 +1218,11 @@ Exit criteria:
 
 ---
 
-32. Phase 2 — Authorization and Organization
+## 32. Phase 2 — Authorization and Organization
 
-Priority: HIGH
+**Priority: HIGH**
 
-Tasks:
+**Tasks:**
 
 1. Complete UAC enforcement.
 2. Implement country scope.
@@ -1225,7 +1234,7 @@ Tasks:
 8. Verify Dashboard navigation against permissions.
 9. Test access denial across country and organization boundaries.
 
-Exit criteria:
+**Exit criteria:**
 
 - No unauthorized cross-country access.
 - Administrative roles remain distinct.
@@ -1235,11 +1244,11 @@ Exit criteria:
 
 ---
 
-33. Phase 3 — Syukbah Management
+## 33. Phase 3 — Syukbah Management
 
-Priority: HIGH
+**Priority: HIGH**
 
-Tasks:
+**Tasks:**
 
 1. Implement Global Baseline Syukbah.
 2. Implement country Syukbah activation.
@@ -1250,7 +1259,7 @@ Tasks:
 7. Implement soft deletion and audit.
 8. Resolve additional Syukbah approval rules.
 
-Exit criteria:
+**Exit criteria:**
 
 - Syukbah is independent of organization hierarchy.
 - Admin and Moderator permissions are enforced.
@@ -1259,11 +1268,11 @@ Exit criteria:
 
 ---
 
-34. Phase 4 — Jemaah and Takaza Participation
+## 34. Phase 4 — Jemaah and Takaza Participation
 
-Priority: HIGH
+**Priority: HIGH**
 
-Tasks:
+**Tasks:**
 
 1. Implement Jemaah Membership.
 2. Implement Main and Sub Takaza.
@@ -1279,7 +1288,7 @@ Tasks:
 12. Ensure no separate V2 Project Member entity exists.
 13. Implement cancellation and Requires Attention integration.
 
-Exit criteria:
+**Exit criteria:**
 
 - Membership and participation remain separate.
 - Every participant has a valid participation record.
@@ -1291,11 +1300,11 @@ Exit criteria:
 
 ---
 
-35. Phase 5 — KAWAIF and TAFAKUT
+## 35. Phase 5 — KAWAIF and TAFAKUT
 
-Priority: HIGH
+**Priority: HIGH**
 
-Tasks:
+**Tasks:**
 
 1. Implement KAWAIF records.
 2. Implement Admin verification.
@@ -1312,7 +1321,7 @@ Tasks:
 13. Implement notifications and decision visibility.
 14. Implement reassessment and historical records.
 
-Exit criteria:
+**Exit criteria:**
 
 - Assessment independence is enforced.
 - Old assessment versions remain available.
@@ -1322,11 +1331,11 @@ Exit criteria:
 
 ---
 
-36. Phase 6 — Amer, Supervisor and Events
+## 36. Phase 6 — Amer, Supervisor and Events
 
-Priority: HIGH
+**Priority: HIGH**
 
-Tasks:
+**Tasks:**
 
 1. Complete Amer appointment workflow.
 2. Enforce confirmed participation prerequisite.
@@ -1339,7 +1348,7 @@ Tasks:
 9. Implement event reuse and creation.
 10. Implement attendance and remarks.
 
-Exit criteria:
+**Exit criteria:**
 
 - Amer must be a confirmed participant in the same Takaza before appointment becomes effective.
 - Appointment may occur before the official start date.
@@ -1350,11 +1359,11 @@ Exit criteria:
 
 ---
 
-37. Phase 7 — Percha, Kharguzari and Reporting
+## 37. Phase 7 — Percha, Kharguzari and Reporting
 
-Priority: HIGH
+**Priority: HIGH**
 
-Tasks:
+**Tasks:**
 
 1. Generate Percha after Bayan Hidayat.
 2. Implement amendment proposal and independent approval.
@@ -1369,7 +1378,7 @@ Tasks:
 11. Implement Annual Summary.
 12. Keep Juhud Reports separate.
 
-Exit criteria:
+**Exit criteria:**
 
 - Percha amendments are independently approved.
 - Original Kharguzari records remain preserved.
@@ -1380,11 +1389,11 @@ Exit criteria:
 
 ---
 
-38. Phase 8 — Case Management and Hardening
+## 38. Phase 8 — Case Management and Hardening
 
-Priority: AFTER CORE WORKFLOWS
+**Priority: AFTER CORE WORKFLOWS**
 
-Tasks:
+**Tasks:**
 
 1. Define full Case Management specification.
 2. Implement case ownership and assignment.
@@ -1398,7 +1407,7 @@ Tasks:
 10. Perform production smoke tests.
 11. Update operational documentation.
 
-Exit criteria:
+**Exit criteria:**
 
 - Case Management follows an approved specification.
 - No unresolved critical security defect.
@@ -1407,11 +1416,11 @@ Exit criteria:
 
 ---
 
-39. Release Gates
+## 39. Release Gates
 
 Production release must not be considered complete until the relevant gates are satisfied.
 
-Gate A — Identity and Bootstrap
+### Gate A — Identity and Bootstrap
 
 - Bootstrap owner verified.
 - SUPER_ADMIN role verified.
@@ -1419,7 +1428,7 @@ Gate A — Identity and Bootstrap
 - No duplicate or ambiguous bootstrap identity.
 - Account status and owner verification are consistent.
 
-Gate B — Authorization
+### Gate B — Authorization
 
 - Backend role checks verified.
 - Country scope verified.
@@ -1428,7 +1437,7 @@ Gate B — Authorization
 - Account disablement enforcement tested.
 - Functional appointment permissions tested.
 
-Gate C — Database
+### Gate C — Database
 
 - Migrations reviewed.
 - Migration order confirmed.
@@ -1437,7 +1446,7 @@ Gate C — Database
 - No unauthorized schema change.
 - V1 and V2 databases remain separate.
 
-Gate D — Security
+### Gate D — Security
 
 - OTP limits tested.
 - Session revocation tested.
@@ -1447,7 +1456,7 @@ Gate D — Security
 - Audit records verified.
 - Disabled and suspended account behavior verified.
 
-Gate E — Deployment
+### Gate E — Deployment
 
 - V1 Worker remains separate.
 - V2 Worker remains separate.
@@ -1456,7 +1465,7 @@ Gate E — Deployment
 - Health endpoint and database connectivity verified.
 - Deployment workflows use the intended directories and configurations.
 
-Gate F — Functional Tests
+### Gate F — Functional Tests
 
 - Required workflows tested.
 - Negative authorization tests passed.
@@ -1467,7 +1476,7 @@ Gate F — Functional Tests
 
 ---
 
-40. Non-Negotiable Requirements
+## 40. Non-Negotiable Requirements
 
 The following must not be violated during implementation:
 
@@ -1476,8 +1485,8 @@ The following must not be violated during implementation:
 3. Amer must already be a confirmed participant in the same Takaza before appointment becomes effective.
 4. Amer appointment may occur before the official Takaza start date.
 5. Supervisor authority must not be invented.
-6. "WITHDRAWN" and "REMOVED" remain distinct.
-7. Account "DISABLED" cannot be overridden by LIMITED access.
+6. `WITHDRAWN` and `REMOVED` remain distinct.
+7. Account `DISABLED` cannot be overridden by LIMITED access.
 8. Password Reset requires verified email OTP and revocation of all existing sessions and tokens.
 9. Password Reset and email change must not reactivate a disabled or suspended account.
 10. No Takaza completion without the required Amer report.
@@ -1492,7 +1501,7 @@ The following must not be violated during implementation:
 
 ---
 
-41. Maintenance and Evidence
+## 41. Maintenance and Evidence
 
 Dokumen ini perlu dikemas kini apabila:
 
@@ -1515,7 +1524,7 @@ Setiap perubahan status perlu disertakan:
 - environment yang terlibat;
 - keputusan dan isu yang masih berbaki.
 
-Setiap fungsi hanya boleh dinaik taraf kepada "IMPLEMENTED" apabila bukti yang sesuai tersedia.
+Setiap fungsi hanya boleh dinaik taraf kepada `IMPLEMENTED` apabila bukti yang sesuai tersedia.
 
 Bukti boleh merangkumi:
 
@@ -1529,42 +1538,43 @@ Bukti boleh merangkumi:
 
 Contoh:
 
-"IMPLEMENTED — SCHEMA FOUNDATION"
+`IMPLEMENTED — SCHEMA FOUNDATION`
 
 tidak boleh ditukar kepada:
 
-"IMPLEMENTED — FULL WORKFLOW"
+`IMPLEMENTED — FULL WORKFLOW`
 
 tanpa bukti tambahan.
 
-Status "DEPLOYED" mesti menyatakan environment yang telah disahkan.
+Status `DEPLOYED` mesti menyatakan environment yang telah disahkan.
 
-Status "REPORTED PASS" mesti dikekalkan sehingga ujian dijalankan semula atau bukti terkini diperoleh.
+Status `REPORTED PASS` mesti dikekalkan sehingga ujian dijalankan semula atau bukti terkini diperoleh.
 
-41.1 Related Documents
+### 41.1 Related Documents
 
 Dokumen ini mesti kekal selaras dengan:
 
-- "MASTER_DECISION_REGISTER.md"
-- "MODULE_REQUIREMENTS.md"
-- "OPEN_DECISIONS_REGISTER.md"
-- "V2_DESIGN_CHECKPOINT.md"
-- "AUTH.md"
-- "UAC_MATRIX.md"
-- "DASHBOARD_NAVIGATION_SPEC_V2.md"
-- "JMV2001-Ahbab-Profile-Account-Management.md"
-- "JMV2002-Organization-Structure-Governance.md"
-- "JMV2003-Syukbah-Management.md"
-- "JMV2004-Takaza-Management.md"
-- "REPOSITORY_DISPOSITION.md"
+- `MASTER_DECISION_REGISTER.md`
+- `MODULE_REQUIREMENTS.md`
+- `OPEN_DECISIONS_REGISTER.md`
+- `V2_DESIGN_CHECKPOINT.md`
+- `AUTH.md`
+- `UAC_MATRIX.md`
+- `DASHBOARD_NAVIGATION_SPEC_V2.md`
+- `JMV2001-Ahbab-Profile-Account-Management.md`
+- `JMV2002-Organization-Structure-Governance.md`
+- `JMV2003-Syukbah-Management.md`
+- `JMV2004-Takaza-Management.md`
+- `REPOSITORY_DISPOSITION.md`
 
 Spesifikasi modul menentukan keperluan dan tingkah laku. Master Decision Register menentukan keputusan. Dokumen ini menentukan status pelaksanaan dan roadmap.
 
 ---
 
-Document Status: WORKING BASELINE — Implementation Tracking
-Version: 3.0
-Last Updated: 28 November 2026
+Document Status: WORKING BASELINE — Implementation Tracking  
+Version: 3.0  
+Last Updated: 28 November 2026  
 Next Review: After repository, bootstrap and deployment verification.
 
 End of Document.
+
