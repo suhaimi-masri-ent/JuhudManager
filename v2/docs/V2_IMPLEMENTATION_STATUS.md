@@ -1,7 +1,7 @@
-JUHUDMANAGER V2 — IMPLEMENTATION STATUS
+# JUHUDMANAGER V2 — IMPLEMENTATION STATUS
 
-Document ID: JMV2-IMP-001
-Version: 2.0
+**Document ID**: JMV2-IMP-001
+**Version**: 2.1
 Status: WORKING BASELINE — Implementation Tracking
 Last Updated: 27 November 2026
 Suggested Filename: "V2_IMPLEMENTATION_STATUS.md"
@@ -9,18 +9,22 @@ Repository Path: "v2/docs/V2_IMPLEMENTATION_STATUS.md"
 
 ---
 
-1. Purpose
+## 1. Purpose
 
-Dokumen ini merekodkan status pelaksanaan sebenar JuhudManager V2 berdasarkan maklumat kod, migration, ujian dan deployment yang telah dilaporkan atau disahkan.
+Dokumen ini merekodkan status pelaksanaan sebenar JuhudManager V2 berdasarkan bukti kod, migration, ujian dan deployment yang telah dilaporkan atau disahkan.
 
 Dokumen ini membezakan:
 
 - fungsi yang telah dilaksanakan;
 - asas teknikal yang telah tersedia tetapi belum lengkap sebagai aliran kerja;
 - fungsi yang belum dilaksanakan;
-- fungsi yang memerlukan pengesahan lanjut.
+- fungsi yang sedang dibangunkan;
+- fungsi yang memerlukan pengesahan lanjut;
+- fungsi yang ditangguhkan atau berada dalam status ON HOLD.
 
 Keputusan reka bentuk yang telah dipersetujui tidak boleh dianggap sebagai fungsi yang telah tersedia sehingga pelaksanaannya disahkan.
+
+Dokumen ini ialah rekod status kerja. Ia bukan pengganti kepada spesifikasi modul atau Master Decision Register.
 
 2. Status Labels
 
@@ -33,14 +37,22 @@ Status| Meaning
 "ON HOLD"| Kerja ditangguhkan sementara.
 "DEPRECATED"| Pelaksanaan atau pendekatan lama tidak lagi digunakan.
 "NOT APPLICABLE"| Tidak berkaitan dengan skop berkenaan.
+"REPORTED PASS"| Keputusan lulus telah dilaporkan tetapi belum semestinya disahkan semula.
+"DEPLOYED"| Telah disahkan dalam persekitaran yang dinyatakan.
+
+Status mesti menyatakan skop sebenar.
+
+Contohnya, "IMPLEMENTED — SCHEMA FOUNDATION" tidak bermaksud keseluruhan workflow modul telah lengkap.
+
+"REPORTED PASS" tidak sama dengan pengesahan terkini.
 
 3. Repository and Architecture
 
 3.1 V1/V2 Separation
 
-Status: PARTIALLY IMPLEMENTED — NEEDS VERIFICATION
+Status: PARTIALLY IMPLEMENTED — NEEDS FINAL VERIFICATION
 
-Kerja pemisahan V1 dan V2 telah dijalankan pada branch:
+Kerja pemisahan V1 dan V2 telah disediakan pada branch:
 
 "integration/v1-v2-separation-develop"
 
@@ -56,8 +68,11 @@ JuhudManager/
 │   ├── src/
 │   ├── web/
 │   ├── migrations/
+│   ├── docs/
 │   └── wrangler.jsonc
 ├── docs/
+├── .github/
+│   └── workflows/
 └── README.md
 
 Perkara yang telah disediakan dalam kerja pemisahan:
@@ -66,11 +81,12 @@ Perkara yang telah disediakan dalam kerja pemisahan:
 - konfigurasi Worker V1 dan V2 yang berasingan;
 - workflow deployment V1 dan V2 yang diasingkan;
 - struktur Pages yang menggabungkan output V1 dan V2;
-- dokumentasi asas pemisahan.
+- dokumentasi asas pemisahan;
+- workflow migration V2 yang berasingan.
 
 Pemisahan fail dan konfigurasi tidak dengan sendirinya membuktikan semua deployment berfungsi.
 
-Perlu pengesahan berasingan bagi:
+Pengesahan akhir diperlukan bagi:
 
 - V1 Worker deployment;
 - V1 Pages deployment;
@@ -78,7 +94,10 @@ Perlu pengesahan berasingan bagi:
 - V2 Pages deployment;
 - laluan aplikasi dan aset;
 - workflow GitHub Actions;
-- konfigurasi production.
+- konfigurasi production;
+- kesinambungan fungsi V1 selepas pemindahan.
+
+Pemisahan pada integration branch tidak bermaksud perubahan telah digabungkan ke branch production.
 
 3.2 V1 Preservation
 
@@ -86,15 +105,18 @@ Status: NEEDS VERIFICATION
 
 V1 telah dipindahkan ke struktur "v1/" pada branch integrasi.
 
+Backup branch dan tag pemeliharaan V1 telah disediakan sebelum kerja pemisahan.
+
 Pengesahan akhir perlu memastikan:
 
 - source V1 lengkap;
 - konfigurasi Worker dan Pages betul;
 - database V1 tidak berubah;
 - fungsi V1 masih boleh dibina dan digunakan;
-- deployment V1 tidak bergantung kepada laluan lama.
+- deployment V1 tidak bergantung kepada laluan lama;
+- workflow V1 tidak menggunakan konfigurasi V2.
 
-V1 tidak boleh dianggap selamat untuk diarkibkan atau ditinggalkan sehingga pengesahan ini selesai.
+V1 tidak boleh dianggap selamat untuk ditinggalkan atau diarkibkan sepenuhnya sehingga pengesahan ini selesai.
 
 3.3 V2 Isolation
 
@@ -109,6 +131,25 @@ V2 mempunyai:
 - Worker berasingan daripada V1.
 
 V2 tidak boleh menggunakan database produksi V1.
+
+3.4 Branch and Repository Controls
+
+Status: NEEDS VERIFICATION
+
+Branch integrasi semasa:
+
+"integration/v1-v2-separation-develop"
+
+Pengesahan sebelum merge perlu merangkumi:
+
+- tiada unresolved merge conflict;
+- perubahan staged dan unstaged telah disemak;
+- workflow deployment menggunakan path yang betul;
+- tiada fail V1 atau V2 yang tertinggal;
+- tiada konfigurasi sensitif dimasukkan ke repository;
+- backup dan tag V1 masih tersedia.
+
+---
 
 4. Cloudflare Worker and Database Foundation
 
@@ -132,7 +173,9 @@ Health endpoint pernah memberikan keputusan:
 - environment production;
 - database connected.
 
-Keputusan tersebut ialah pengesahan pada masa pemeriksaan terdahulu, bukan jaminan bahawa semua API dan modul perniagaan telah berfungsi.
+Keputusan tersebut ialah pengesahan pada masa pemeriksaan terdahulu.
+
+Ia bukan jaminan bahawa semua API, authorization dan modul perniagaan telah berfungsi.
 
 4.2 D1 Database
 
@@ -157,7 +200,8 @@ Pengesahan akhir masih perlu memastikan:
 - struktur remote sepadan dengan struktur yang dijangka;
 - semua foreign key dan constraint berfungsi;
 - tiada migration yang tertinggal;
-- data dan trigger berkaitan berada dalam keadaan konsisten.
+- data dan trigger berkaitan berada dalam keadaan konsisten;
+- migration V2 tidak pernah diarahkan kepada database V1.
 
 4.3 Migration Safety
 
@@ -169,7 +213,12 @@ Migration V2 mesti:
 - dikendalikan melalui workflow yang mempunyai kawalan pengesahan;
 - mengekalkan migration history;
 - tidak menggunakan database V1;
-- diuji sebelum digunakan pada production.
+- diuji sebelum digunakan pada production;
+- mempunyai prosedur pemulihan yang sesuai.
+
+Workflow migration yang tersedia tidak bermaksud setiap migration telah melalui pengesahan penuh semua kes penggunaan.
+
+---
 
 5. Database Schema Foundation
 
@@ -187,11 +236,16 @@ Asas schema yang telah dikenal pasti termasuk:
 - Takaza Participation;
 - Amer Appointment;
 - audit records;
-- authentication OTP and verification records.
+- authentication OTP and verification records;
+- Super Admin owner verification records.
 
-Constraint dan domain validation berkaitan pelantikan Amer turut disediakan pada skop asas.
+Constraint dan domain validation berkaitan pelantikan Amer turut disediakan pada skop asas yang dilaporkan.
 
 Kewujudan schema tidak bermaksud semua fungsi pengurusan dan aliran kerja modul telah lengkap.
+
+Pengesahan diperlukan bagi setiap jadual, foreign key, index, trigger dan domain constraint sebelum status dinaik taraf.
+
+---
 
 6. Authentication and Account Foundation
 
@@ -201,7 +255,7 @@ Status: PARTIALLY IMPLEMENTED
 
 Asas pendaftaran melalui e-mel dan pengesahan OTP telah dilaksanakan pada skop yang dilaporkan.
 
-Peraturan reka bentuk yang digunakan:
+Peraturan reka bentuk:
 
 - OTP enam digit;
 - tempoh sah lima minit;
@@ -210,11 +264,11 @@ Peraturan reka bentuk yang digunakan:
 - identity reservation 15 minit;
 - kata laluan minimum 12 aksara.
 
-Pengesahan keseluruhan aliran pendaftaran, termasuk kes khas dan bootstrap owner, masih memerlukan pengesahan.
+Pengesahan keseluruhan aliran pendaftaran, termasuk kes khas dan bootstrap owner, masih diperlukan.
 
 6.2 Email OTP and Activation
 
-Status: PARTIALLY IMPLEMENTED
+Status: PARTIALLY IMPLEMENTED — NEEDS PRODUCTION VERIFICATION
 
 Asas penghantaran OTP dan pengaktifan akaun melalui e-mel telah disediakan.
 
@@ -222,7 +276,15 @@ Sender yang digunakan:
 
 "noreply@m.juhud.run.place"
 
-Penghantaran dan pengesahan OTP perlu diuji semula dalam keadaan production, termasuk kegagalan penghantaran dan percubaan berulang.
+Penghantaran dan pengesahan OTP perlu diuji semula dalam keadaan production, termasuk:
+
+- kegagalan penghantaran;
+- OTP tamat tempoh;
+- percubaan berulang;
+- resend cooldown;
+- OTP digunakan lebih daripada sekali;
+- OTP untuk tujuan transaksi berbeza;
+- identity reservation tamat tempoh.
 
 6.3 Login and Sessions
 
@@ -234,10 +296,19 @@ Polisi reka bentuk:
 
 - idle timeout 30 minit;
 - maksimum hayat sesi 12 jam;
-- tindakan DISABLE menamatkan sesi dan token yang berkaitan;
-- perubahan kata laluan perlu membatalkan sesi yang terjejas.
+- tindakan DISABLE menamatkan sesi dan token berkaitan;
+- perubahan kata laluan perlu membatalkan sesi yang terjejas;
+- sesi mesti diperiksa terhadap account status dan authorization.
 
-Pengesahan penuh perlu merangkumi semua laluan login, session expiry, revocation dan authorization.
+Pengesahan penuh perlu merangkumi:
+
+- login berjaya dan gagal;
+- session expiry;
+- session revocation;
+- token revocation;
+- perubahan status akaun;
+- authorization selepas perubahan role atau appointment;
+- logout dan logout semua sesi.
 
 6.4 Email Change
 
@@ -251,21 +322,26 @@ Pelaksanaan keseluruhan perlu disahkan.
 
 6.5 Password Reset / Forgot Password
 
-Status: NOT IMPLEMENTED
+<text weight="semibold" color="danger">Status: NOT IMPLEMENTED — REQUIRED</text>
 
 Fungsi Password Reset / Forgot Password belum dilaksanakan.
 
-Ia tidak boleh dipaparkan atau didokumenkan sebagai fungsi tersedia.
+Keperluan yang telah dipersetujui:
 
-Reka bentuk masa hadapan perlu merangkumi:
+- menggunakan e-mel berdaftar dan telah disahkan;
+- OTP enam digit;
+- tempoh sah lima minit;
+- maksimum lima percubaan;
+- resend cooldown 60 saat;
+- OTP sekali guna dan terasing mengikut tujuan;
+- kata laluan baharu minimum 12 aksara;
+- membatalkan semua sesi dan token berkaitan selepas reset berjaya;
+- merekodkan audit event;
+- menghantar security notification.
 
-- pengesahan identiti;
-- token sekali guna;
-- tempoh sah token;
-- pembatalan token terdahulu;
-- penamatan sesi atau token lama;
-- notifikasi;
-- audit.
+Admin-Assisted Account Recovery ialah workflow berasingan apabila pengguna tidak lagi mempunyai akses kepada e-mel yang disahkan.
+
+Fungsi ini tidak boleh dipaparkan atau didokumenkan sebagai tersedia sehingga dilaksanakan dan diuji.
 
 6.6 Bootstrap Super Admin
 
@@ -292,32 +368,42 @@ Urutan ujian yang dirancang:
 
 Jangan menganggap bootstrap selesai hanya kerana migration atau jadual berkaitan telah diwujudkan.
 
+---
+
 7. Authorization and UAC
 
-Status: PARTIALLY IMPLEMENTED / NEEDS VERIFICATION
+Status: PARTIALLY IMPLEMENTED — NEEDS VERIFICATION
 
 Asas role dan authorization telah disediakan.
 
-Model akses yang dipersetujui:
+Model core role yang dipersetujui:
 
-- "SUPER_ADMIN";
-- "ADMIN";
-- "AHBAB".
+- "SUPER_ADMIN"
+- "ADMIN"
+- "AHBAB"
 
-Amer dan Supervisor ialah pelantikan khusus Takaza, bukan role global.
+Amer, Supervisor, Admin Syukbah, Admin Takaza, Deputy, Moderator dan TAFAKUT Assessor ialah functional appointments atau delegation, bukan core role global.
 
 Pengesahan penuh perlu memastikan:
 
+- account status;
+- access level;
+- core role;
+- functional appointment;
+- appointment effective dates;
 - skop negara dan organisasi;
 - hubungan pengguna dengan rekod;
 - akses peserta terhadap Takaza;
-- akses Amer terhadap Takaza yang berkaitan;
+- akses Amer terhadap Takaza berkaitan;
 - skop tindakan Admin;
 - kawalan Admin lebih tinggi atau lebih luas;
 - kawalan rayuan dan penggantian;
-- akses kepada sejarah dan arkib.
+- akses kepada sejarah dan arkib;
+- pemisahan antara visibility dan permission.
 
 UAC Matrix ialah rujukan reka bentuk. Ia tidak membuktikan setiap permission telah dilaksanakan.
+
+---
 
 8. Jemaah and Membership
 
@@ -332,9 +418,13 @@ Belum disahkan sebagai lengkap:
 - pengurusan Mohallah;
 - aliran keahlian;
 - sejarah keahlian;
-- integrasi penuh dengan struktur organisasi.
+- integrasi penuh dengan struktur organisasi;
+- skop akses Admin;
+- kawalan akses Ahbab terhadap rekod Jemaah.
 
 Jemaah Membership mesti kekal berasingan daripada Takaza Participation.
+
+---
 
 9. Takaza and Participation
 
@@ -346,6 +436,7 @@ Perkara yang belum boleh dianggap lengkap:
 
 - penciptaan Takaza;
 - Main/Sub Takaza management;
+- had dua peringkat;
 - konfigurasi kaedah penyertaan;
 - Automatic Inclusion dan pengesahan Admin;
 - permohonan sukarela;
@@ -360,9 +451,14 @@ Perkara yang belum boleh dianggap lengkap:
 - transfer;
 - lifecycle dan status transition;
 - end-date completion rules;
-- cancellation dan Requires Attention integration.
+- cancellation dan Requires Attention integration;
+- Main/Sub independent lifecycle.
 
-Spesifikasi penuh telah diselaraskan dalam dokumen reka bentuk. Pelaksanaannya masih perlu dibuat dan diuji.
+Spesifikasi penuh telah diselaraskan dalam "JMV2004-Takaza-Management.md".
+
+Pelaksanaannya masih perlu dibuat dan diuji.
+
+---
 
 10. Amer Appointment
 
@@ -386,21 +482,27 @@ Peraturan reka bentuk:
 - Takaza tidak perlu menunggu status "ACTIVE" untuk pelantikan;
 - pelantikan memerlukan persetujuan Admin dan individu yang dipilih;
 - penggantian memerlukan sebab dan justifikasi Admin kedua;
-- Admin yang mengurus Takaza membuat keputusan akhir.
+- Admin yang mengurus Takaza membuat keputusan akhir;
+- appointment mempunyai tempoh dan sejarah;
+- tamat appointment tidak mengubah lifecycle Takaza.
 
 Asas teknikal pelantikan tidak membuktikan keseluruhan proses persetujuan, justifikasi, notifikasi dan audit telah lengkap.
+
+---
 
 11. Supervisor Appointment
 
 Status: NOT IMPLEMENTED / NEEDS VERIFICATION
 
-Reka bentuk sementara telah menetapkan prinsip pelantikan dengan persetujuan Admin dan individu yang dipilih.
+Reka bentuk sementara menetapkan prinsip pelantikan dengan persetujuan Admin dan individu yang dipilih.
 
 Tempoh pelantikan buat masa ini mengikuti prinsip Amer.
 
-Skop kuasa dan fungsi khusus Supervisor masih belum diputuskan.
+Skop kuasa, tanggungjawab khusus dan sama ada Supervisor wajib menjadi peserta masih belum diputuskan.
 
-Tiada fungsi tambahan boleh dianggap tersedia tanpa pemeriksaan kod.
+Tiada fungsi tambahan boleh dianggap tersedia tanpa pemeriksaan kod dan keputusan yang diluluskan.
+
+---
 
 12. KAWAIF
 
@@ -422,6 +524,8 @@ Fungsi yang diperlukan tetapi belum disahkan lengkap:
 
 Jangan menganggap pengiraan kelayakan telah tersedia hanya kerana maklumat KAWAIF boleh disimpan.
 
+---
+
 13. TAFAKUT
 
 Status: NOT IMPLEMENTED / NEEDS VERIFICATION
@@ -442,9 +546,12 @@ Fungsi reka bentuk yang diperlukan termasuk:
 - pembetulan data;
 - keputusan akhir Admin;
 - paparan keputusan kepada Ahbab;
-- notifikasi.
+- notifikasi;
+- sejarah penilaian.
 
 Kriteria, pemarkahan dan formula kelayakan tidak boleh direka secara automatik tanpa keputusan yang telah dipersetujui.
+
+---
 
 14. Rekod Amal
 
@@ -461,7 +568,10 @@ Keperluan yang perlu dilaksanakan termasuk:
 - sejarah;
 - hubungan dengan TAFAKUT;
 - hubungan dengan laporan;
+- kawalan pemilikan dan akses;
 - pengiraan kemajuan jika ditetapkan.
+
+---
 
 15. Takaza Events and Attendance
 
@@ -477,9 +587,12 @@ Pelaksanaan penuh belum disahkan, termasuk:
 - kehadiran;
 - catatan kehadiran;
 - perubahan dan pembatalan;
-- templat acara.
+- templat acara;
+- sejarah perubahan.
 
 Kehadiran tidak boleh digunakan sebagai pengganti status lifecycle Takaza.
+
+---
 
 16. Percha, Kharguzari and Reports
 
@@ -490,6 +603,7 @@ Fungsi berikut belum disahkan lengkap:
 - penjanaan Percha selepas Bayan Hidayat;
 - maklumat Percha;
 - pindaan dan versioning Percha;
+- persetujuan dan kelulusan pindaan oleh Admin berlainan;
 - Kharguzari individu;
 - komen susulan;
 - laporan penuh Amer;
@@ -498,6 +612,10 @@ Fungsi berikut belum disahkan lengkap:
 - syarat penyelesaian Takaza.
 
 Laporan penuh Amer ialah syarat penyelesaian Takaza mengikut keputusan reka bentuk semasa.
+
+Laporan operasi Takaza mesti kekal berasingan daripada Juhud Reports CMS.
+
+---
 
 17. Comments and Discussion
 
@@ -508,13 +626,18 @@ Keperluan reka bentuk:
 - komen disimpan berasingan daripada rekod asal;
 - penulis boleh mengemas kini komen sendiri mengikut kebenaran;
 - sejarah perubahan dikekalkan;
-- akses dikawal melalui UAC.
+- akses dikawal melalui UAC;
+- Moderator hanya mempunyai kuasa yang ditetapkan untuk ruang perbincangan Syukbah;
+- Moderator tidak secara automatik mempunyai kuasa mengubah komen orang lain;
+- CMS dan perbincangan bukan modul yang sama.
 
 Pelaksanaan penuh belum disahkan.
 
+---
+
 18. Notifications
 
-Status: PARTIALLY IMPLEMENTED / NEEDS VERIFICATION
+Status: PARTIALLY IMPLEMENTED — NEEDS VERIFICATION
 
 Penghantaran e-mel untuk proses pengesahan akaun telah disediakan pada skop yang dilaporkan.
 
@@ -527,11 +650,15 @@ Notifikasi modul perniagaan masih perlu disahkan, termasuk:
 - withdrawal dan removal;
 - appeal;
 - laporan dan aktiviti;
-- perubahan penting Takaza.
+- perubahan penting Takaza;
+- perubahan status akaun;
+- security notification.
 
 Notifikasi perlu menggunakan bahasa pilihan pengguna.
 
 Peringatan automatik dan had masa tambahan tidak boleh dianggap tersedia tanpa keputusan dan pelaksanaan khusus.
+
+---
 
 19. Case Management
 
@@ -546,7 +673,18 @@ Perkara yang telah dipersetujui:
 - Admin mengurus tindakan terhadap peserta secara berasingan;
 - sejarah dan rekod berkaitan dikekalkan.
 
-Aliran kerja penuh Case Management masih "ON HOLD", termasuk assignment, tindakan, resolusi dan penutupan.
+Aliran kerja penuh Case Management masih ON HOLD, termasuk:
+
+- assignment;
+- tindakan;
+- status;
+- resolusi;
+- penutupan;
+- audit dan notifikasi.
+
+Jangan menganggap keseluruhan Case Management tersedia hanya kerana rekod Requires Attention boleh diwujudkan.
+
+---
 
 20. Annual Archive and Reporting
 
@@ -569,9 +707,42 @@ Keperluan reka bentuk telah dikenal pasti:
 
 Pelaksanaan penuh belum disahkan.
 
-21. Audit and History
+Perkara yang masih pending:
 
-Status: PARTIALLY IMPLEMENTED
+- polisi pembetulan Annual Archive;
+- penapis Main Takaza;
+- prosedur pembetulan data sejarah.
+
+Tiada PDF atau Excel export dalam baseline semasa.
+
+---
+
+21. Juhud Reports CMS
+
+Status: NOT IMPLEMENTED / NEEDS VERIFICATION
+
+Juhud Reports ialah modul penerbitan berasingan daripada laporan operasi Takaza.
+
+Keperluan reka bentuk:
+
+- penciptaan laporan;
+- penyimpanan DRAFT;
+- pengeditan mengikut kebenaran;
+- penerbitan;
+- pengarkiban;
+- pengurusan audience visibility;
+- attachment handling;
+- audit penerbitan dan perubahan.
+
+ADMIN yang mempunyai publishing permission boleh menerbitkan laporan tanpa kelulusan SUPER_ADMIN.
+
+Pelaksanaan penuh belum disahkan.
+
+---
+
+22. Audit and History
+
+Status: PARTIALLY IMPLEMENTED — NEEDS COMPLETENESS VERIFICATION
 
 Asas audit telah disediakan.
 
@@ -588,11 +759,18 @@ Pelaksanaan audit penuh perlu meliputi semua tindakan penting, termasuk:
 - withdrawal, removal dan appeal;
 - capacity dan transfer;
 - laporan dan lanjutan masa;
-- arkib dan ringkasan tahunan.
+- Percha;
+- arkib dan ringkasan tahunan;
+- penerbitan Juhud Reports;
+- perubahan konfigurasi.
 
 Kewujudan jadual audit tidak membuktikan setiap tindakan telah menghasilkan rekod audit yang betul.
 
-22. Frontend and Integration
+Audit mesti mengekalkan actor, timestamp, old/new values dan reason apabila diwajibkan.
+
+---
+
+23. Frontend and Integration
 
 Status: NEEDS VERIFICATION
 
@@ -602,7 +780,7 @@ Pengesahan diperlukan bagi:
 
 - halaman pendaftaran dan login;
 - pengesahan OTP;
-- dashboard mengikut role;
+- dashboard mengikut access level dan role;
 - profil Ahbab;
 - fungsi Admin;
 - pengurusan Jemaah;
@@ -613,11 +791,17 @@ Pengesahan diperlukan bagi:
 - laporan;
 - notifikasi;
 - integrasi API;
-- authorization pada frontend dan backend.
+- authorization pada frontend dan backend;
+- responsive layout;
+- navigation berdasarkan appointment dan scope.
 
-Paparan frontend tidak boleh menjadi satu-satunya kawalan keselamatan. Backend mesti mengesahkan setiap tindakan.
+Paparan frontend tidak boleh menjadi satu-satunya kawalan keselamatan.
 
-23. Automated Tests and Build
+Backend mesti mengesahkan setiap tindakan.
+
+---
+
+24. Automated Tests and Build
 
 Status: REPORTED PASS — SCOPE LIMITED
 
@@ -626,6 +810,8 @@ Keputusan ujian yang dilaporkan:
 - "npm test": 94/94 tests passed.
 - GitHub Actions build and test: success.
 - Worker dry-run/build: pernah dilaporkan berjaya.
+
+Keputusan tersebut ialah hasil yang dilaporkan pada pemeriksaan terdahulu.
 
 Ujian ini mengesahkan skop yang diuji sahaja.
 
@@ -637,24 +823,39 @@ Ia tidak membuktikan:
 - semua aliran frontend berfungsi;
 - semua migration remote sepadan;
 - bootstrap Super Admin berjaya;
-- deployment V1 dan V2 lengkap.
+- deployment V1 dan V2 lengkap;
+- Password Reset tersedia.
 
 Ujian perlu dikembangkan seiring pelaksanaan modul.
 
-24. Current Known Blockers and Risks
+24.1 Development Environment Note
+
+Persekitaran Android Termux pernah menghadapi isu platform "workerd" ketika menjalankan build secara tempatan.
+
+GitHub Actions merupakan laluan build dan test yang digunakan untuk pengesahan projek.
+
+Kegagalan platform Android tidak boleh disalah anggap sebagai kegagalan build production.
+
+---
+
+25. Current Known Blockers and Risks
 
 Item| Status| Impact
-Bootstrap Super Admin| "NEEDS VERIFICATION"| Pentadbiran awal belum boleh dianggap selesai
-Password Reset| "NOT IMPLEMENTED"| Pemulihan kata laluan belum tersedia
-Full Takaza workflow| "NOT IMPLEMENTED / NEEDS VERIFICATION"| Operasi Takaza belum lengkap
-KAWAIF and TAFAKUT| "NOT IMPLEMENTED / NEEDS VERIFICATION"| Penilaian kelayakan belum lengkap
-Rekod Amal| "NOT IMPLEMENTED / NEEDS VERIFICATION"| Rekod aktiviti belum lengkap
-Case Management| "ON HOLD"| Pengurusan kes belum lengkap
-Frontend integration| "NEEDS VERIFICATION"| Pengalaman pengguna belum disahkan
-V1/V2 deployment| "NEEDS VERIFICATION"| Pengasingan deployment perlu diuji
-Production integration| "NEEDS VERIFICATION"| Ujian end-to-end masih diperlukan
+Bootstrap Super Admin| NEEDS VERIFICATION| Pentadbiran awal belum boleh dianggap selesai
+Password Reset| NOT IMPLEMENTED| Pemulihan kata laluan belum tersedia
+Full Takaza workflow| NOT IMPLEMENTED / NEEDS VERIFICATION| Operasi Takaza belum lengkap
+KAWAIF and TAFAKUT| NOT IMPLEMENTED / NEEDS VERIFICATION| Penilaian kelayakan belum lengkap
+Rekod Amal| NOT IMPLEMENTED / NEEDS VERIFICATION| Rekod aktiviti belum lengkap
+Case Management| ON HOLD| Pengurusan kes belum lengkap
+Frontend integration| NEEDS VERIFICATION| Pengalaman pengguna belum disahkan
+V1/V2 deployment| NEEDS VERIFICATION| Pengasingan deployment perlu diuji
+Production integration| NEEDS VERIFICATION| Ujian end-to-end masih diperlukan
+Audit completeness| NEEDS VERIFICATION| Semua tindakan penting belum disahkan menghasilkan audit
+Juhud Reports CMS| NOT IMPLEMENTED / NEEDS VERIFICATION| Penerbitan laporan belum lengkap
 
-25. Recommended Implementation Sequence
+---
+
+26. Recommended Implementation Sequence
 
 Cadangan urutan kerja pembangunan seterusnya:
 
@@ -665,7 +866,8 @@ Phase 1 — Foundation Verification
 - sahkan database dan migration;
 - selesaikan bootstrap Super Admin;
 - sahkan authentication dan session;
-- sahkan UAC asas.
+- sahkan UAC asas;
+- sahkan Password Reset implementation plan.
 
 Phase 2 — Ahbab and Organization
 
@@ -674,7 +876,8 @@ Phase 2 — Ahbab and Organization
 - alamat dan Mohallah;
 - struktur organisasi;
 - Admin scope;
-- Jemaah Membership.
+- Jemaah Membership;
+- role and appointment foundations.
 
 Phase 3 — Takaza Core
 
@@ -717,6 +920,7 @@ Phase 7 — Archive and Reporting
 - annual archive;
 - statistics;
 - annual summary;
+- Juhud Reports CMS;
 - access control;
 - audit completeness.
 
@@ -731,7 +935,9 @@ Phase 8 — Final Integration and Hardening
 
 Urutan ini ialah cadangan pelaksanaan. Keutamaan boleh disusun semula apabila terdapat keperluan teknikal yang sah, tanpa mengubah keputusan perniagaan yang telah dipersetujui.
 
-26. Verification Rules
+---
+
+27. Verification Rules
 
 Setiap fungsi hanya boleh dinaik taraf kepada "IMPLEMENTED" apabila bukti yang sesuai tersedia.
 
@@ -749,15 +955,21 @@ Status perlu menyatakan skop sebenar yang telah diuji.
 
 Contohnya:
 
-"IMPLEMENTED — schema foundation"
+"IMPLEMENTED — SCHEMA FOUNDATION"
 
 tidak boleh ditukar kepada:
 
-"IMPLEMENTED — full workflow"
+"IMPLEMENTED — FULL WORKFLOW"
 
 tanpa bukti tambahan.
 
-27. Maintenance
+Status "DEPLOYED" mesti menyatakan environment yang telah disahkan.
+
+Status "REPORTED PASS" mesti dikekalkan sehingga ujian dijalankan semula atau bukti terkini diperoleh.
+
+---
+
+28. Maintenance
 
 Dokumen ini perlu dikemas kini apabila:
 
@@ -766,12 +978,24 @@ Dokumen ini perlu dikemas kini apabila:
 - deployment disahkan;
 - isu pelaksanaan ditemui;
 - status fungsi berubah;
-- spesifikasi reka bentuk berubah.
+- spesifikasi reka bentuk berubah;
+- keputusan dalam Master Decision Register berubah.
 
 Setiap perubahan status perlu disertakan tarikh dan skop pengesahan.
+
+Dokumen ini mesti kekal selaras dengan:
+
+- "MASTER_DECISION_REGISTER.md"
+- "MODULE_REQUIREMENTS.md"
+- "OPEN_DECISIONS_REGISTER.md"
+- "V2_DESIGN_CHECKPOINT.md"
+- "UAC_MATRIX.md"
+- spesifikasi modul yang berkaitan.
 
 ---
 
 Document Status: WORKING BASELINE — Implementation Tracking
 Last Updated: 27 November 2026
-Next Review: After repository and deployment verification.
+Next Review: After repository, bootstrap and deployment verification.
+
+End of Document.
