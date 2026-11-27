@@ -178,6 +178,7 @@ Perubahan e-mel juga tidak mengaktifkan semula akaun.
 - Nombor mesti dinormalisasi kepada format antarabangsa E.164.
 - Nombor yang telah digunakan oleh akaun lain tidak boleh dikaitkan kepada akaun baharu tanpa proses penyelesaian identiti yang sah.
 - Pelaksanaan WhatsApp OTP perlu disahkan secara berasingan.
+- OTP pengesahan perubahan nombor mesti terikat kepada transaksi perubahan nombor yang khusus dan tidak boleh digunakan silang daripada transaksi lain.  
 - Penggunaan WhatsApp untuk notifikasi tidak membuktikan bahawa WhatsApp OTP bagi authentication telah dilaksanakan.
 - Perubahan nombor telefon tidak mengubah `user_id`.
 - Perubahan nombor telefon tidak mengubah role atau status akaun.
