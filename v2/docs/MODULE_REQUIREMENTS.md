@@ -1,10 +1,12 @@
 
-JuhudManager V2 — Consolidated Module Requirements
+# JuhudManager V2 — Consolidated Module Requirements
 
-Document ID: JMV2-MOD-001
-Version: 1.1
-Date: 28 November 2026
-Status: Consolidated Working Baseline — For Review
+**Document ID:** JMV2-MOD-001  
+**Version:** 1.1  
+**Date:** 28 November 2026  
+**Status:** Consolidated Working Baseline — For Review
+
+---
 
 ---
 
