@@ -1,380 +1,7 @@
-
-**Exit criteria:**
-
-- Bootstrap SUPER_ADMIN works.
-- No duplicate or ambiguous bootstrap identity remains.
-- Country ADMIN can be created within authorized scope.
-- Account and session controls pass tests.
-- Password Reset passes full security tests.
-- Disabled or suspended accounts are not automatically reactivated.
-- Profile changes preserve verification and audit history.
-
----
-
-## 32. Phase 2 — Authorization and Organization
-
-**Priority: HIGH**
-
-**Tasks:**
-
-1. Complete UAC enforcement.
-2. Implement country scope.
-3. Implement organization hierarchy.
-4. Implement Chief Admin and Deputy structure.
-5. Implement cross-organization support.
-6. Resolve pending governance decisions.
-7. Implement Admin Markaz scope.
-8. Verify Dashboard navigation against permissions.
-9. Test access denial across country and organization boundaries.
-
-**Exit criteria:**
-
-- No unauthorized cross-country access.
-- Administrative roles remain distinct.
-- Organization scope is enforced by the backend.
-- Dashboard actions match actual authorization.
-- Cross-organization support is consent-based, time-limited and auditable.
-
----
-
-## 33. Phase 3 — Syukbah Management
-
-**Priority: HIGH**
-
-**Tasks:**
-
-1. Implement Global Baseline Syukbah.
-2. Implement country Syukbah activation.
-3. Implement Admin Syukbah.
-4. Implement Deputy and acting assignment.
-5. Implement moderator management.
-6. Implement discussion permissions.
-7. Implement soft deletion and audit.
-8. Resolve additional Syukbah approval rules.
-
-**Exit criteria:**
-
-- Syukbah is independent of organization hierarchy.
-- Admin and Moderator permissions are enforced.
-- Discussion and CMS remain separate.
-- Delegation and moderation actions are auditable.
-
----
-
-## 34. Phase 4 — Jemaah and Takaza Participation
-
-**Priority: HIGH**
-
-**Tasks:**
-
-1. Implement Jemaah Membership.
-2. Implement Main and Sub Takaza.
-3. Enforce two-level hierarchy.
-4. Implement Takaza lifecycle.
-5. Implement four participation methods.
-6. Implement Admin confirmation.
-7. Implement capacity rules.
-8. Implement withdrawal.
-9. Implement removal and appeal.
-10. Implement transfer.
-11. Implement rejoining and linked history.
-12. Ensure no separate V2 Project Member entity exists.
-13. Implement cancellation and Requires Attention integration.
-
-**Exit criteria:**
-
-- Membership and participation remain separate.
-- Every participant has a valid participation record.
-- Main and Sub Takaza operate independently.
-- Participation history is retained.
-- Capacity changes do not automatically remove existing participants.
-- Withdrawal and removal remain distinct.
-- Appeal does not erase original removal history.
-
----
-
-## 35. Phase 5 — KAWAIF and TAFAKUT
-
-**Priority: HIGH**
-
-**Tasks:**
-
-1. Implement KAWAIF records.
-2. Implement Admin verification.
-3. Implement KAWAIF configuration.
-4. Implement TAFAKUT form types.
-5. Implement template versioning.
-6. Implement assessor assignment.
-7. Enforce two independent assessors.
-8. Implement disagreement and third Admin.
-9. Implement new assessors for additional rounds.
-10. Implement immutable submission.
-11. Implement Ahbab and assessor form workflows.
-12. Implement final Admin decision and justification.
-13. Implement notifications and decision visibility.
-14. Implement reassessment and historical records.
-
-**Exit criteria:**
-
-- Assessment independence is enforced.
-- Old assessment versions remain available.
-- Decisions and justifications are auditable.
-- KAWAIF does not automatically determine TAFAKUT outcome.
-- No assessor can alter a submitted assessment.
-
----
-
-## 36. Phase 6 — Amer, Supervisor and Events
-
-**Priority: HIGH**
-
-**Tasks:**
-
-1. Complete Amer appointment workflow.
-2. Enforce confirmed participation prerequisite.
-3. Implement Admin and candidate consent.
-4. Implement appointment duration and replacement.
-5. Implement expiry and notification.
-6. Resolve Supervisor authority and eligibility.
-7. Implement Supervisor appointment.
-8. Implement flexible event scheduling.
-9. Implement event reuse and creation.
-10. Implement attendance and remarks.
-
-**Exit criteria:**
-
-- Amer must be a confirmed participant in the same Takaza before appointment becomes effective.
-- Appointment may occur before the official start date.
-- Consent and audit rules are enforced.
-- Supervisor permissions follow approved decisions.
-- Events and attendance are linked to the correct Takaza.
-- Appointment expiry does not automatically alter Takaza lifecycle.
-
----
-
-## 37. Phase 7 — Percha, Kharguzari and Reporting
-
-**Priority: HIGH**
-
-**Tasks:**
-
-1. Generate Percha after Bayan Hidayat.
-2. Implement amendment proposal and independent approval.
-3. Implement Kharguzari.
-4. Implement individual Kharguzari access.
-5. Implement immutable original records.
-6. Implement follow-up comments.
-7. Implement Amer report.
-8. Implement overdue and extension behavior.
-9. Enforce completion conditions.
-10. Implement Annual Archive.
-11. Implement Annual Summary.
-12. Keep Juhud Reports separate.
-
-**Exit criteria:**
-
-- Percha amendments are independently approved.
-- Original Kharguzari records remain preserved.
-- Amer report is mandatory for completion.
-- Archive access is scope-controlled.
-- Annual Summary remains separate from operational records.
-- No Takaza is automatically completed while required reports remain outstanding.
-
----
-
-## 38. Phase 8 — Case Management and Hardening
-
-**Priority: AFTER CORE WORKFLOWS**
-
-**Tasks:**
-
-1. Define full Case Management specification.
-2. Implement case ownership and assignment.
-3. Implement case status and resolution.
-4. Implement escalation and notifications.
-5. Implement case audit.
-6. Review security controls.
-7. Review rate limits.
-8. Review database integrity.
-9. Run full regression tests.
-10. Perform production smoke tests.
-11. Update operational documentation.
-
-**Exit criteria:**
-
-- Case Management follows an approved specification.
-- No unresolved critical security defect.
-- All release gates pass.
-- Audit and notification behavior is verified.
-
----
-
-## 39. Release Gates
-
-Production release must not be considered complete until the relevant gates are satisfied.
-
-### Gate A — Identity and Bootstrap
-
-- Bootstrap owner verified.
-- SUPER_ADMIN role verified.
-- Login tested.
-- No duplicate or ambiguous bootstrap identity.
-- Account status and owner verification are consistent.
-
-### Gate B — Authorization
-
-- Backend role checks verified.
-- Country scope verified.
-- Administrative scope verified.
-- Cross-scope denial tested.
-- Account disablement enforcement tested.
-- Functional appointment permissions tested.
-
-### Gate C — Database
-
-- Migrations reviewed.
-- Migration order confirmed.
-- Production database state verified.
-- Backup and recovery plan considered.
-- No unauthorized schema change.
-- V1 and V2 databases remain separate.
-
-### Gate D — Security
-
-- OTP limits tested.
-- Session revocation tested.
-- Password handling reviewed.
-- Password Reset tested after implementation.
-- Protected identity fields verified.
-- Audit records verified.
-- Disabled and suspended account behavior verified.
-
-### Gate E — Deployment
-
-- V1 Worker remains separate.
-- V2 Worker remains separate.
-- Pages paths are correct.
-- Production environment variables are correct.
-- Health endpoint and database connectivity verified.
-- Deployment workflows use the intended directories and configurations.
-
-### Gate F — Functional Tests
-
-- Required workflows tested.
-- Negative authorization tests passed.
-- Relevant integration tests passed.
-- Regression tests passed.
-- Frontend and backend integration verified.
-- No unresolved critical blocker.
-
----
-
-## 40. Non-Negotiable Requirements
-
-The following must not be violated during implementation:
-
-1. No separate V2 Project Member entity.
-2. Jemaah Membership and Takaza Participation remain separate.
-3. Amer must already be a confirmed participant in the same Takaza before appointment becomes effective.
-4. Amer appointment may occur before the official Takaza start date.
-5. Supervisor authority must not be invented.
-6. `WITHDRAWN` and `REMOVED` remain distinct.
-7. Account `DISABLED` cannot be overridden by LIMITED access.
-8. Password Reset requires verified email OTP and revocation of all existing sessions and tokens.
-9. Password Reset and email change must not reactivate a disabled or suspended account.
-10. No Takaza completion without the required Amer report.
-11. Main and Sub Takaza lifecycle remain independent.
-12. Historical records must be preserved.
-13. Frontend visibility is not authorization.
-14. No implementation status may be overstated without evidence.
-15. No production migration or deployment is authorized by this document alone.
-16. V1 and V2 must retain separate Workers and databases.
-17. Pending decisions must not be implemented as approved requirements.
-18. Changes to approved requirements must follow the decision-control process.
-
----
-
-## 41. Maintenance and Evidence
-
-Dokumen ini perlu dikemas kini apabila:
-
-- fungsi baharu dilaksanakan;
-- ujian baharu lulus;
-- deployment disahkan;
-- migration digunakan;
-- isu pelaksanaan ditemui;
-- status fungsi berubah;
-- spesifikasi reka bentuk berubah;
-- keputusan dalam Master Decision Register berubah;
-- blocker diselesaikan.
-
-Setiap perubahan status perlu disertakan:
-
-- tarikh pengesahan;
-- skop yang diperiksa;
-- bukti kod atau migration;
-- ujian yang dijalankan;
-- environment yang terlibat;
-- keputusan dan isu yang masih berbaki.
-
-Setiap fungsi hanya boleh dinaik taraf kepada `IMPLEMENTED` apabila bukti yang sesuai tersedia.
-
-Bukti boleh merangkumi:
-
-1. kod atau API yang berkaitan;
-2. schema dan migration jika diperlukan;
-3. ujian automatik;
-4. ujian integrasi;
-5. ujian authorization;
-6. pengesahan UI jika melibatkan frontend;
-7. pengesahan deployment jika melibatkan production.
-
-Contoh:
-
-`IMPLEMENTED — SCHEMA FOUNDATION`
-
-tidak boleh ditukar kepada:
-
-`IMPLEMENTED — FULL WORKFLOW`
-
-tanpa bukti tambahan.
-
-Status `DEPLOYED` mesti menyatakan environment yang telah disahkan.
-
-Status `REPORTED PASS` mesti dikekalkan sehingga ujian dijalankan semula atau bukti terkini diperoleh.
-
-### 41.1 Related Documents
-
-Dokumen ini mesti kekal selaras dengan:
-
-- `MASTER_DECISION_REGISTER.md`
-- `MODULE_REQUIREMENTS.md`
-- `OPEN_DECISIONS_REGISTER.md`
-- `V2_DESIGN_CHECKPOINT.md`
-- `AUTH.md`
-- `UAC_MATRIX.md`
-- `DASHBOARD_NAVIGATION_SPEC_V2.md`
-- `JMV2001-Ahbab-Profile-Account-Management.md`
-- `JMV2002-Organization-Structure-Governance.md`
-- `JMV2003-Syukbah-Management.md`
-- `JMV2004-Takaza-Management.md`
-- `REPOSITORY_DISPOSITION.md`
-
-Spesifikasi modul menentukan keperluan dan tingkah laku. Master Decision Register menentukan keputusan. Dokumen ini menentukan status pelaksanaan dan roadmap.
-
----
-
-Document Status: WORKING BASELINE — Implementation Tracking  
-Version: 3.0  
-Last Updated: 28 November 2026  
-Next Review: After repository, bootstrap and deployment verification.
-
-End of Document.
-
 # JuhudManager V2 — Consolidated Module Requirements
 
 **Document ID:** JMV2-MOD-001  
-**Version:** 1.1  
+**Version:** 1.2  
 **Date:** 28 November 2026  
 **Status:** Consolidated Working Baseline — For Review
 
@@ -1582,6 +1209,508 @@ Pending decisions must remain visibly pending until formally resolved.
 - `DASHBOARD_NAVIGATION_SPEC_V2.md`
 - `V2_IMPLEMENTATION_STATUS.md`
 - `V2_DESIGN_CHECKPOINT.md`
+
+# 27. Implementation Roadmap
+
+This section provides an implementation sequence for the requirements in this document.
+
+The roadmap is a planning reference. It does not override approved decisions, open decisions or implementation evidence.
+
+A phase may be marked complete only when its exit criteria are supported by code, database, authorization and test evidence.
+
+## 27.1 Phase 1 — Authentication and Bootstrap
+
+**Priority: CRITICAL**
+
+Tasks:
+
+1. Resolve bootstrap SUPER_ADMIN eligibility.
+2. Establish the designated bootstrap owner.
+3. Complete SUPER_ADMIN activation.
+4. Verify email identity and account status.
+5. Verify password and session handling.
+6. Complete country ADMIN creation within authorized scope.
+7. Verify account disablement and reactivation controls.
+8. Implement Password Reset.
+9. Verify profile update and identity verification behavior.
+
+Exit criteria:
+
+- Bootstrap SUPER_ADMIN works.
+- No duplicate or ambiguous bootstrap identity remains.
+- Country ADMIN can be created within authorized scope.
+- Account and session controls pass tests.
+- Password Reset passes full security tests.
+- Disabled or suspended accounts are not automatically reactivated.
+- Profile changes preserve verification and audit history.
+
+## 27.2 Phase 2 — Authorization and Organization
+
+**Priority: HIGH**
+
+Tasks:
+
+1. Complete UAC enforcement.
+2. Implement country scope.
+3. Implement organization hierarchy.
+4. Implement Chief Admin and Deputy structure.
+5. Implement cross-organization support.
+6. Resolve pending governance decisions.
+7. Implement Admin Markaz scope.
+8. Verify Dashboard navigation against permissions.
+9. Test access denial across country and organization boundaries.
+
+Exit criteria:
+
+- No unauthorized cross-country access.
+- Administrative roles remain distinct.
+- Organization scope is enforced by the backend.
+- Dashboard actions match actual authorization.
+
+## 27.3 Phase 3 — Ahbab and Syukbah
+
+**Priority: HIGH**
+
+Tasks:
+
+1. Complete Ahbab profile management.
+2. Complete identity verification.
+3. Complete KAWAIF.
+4. Implement Syukbah baseline.
+5. Implement Syukbah Admin and Deputy controls.
+6. Implement Moderator permissions.
+7. Separate CMS and discussion functionality.
+8. Verify Jemaah membership history.
+
+Exit criteria:
+
+- Profile changes preserve history.
+- Protected identity information cannot be changed through ordinary editing.
+- KAWAIF verification is auditable.
+- Syukbah permissions are enforced.
+- Jemaah membership is separate from Takaza participation.
+
+## 27.4 Phase 4 — Takaza and Participation
+
+**Priority: HIGH**
+
+Tasks:
+
+1. Implement Main and Sub Takaza.
+2. Enforce maximum two-level hierarchy.
+3. Implement Takaza lifecycle statuses.
+4. Implement participation methods.
+5. Implement Admin confirmation.
+6. Implement capacity controls.
+7. Implement participation history.
+8. Implement withdrawal.
+9. Implement removal and appeal.
+10. Implement transfer.
+
+Exit criteria:
+
+- Main and Sub Takaza rules are enforced.
+- Participation methods behave according to approved rules.
+- Capacity changes do not remove existing participants.
+- Withdrawal and removal remain distinct.
+- Historical participation records are preserved.
+
+## 27.5 Phase 5 — TAFAKUT
+
+**Priority: HIGH**
+
+Tasks:
+
+1. Implement TAFAKUT rounds.
+2. Implement independent assessor assignment.
+3. Implement two-assessor decision rules.
+4. Implement third-Admin disagreement resolution.
+5. Implement additional assessment rounds.
+6. Implement assessor replacement.
+7. Implement immutable submitted assessments.
+8. Implement versioned forms and templates.
+9. Implement Managing Admin final decision.
+10. Implement notifications and visibility rules.
+
+Exit criteria:
+
+- Assessor independence is enforced.
+- Disagreement cannot bypass third-Admin resolution.
+- Submitted records remain immutable.
+- Reassessment creates new records.
+- Managing Admin decisions remain separate from assessor outcomes.
+
+## 27.6 Phase 6 — Amer, Supervisor and Activities
+
+**Priority: HIGH**
+
+Tasks:
+
+1. Implement Amer appointment.
+2. Implement Amer eligibility and consent.
+3. Implement appointment expiry.
+4. Implement Amer replacement.
+5. Resolve Supervisor authority.
+6. Implement approved Supervisor workflow.
+7. Implement events and activities.
+8. Implement attendance.
+9. Implement Percha.
+10. Implement Percha amendment approval.
+
+Exit criteria:
+
+- Amer appointment follows eligibility and consent rules.
+- Appointment expiry does not automatically complete Takaza.
+- Amer replacement preserves appointment history.
+- Supervisor permissions follow approved decisions.
+- Percha amendments require a different Admin's approval.
+
+## 27.7 Phase 7 — Reporting and Archive
+
+**Priority: MEDIUM**
+
+Tasks:
+
+1. Implement Kharguzari.
+2. Implement Amer report.
+3. Implement overdue report handling.
+4. Implement report due-date extension.
+5. Implement Takaza completion conditions.
+6. Implement Annual Archive.
+7. Implement Annual Summary.
+8. Implement Juhud Reports publication workflow.
+
+Exit criteria:
+
+- Amer report is mandatory for completion.
+- Original due dates remain preserved.
+- Archive access follows authorized scope.
+- Annual Summary does not modify operational records.
+- Publication permissions are enforced.
+
+## 27.8 Phase 8 — Case Management and Final Integration
+
+**Priority: ON HOLD / FUTURE**
+
+Tasks:
+
+1. Resolve Case Management scope.
+2. Approve case lifecycle and authority.
+3. Define case categories and ownership.
+4. Define notification and escalation rules.
+5. Implement approved case workflow.
+6. Conduct end-to-end integration testing.
+7. Conduct authorization and security testing.
+8. Verify deployment and operational readiness.
+
+Exit criteria:
+
+- Case Management is implemented only after approval.
+- No unapproved automated participant action exists.
+- End-to-end workflows pass their required tests.
+- Release evidence is retained.
+
+# 28. Release Gates
+
+A release must not be considered ready merely because the frontend builds successfully.
+
+The following gates apply.
+
+## 28.1 Gate A — Repository and Build
+
+- Repository structure is verified.
+- V1 and V2 separation is preserved.
+- Build completes successfully.
+- Automated tests complete successfully.
+- No unintended legacy dependency is introduced.
+
+## 28.2 Gate B — Database
+
+- Required migrations are applied.
+- Migration order is verified.
+- Foreign keys and constraints are checked.
+- Critical indexes are present.
+- Data integrity checks pass.
+- No destructive migration is applied without explicit approval.
+
+## 28.3 Gate C — Authentication and Authorization
+
+- Registration and OTP verification work.
+- Login and session expiry work.
+- Password Reset works.
+- Account disablement and reactivation rules work.
+- SUPER_ADMIN bootstrap is verified.
+- Country and organization boundaries are enforced.
+- Unauthorized API requests are rejected.
+
+## 28.4 Gate D — Workflow Integrity
+
+- Required approvals are enforced.
+- Independent assessments remain independent.
+- Submitted records remain immutable.
+- Audit history is preserved.
+- Notifications are sent to authorized recipients.
+- Pending decisions are not implemented as assumed rules.
+
+## 28.5 Gate E — Operational Readiness
+
+- Health endpoint is verified.
+- Database connectivity is verified.
+- Environment configuration is checked.
+- Deployment workflow is verified.
+- Error handling and logging are reviewed.
+- Rollback or recovery procedure is documented.
+
+A release gate must be supported by evidence. A statement in documentation alone is not sufficient.
+
+# 29. Non-Negotiable Requirements
+
+The following principles apply across all modules.
+
+1. Backend authorization is mandatory.
+2. Frontend visibility is not authorization.
+3. Account status and access level are separate.
+4. Password Reset must not reactivate a disabled or suspended account.
+5. Historical records must not be silently overwritten.
+6. Submitted assessment records must remain immutable.
+7. Administrative decisions must be distinguishable from assessor outcomes.
+8. Required approvals must not be bypassed.
+9. Country and organization scope must be enforced.
+10. Takaza Main and Sub hierarchy is limited to two levels.
+11. Capacity changes must not silently remove existing participants.
+12. Withdrawal and removal must remain distinct.
+13. Amer report is mandatory before Takaza completion.
+14. Case Management remains ON HOLD until formally approved.
+15. Pending decisions must not be treated as approved requirements.
+16. Implementation claims must be supported by verifiable evidence.
+17. Security-sensitive actions must be audited.
+18. No feature may rely solely on frontend restrictions for security.
+
+# 30. Security and Data Integrity Principles
+
+All modules must follow these principles.
+
+## 30.1 Identity Integrity
+
+- Verified identities must be protected.
+- Identity corrections must be authorized.
+- Previous identity values must be retained where required.
+- Duplicate identity reservations must be prevented.
+- Account recovery must not bypass verification.
+
+## 30.2 Authorization Integrity
+
+- Every protected API operation must validate authorization.
+- Scope must be checked against the target record.
+- Role assignment must not grant unintended global access.
+- Delegated authority must be explicit and time-bounded where applicable.
+- Revoked permissions must take effect immediately.
+
+## 30.3 Record Integrity
+
+- Historical records must remain available according to retention rules.
+- Submitted records must not be silently edited.
+- Corrections must create traceable history.
+- Related records must retain their relationships.
+- Deletion must follow approved retention and audit rules.
+
+## 30.4 Session Integrity
+
+- Revoked sessions must not be reusable.
+- Account disablement must terminate relevant sessions.
+- Password Reset must revoke all existing sessions and tokens.
+- Session expiry must be enforced server-side.
+- Client-side logout alone is insufficient.
+
+# 31. Testing and Verification Requirements
+
+Testing must cover both expected behavior and prohibited behavior.
+
+## 31.1 Functional Tests
+
+Test:
+
+- Successful workflows.
+- Invalid input.
+- Missing required information.
+- Unauthorized actions.
+- Invalid status transitions.
+- Duplicate submissions.
+- Concurrent updates.
+- Expired records.
+- Rejected approvals.
+- Repeated requests.
+
+## 31.2 Authorization Tests
+
+Test access by:
+
+- SUPER_ADMIN.
+- Country ADMIN.
+- Admin Markaz.
+- Admin Syukbah.
+- Admin Takaza.
+- Ahbab.
+- Unauthenticated users.
+
+Tests must include attempts to access records outside the user's country, organization, Takaza or relationship scope.
+
+## 31.3 Security Tests
+
+Test:
+
+- OTP expiry.
+- OTP attempt limits.
+- Resend cooldown.
+- Identity reservation expiry.
+- Password policy.
+- Session idle timeout.
+- Maximum session lifetime.
+- Token revocation.
+- Disabled and suspended account restrictions.
+- Password Reset session termination.
+
+## 31.4 Audit Tests
+
+Verify that:
+
+- Required actions create audit records.
+- Actor identity is correct.
+- Timestamps are retained.
+- Previous and new values are correct.
+- Reasons and justifications are preserved.
+- Original records are not overwritten.
+- Unauthorized users cannot access sensitive audit information.
+
+## 31.5 Evidence Requirements
+
+Each completed test phase should retain:
+
+- Test name.
+- Test date.
+- Environment.
+- Result.
+- Relevant commit or build reference.
+- Failure details where applicable.
+- Corrective action where required.
+
+Historical test results must not be represented as newly executed tests.
+
+# 32. Implementation Status Classification
+
+Implementation status must be maintained separately from functional requirements.
+
+Use the following classifications:
+
+| Status | Meaning |
+|---|---|
+| NOT STARTED | No implementation work has been verified |
+| IN PROGRESS | Work is underway but acceptance criteria are incomplete |
+| IMPLEMENTED — UNVERIFIED | Code exists but required verification is incomplete |
+| VERIFIED | Required implementation and tests have passed |
+| BLOCKED | Work cannot proceed because of a dependency or unresolved issue |
+| ON HOLD | Work is intentionally paused pending approval or direction |
+| NOT IMPLEMENTED | Required feature does not yet exist |
+
+A feature must not be marked VERIFIED solely because:
+
+- A document describes it.
+- A database table exists.
+- A frontend screen exists.
+- A build succeeds.
+- A single happy-path test passes.
+
+Verification requires sufficient evidence for the relevant functional, authorization, data integrity and security requirements.
+
+# 33. Open Decisions and Change Control
+
+Open decisions must remain in the official Open Decisions Register.
+
+A pending decision must not be silently converted into a requirement.
+
+When a decision is approved:
+
+1. Record the decision in the Master Decision Register.
+2. Update this document where affected.
+3. Update relevant module specifications.
+4. Update UAC and Dashboard specifications where affected.
+5. Update implementation status.
+6. Identify required database, API, UI and test changes.
+7. Preserve the decision history.
+
+A change to an approved requirement must include:
+
+- Change description.
+- Reason.
+- Decision authority.
+- Approval date.
+- Affected modules.
+- Affected documents.
+- Implementation impact.
+- Verification impact.
+
+# 34. Documentation Maintenance
+
+The following documents are related to this requirements baseline:
+
+- `MASTER_DECISION_REGISTER.md`
+- `OPEN_DECISIONS_REGISTER.md`
+- `V2_IMPLEMENTATION_STATUS.md`
+- `V2_DESIGN_CHECKPOINT.md`
+- `AUTH.md`
+- `UAC_MATRIX.md`
+- `DASHBOARD_NAVIGATION_SPEC_V2.md`
+- `JMV2001-Ahbab-Profile-Account-Management.md`
+- `JMV2002-Organization-Structure-Governance.md`
+- `JMV2003-Syukbah-Management.md`
+- `JMV2004-Takaza-Management.md`
+- `REPOSITORY_DISPOSITION.md`
+
+Document responsibilities:
+
+- Module Requirements define functional behavior.
+- Master Decision Register records approved decisions.
+- Open Decisions Register tracks unresolved matters.
+- Implementation Status tracks actual implementation and evidence.
+- Design Checkpoint records the consolidated design baseline.
+- AUTH defines authentication and account security requirements.
+- UAC Matrix defines role and permission boundaries.
+- Dashboard Specification defines navigation and presentation.
+- Module specifications provide detailed module-level behavior.
+
+Where documents conflict, the conflict must be recorded and reconciled. Do not silently assume that one document has changed the approved decision.
+
+# 35. Review and Acceptance
+
+This document is a consolidated working baseline for review.
+
+Acceptance of this document does not mean:
+
+- All features are implemented.
+- All open decisions are resolved.
+- All database structures are complete.
+- All workflows are deployed.
+- All tests have passed.
+- Production release is approved.
+
+Requirements become implementation-ready when their dependencies, decisions, permissions, data requirements and acceptance criteria are sufficiently defined.
+
+# 36. Revision History
+
+| Version | Date | Description |
+|---|---|---|
+| 1.1 | 28 November 2026 | Consolidated module requirements baseline |
+| 1.2 | 28 November 2026 | Corrected document structure, retained original requirements and added implementation roadmap, release gates, security, testing and maintenance guidance |
+
+# 37. Document Control
+
+**Document:** JuhudManager V2 — Consolidated Module Requirements  
+**Document ID:** JMV2-MOD-001  
+**Version:** 1.2  
+**Status:** Consolidated Working Baseline — For Review  
+**Repository Path:** `v2/docs/MODULE_REQUIREMENTS.md`
+
+This document must be reviewed whenever an approved decision materially changes module behavior, security requirements, authorization scope or workflow rules.
 
 ---
 
