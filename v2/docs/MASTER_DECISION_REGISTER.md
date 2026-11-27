@@ -113,7 +113,7 @@ Approved direction:
 
 1. User submits the registered and verified email address.
 2. System sends a six-digit OTP.
-3. OTP follows the existing authentication policy.
+3. OTP follows the existing authentication policy and must be bound to the specific Password Reset transaction. OTP issued for registration or another purpose must not be accepted.
 4. User verifies the OTP.
 5. User may establish a new password.
 6. All existing sessions and tokens must be revoked.
@@ -180,7 +180,7 @@ Confirmed rules:
 The following features are not yet implemented:
 
 - Password Reset.
-- WhatsApp OTP.
+- WhatsApp OTP (implementation status requires verification).
 - Two-factor authentication.
 
 Passport-based login remains pending.
