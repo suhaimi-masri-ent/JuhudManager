@@ -552,7 +552,7 @@ Functions may include:
 - Review applications and nominations.
 - Confirm participants.
 - Manage Amer appointment.
-- Manage provisional Supervisor appointment according to the approved provisional rules.
+- Manage Supervisor appointments only within the provisional appointment rules in ODR-004. The appointment must not grant additional operational, approval or administrative authority.
 - Manage relevant events and activities.
 - Manage Percha.
 - Review Kharguzari.
