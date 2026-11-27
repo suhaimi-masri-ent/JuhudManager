@@ -2,7 +2,7 @@
 # JuhudManager V2 — Design Checkpoint
 
 **Document:** V2 Design Checkpoint  
-**Version:** 2.1  
+**Version:** 2.2  
 **Branch:** `integration/v1-v2-separation-develop`  
 **Status:** Living Checkpoint — Design Consolidation and Implementation Preparation  
 **Checkpoint Date:** 28 November 2026
@@ -16,17 +16,14 @@
 - The existing system is designated JuhudManager V1 (legacy system).
 - The new architecture and application are designated JuhudManager V2.
 - V1 must be preserved as a reference and fallback. It must not be discarded or overwritten as part of the V2 redesign.
-- The repository separation into `v1/` and `v2/` has been prepared on the integration branch.
-- The current repository structure separates V1 source/configuration and V2 source/configuration.
-- V1 and V2 must retain separate Worker configurations and database environments.
-- Complete and reconcile the business workflow design before finalising dependent V2 ERD/database schema and implementation.
+- Repository separation into `v1/` and `v2/` has been prepared on the integration branch.
+- V1 and V2 source code, Worker configurations, databases and deployment workflows must remain separate.
+- Business workflow design must be sufficiently consolidated before finalizing dependent V2 ERD, database schema and implementation.
 - Design decisions, implementation status and deployment status must be tracked separately.
 - The Master Decision Register is the central authority for approved and provisional V2 decisions.
 - The Open Decisions Register records unresolved matters and decisions that remain pending or on hold.
 
 ### 1.1 Current Repository Structure
-
-The intended and prepared repository structure is:
 
 ```text
 JuhudManager/
@@ -47,9 +44,9 @@ JuhudManager/
 └── README.md
 ```
 
-The exact repository contents and workflow configuration must be checked against the active branch before subsequent code or deployment changes.
+The exact repository contents and workflow configuration must be checked against the active branch before code or deployment changes.
 
-The separation work is not, by itself, proof that every V1 and V2 deployment path has been independently verified.
+Repository separation does not, by itself, prove that every V1 and V2 deployment path has been independently verified.
 
 ---
 
@@ -60,8 +57,8 @@ The separation work is not, by itself, proof that every V1 and V2 deployment pat
 | `AGREED` | Confirmed direction or business rule |
 | `PROPOSED` | Suggested design not yet approved |
 | `PENDING` | Requires further discussion or decision |
-| `PROVISIONAL` | Temporary direction that remains subject to confirmation |
-| `ON HOLD` | Work or decision is explicitly paused |
+| `PROVISIONAL` | Temporary direction subject to confirmation |
+| `ON HOLD` | Work or decision explicitly paused |
 | `IMPLEMENTED` | Verified as present in the relevant codebase |
 | `TESTED` | Verified through an identified test or execution |
 | `DEPLOYED` | Verified as deployed to the specified environment |
@@ -70,11 +67,9 @@ The separation work is not, by itself, proof that every V1 and V2 deployment pat
 
 A design decision marked `AGREED` is not automatically implemented.
 
-A provisional decision must not be presented as a final decision.
+A provisional decision must not be presented as final.
 
-A test passing does not prove that every related production workflow is implemented.
-
-A deployed service does not prove that every business feature is complete.
+A passing test does not prove that every related production workflow is implemented. A deployed service does not prove that every business feature is complete.
 
 Implementation status must be supported by source code, test or deployment evidence.
 
@@ -109,14 +104,13 @@ Implementation status must be supported by source code, test or deployment evide
 - Session idle timeout is 30 minutes.
 - Maximum session lifetime is 12 hours.
 - Account status, access level, core role and functional appointment are separate concepts.
-- Account disablement must follow the approved audit, notification, session termination and review requirements.
+- Account disablement must follow approved audit, notification, session termination and review requirements.
 - Password Reset, OTP verification or email change must not automatically reactivate a disabled or suspended account.
 
 ### 3.3 Password Reset
 
-**REQUIRED — NOT IMPLEMENTED**
+<badge color="warning">REQUIRED — NOT IMPLEMENTED</badge>
 
-- Password Reset is a required V2 feature.
 - Normal Password Reset uses the registered and verified email address.
 - It uses the existing OTP policy:
   - Six-digit OTP.
@@ -132,7 +126,7 @@ Implementation status must be supported by source code, test or deployment evide
 - Admin-Assisted Account Recovery must not be presented as normal Password Reset.
 - Password Reset must not change account status, assigned roles, organization membership or Takaza participation.
 
-The detailed authentication requirements are maintained in `v2/docs/Auth.md`.
+The detailed authentication requirements are maintained in `v2/docs/AUTH.md`.
 
 The consolidated functional requirements are maintained in `v2/docs/MODULE_REQUIREMENTS.md`.
 
@@ -195,7 +189,7 @@ No appointment automatically grants unrelated permissions.
   1. Amer Negara as final authority; or
   2. Ahli Syura with Faisalah as final authority.
 - The final country organizational hierarchy remains configurable and pending confirmation.
-- The exact appointment and delegation processes require further specification.
+- Exact appointment and delegation processes require further specification.
 
 These unresolved matters must remain in `v2/docs/OPEN_DECISIONS_REGISTER.md`.
 
@@ -260,11 +254,10 @@ Key rules:
 - ADMIN must confirm the candidate before the person becomes a confirmed participant.
 - Existing Jemaah members are not automatically confirmed participants in a newly formed Takaza.
 - An Ahbab joining a Jemaah after a Takaza becomes ACTIVE may also become a candidate for ADMIN confirmation.
-- Voluntary Application and Admin Nomination follow the applicable consent and TAFAKUT requirements.
+- Voluntary Application and Admin Nomination follow applicable consent and TAFAKUT requirements.
 - TAFAKUT PASS does not automatically mean participation approval.
 - Direct Assignment consent and TAFAKUT requirements remain pending.
-
-Configuration changes after RELEASED or ACTIVE apply only to new participation and undecided applications, not existing confirmed participants.
+- Configuration changes after RELEASED or ACTIVE apply only to new participation and undecided applications, not existing confirmed participants.
 
 ### 5.5 Withdrawal, Removal and Appeal
 
@@ -273,7 +266,7 @@ Configuration changes after RELEASED or ACTIVE apply only to new participation a
 - Ahbab may request withdrawal.
 - Participation becomes `WITHDRAWN` only after ADMIN confirms the request.
 - ADMIN acknowledges a valid withdrawal request but cannot block or veto it.
-- The confirmation step records operational completion; it must not be used to deny the Ahbab's right to withdraw.
+- Confirmation records operational completion; it must not be used to deny the Ahbab's right to withdraw.
 - Request and confirmation dates must be recorded.
 - ADMIN may remove a participant with justification from at least one other ADMIN.
 - The second ADMIN provides justification but does not have a veto.
@@ -358,7 +351,7 @@ See `v2/docs/OPEN_DECISIONS_REGISTER.md`, ODR-004.
 
 **AGREED**
 
-- ADMIN may amend Takaza information subject to the applicable rules.
+- ADMIN may amend Takaza information subject to applicable rules.
 - The system must preserve old and new values, actor, date/time and reason where required.
 - Takaza must not be deleted.
 - Cancellation and amendments must preserve Takaza history and related records.
@@ -385,7 +378,7 @@ See `v2/docs/OPEN_DECISIONS_REGISTER.md`, ODR-004.
 - Takaza has a planned/fixed end date.
 - ADMIN may end a Takaza earlier with a recorded reason.
 - ADMIN may amend the end date with history.
-- Completion requires the applicable completion conditions.
+- Completion requires applicable completion conditions.
 - Amer's full report is mandatory before completion.
 - If the report is overdue, Takaza must not automatically become COMPLETED.
 - Exceptional changes after completion remain pending.
@@ -425,8 +418,6 @@ See `v2/docs/OPEN_DECISIONS_REGISTER.md`, ODR-004.
 
 Each standard TAFAKUT round uses exactly two independent ADMIN assessors.
 
-Initial decision rules:
-
 | Assessor 1 | Assessor 2 | Outcome |
 |---|---|---|
 | PASS | PASS | PASS |
@@ -456,13 +447,13 @@ The managing ADMIN may make a final decision that differs from the assessment ma
 
 Requirements:
 
-- The managing ADMIN must have the authority to make the relevant decision within the applicable scope.
+- The managing ADMIN must have authority to make the relevant decision within the applicable scope.
 - A justification is mandatory.
 - The final decision and justification must be recorded.
-- The original assessor submissions and assessment outcome must remain unchanged.
-- The final ADMIN decision must not overwrite the independent assessment records.
+- Original assessor submissions and assessment outcome must remain unchanged.
+- The final ADMIN decision must not overwrite independent assessment records.
 
-This is a distinct decision layer. It does not mean that an assessor may edit another assessor's result or that the assessment history may be rewritten.
+This is a distinct decision layer. It does not mean that an assessor may edit another assessor's result or that assessment history may be rewritten.
 
 **Cross-document alignment note:**
 
@@ -473,7 +464,7 @@ This rule is recorded in:
 
 It must also be reflected consistently in `docs/SYSTEM_REALIGNMENT_DESIGN.md` and the detailed TAFAKUT specification.
 
-Until that reconciliation is committed, this checkpoint records the Master Decision Register direction and identifies the cross-document alignment task explicitly.
+The current project-level system design reference is version 2.2. Any remaining differences must be reconciled against the Master Decision Register.
 
 ### 6.4 TAFAKUT Forms and Data
 
@@ -506,7 +497,7 @@ Until that reconciliation is committed, this checkpoint records the Master Decis
 - Participation becomes `WITHDRAWN` only after ADMIN confirms the request.
 - ADMIN acknowledgment is required but cannot be used to block a valid withdrawal request.
 - Request date and confirmation date are recorded.
-- The confirmation step is operational record completion, not a veto over a valid request.
+- Confirmation is operational record completion, not a veto over a valid request.
 
 ### 7.2 Removal
 
@@ -549,7 +540,7 @@ Until that reconciliation is committed, this checkpoint records the Master Decis
 **AGREED**
 
 - Percha is generated after Bayan Hidayat.
-- Percha contains the approved operational details, including Jemaah, place, Halqah, route, destination and relevant dates.
+- Percha contains approved operational details, including Jemaah, place, Halqah, route, destination and relevant dates.
 - ADMIN proposes an amendment.
 - A different ADMIN must approve the amendment.
 - Approval and rejection are recorded.
@@ -566,9 +557,9 @@ Until that reconciliation is committed, this checkpoint records the Master Decis
 - Amer may access relevant Kharguzari for the full report.
 - Original submitted records are immutable.
 - Follow-up comments are separate records.
-- Comment authors may edit their own comments subject to the applicable rules.
+- Comment authors may edit their own comments subject to applicable rules.
 - Amer's full report is mandatory before Takaza completion.
-- If the report is missing after the relevant end activities, it becomes `OVERDUE`.
+- If the report is missing after relevant end activities, it becomes `OVERDUE`.
 - Takaza remains incomplete until the report is submitted and completion conditions are met.
 - ADMIN may extend the report due date with history.
 - An extension does not automatically clear `OVERDUE` status or complete Takaza.
@@ -708,7 +699,7 @@ A feature may be labelled:
 - `IMPLEMENTED` only after code inspection confirms the relevant behavior.
 - `TESTED` only when a relevant test or verification has been executed.
 - `DEPLOYED` only when the target environment has been verified.
-- `COMPLETE` only when the approved acceptance criteria have been met.
+- `COMPLETE` only when approved acceptance criteria have been met.
 
 Design approval alone is not implementation evidence.
 
@@ -769,7 +760,7 @@ Before merging or changing production deployment:
 4. Verify Pages build and deployment paths.
 5. Verify migration workflows target only the V2 database.
 6. Verify no V1 production configuration or database reference has been overwritten.
-7. Run the applicable build and test workflows.
+7. Run applicable build and test workflows.
 8. Verify the resulting deployment independently.
 9. Preserve the V1 backup/tag and branch until the separation is accepted.
 
@@ -781,16 +772,16 @@ A prepared branch does not automatically mean the separation has been merged or 
 
 The following sequence reflects the current documentation and design consolidation stage.
 
-1. Reconcile `docs/SYSTEM_REALIGNMENT_DESIGN.md` v2.1 with the TAFAKUT final Managing Admin decision recorded in the Master Decision Register.
+1. Reconcile `docs/SYSTEM_REALIGNMENT_DESIGN.md` version 2.2 with the TAFAKUT final Managing Admin decision recorded in the Master Decision Register.
 2. Verify that `v2/docs/MODULE_REQUIREMENTS.md` and `v2/docs/MASTER_DECISION_REGISTER.md` remain aligned.
-3. Review the detailed module specifications against the Master Decision Register and Open Decisions Register.
+3. Review detailed module specifications against the Master Decision Register and Open Decisions Register.
 4. Update the UAC Matrix and Dashboard Navigation Specification where approved decisions require it.
 5. Resolve outstanding open decisions or explicitly retain them as pending.
 6. Review the V2 Design Checkpoint and Implementation Status documents together.
 7. Finalize the V2 Master Design Specification.
 8. Review and approve the complete business workflow specification.
 9. Produce and review the V2 ERD and database schema after business workflows are sufficiently stable.
-10. Verify the repository separation and deployment workflows.
+10. Verify repository separation and deployment workflows.
 11. Resolve Super Admin bootstrap and owner verification.
 12. Implement Password Reset and other required features according to approved specifications.
 13. Implement V2 incrementally with tests and verification at each stage.
@@ -821,7 +812,7 @@ The order may be adjusted when a dependency or newly approved decision requires 
 ---
 
 **Last Updated:** 28 November 2026  
-**Document Version:** 2.1  
+**Document Version:** 2.2  
 **Document Status:** Living Checkpoint — Design Consolidation and Implementation Preparation
 
 **End of Document.**
