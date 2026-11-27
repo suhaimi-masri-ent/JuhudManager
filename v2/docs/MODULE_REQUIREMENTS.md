@@ -332,11 +332,15 @@ Publication into CMS must follow its own content management and authorization ru
 
 ## 5.5 Delegation
 
-Deputy and acting authority must be explicitly assigned.
+Deputy permissions must be explicitly assigned and limited to the approved duties and scope.
+
+No acting authority may be exercised solely by virtue of the Deputy appointment.
+
+Temporary acting authority, including its scope, duration and approval process, remains subject to ODR-011.
+
+Until ODR-011 is finalized, the system must not grant or implement acting authority for Deputy Admin Syukbah.
 
 No unrestricted authority is implied by the Deputy title alone.
-
-Detailed delegation rules remain pending.
 
 # 6. Jemaah Membership
 
