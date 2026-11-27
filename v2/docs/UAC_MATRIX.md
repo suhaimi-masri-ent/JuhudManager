@@ -299,22 +299,17 @@ Deputy Admin Syukbah assists the assigned Admin Syukbah.
 
 The Deputy may:
 
-- Perform assigned tasks.
-- Access records required for assigned tasks.
-- Carry out authorized temporary acting duties.
+- Perform tasks explicitly assigned by the Admin Syukbah.
+- Access records strictly required for those assigned tasks.
+- Exercise only permissions explicitly granted within the approved scope.
 
 The Deputy does not automatically inherit all Admin Syukbah permissions.
 
-Acting authority must specify:
+No acting authority may be exercised solely by virtue of the Deputy appointment.
 
-- The person acting.
-- The delegating authority.
-- Scope.
-- Start date.
-- End date.
-- Reason, where required.
+Temporary acting authority, its scope, duration and approval process remain subject to ODR-011.
 
-The complete Deputy delegation and acting-authority rules remain subject to the relevant open decision.
+Until ODR-011 is finalized, the system must not grant or implement acting authority for Deputy Admin Syukbah.
 
 ### 5.4 Admin Takaza
 
