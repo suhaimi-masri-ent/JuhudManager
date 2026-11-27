@@ -374,10 +374,11 @@ The approved Password Reset baseline requires:
 3. Five-minute OTP validity.
 4. Maximum five verification attempts.
 5. Sixty-second resend cooldown.
-6. New password meeting the minimum twelve-character requirement.
-7. Revocation of all existing sessions and tokens after successful reset.
-8. Audit event recording.
-9. Security notification.
+6. OTP must be bound to the specific Password Reset transaction. OTP issued for registration or another purpose must not be accepted.
+7. New password meeting the minimum twelve-character requirement.
+8. Revocation of all existing sessions and tokens after successful reset.
+9. Audit event recording.
+10. Security notification.
 
 Admin-Assisted Account Recovery is a separate process and must not be represented as ordinary Password Reset.
 
