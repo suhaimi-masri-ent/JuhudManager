@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="./assets/css/app.css">
   <link rel="stylesheet" href="./assets/css/dashboard.css">
 
-  <script type="module" src="./assets/js/profile.js"></script>
+  <script type="module" src="./assets/js/profile.js?v=2"></script>
 
   <style>
     .profile-card {
@@ -33,6 +33,7 @@
 
     .profile-field {
       margin-bottom: 20px;
+      min-width: 0;
     }
 
     .profile-field label {
@@ -55,11 +56,7 @@
       font: inherit;
     }
 
-    .profile-field input[readonly] {
-      background: #f1f4f2;
-      color: #718078;
-    }
-
+    .profile-field input[readonly],
     .profile-field input:disabled,
     .profile-field select:disabled {
       background: #f1f4f2;
@@ -72,6 +69,34 @@
       color: #718078;
       font-size: 12px;
       line-height: 1.6;
+    }
+
+    .profile-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0 16px;
+    }
+
+    .dob-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .dob-grid input {
+      min-width: 0;
+    }
+
+    .age-display {
+      display: inline-flex;
+      align-items: center;
+      min-height: 42px;
+      padding: 0 13px;
+      border: 1px solid #dfe8e1;
+      border-radius: 8px;
+      background: #f1f4f2;
+      color: #174b38;
+      font-weight: 650;
     }
 
     .profile-actions {
@@ -132,9 +157,61 @@
       line-height: 1.8;
     }
 
+    .address-suggestions {
+      display: none;
+      margin-top: 6px;
+      border: 1px solid #dfe8e1;
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      box-shadow: 0 5px 16px rgba(0, 0, 0, .08);
+    }
+
+    .address-suggestions.show {
+      display: block;
+    }
+
+    .address-suggestion {
+      display: block;
+      width: 100%;
+      padding: 12px 14px;
+      border: 0;
+      border-bottom: 1px solid #edf1ee;
+      background: #fff;
+      color: #24352c;
+      text-align: left;
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .address-suggestion:last-child {
+      border-bottom: 0;
+    }
+
+    .address-suggestion:hover,
+    .address-suggestion:focus {
+      background: #f1f7f3;
+      outline: none;
+    }
+
+    .address-suggestion small {
+      display: block;
+      margin-top: 4px;
+      color: #718078;
+      font-size: 11px;
+    }
+
     @media (max-width: 600px) {
       .profile-card {
         padding: 18px;
+      }
+
+      .profile-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dob-grid {
+        grid-template-columns: 1.2fr 1fr 1fr;
       }
     }
   </style>
@@ -184,30 +261,109 @@
           </h2>
 
           <div class="profile-field">
-            <label for="fullName">Full name</label>
+            <label for="fullName">Full Name</label>
             <input
               id="fullName"
               name="fullName"
               type="text"
               maxlength="150"
+              autocomplete="name"
               required
             >
           </div>
 
           <div class="profile-field">
-            <label for="dateOfBirth">Date of birth</label>
-            <input
-              id="dateOfBirth"
-              name="dateOfBirth"
-              type="date"
-            >
+            <label>Date of Birth</label>
+
+            <div class="dob-grid">
+              <input
+                id="dobYear"
+                type="number"
+                inputmode="numeric"
+                min="1900"
+                max="2100"
+                placeholder="Year"
+                aria-label="Year of birth"
+              >
+
+              <input
+                id="dobMonth"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                max="12"
+                placeholder="Month"
+                aria-label="Month of birth"
+              >
+
+              <input
+                id="dobDay"
+                type="number"
+                inputmode="numeric"
+                min="1"
+                max="31"
+                placeholder="Day"
+                aria-label="Day of birth"
+              >
+            </div>
+
             <p class="profile-help">
-              Leave blank if you do not want to provide your date of birth.
+              Enter Year, Month and Day. Leave all three blank if you do not want to provide your date of birth.
             </p>
           </div>
 
           <div class="profile-field">
-            <label for="email">Email address</label>
+            <label>Age</label>
+            <div id="ageDisplay" class="age-display">—</div>
+            <p class="profile-help">
+              Age is calculated automatically from your date of birth.
+            </p>
+          </div>
+
+          <div class="profile-grid">
+
+            <div class="profile-field">
+              <label for="gender">Gender</label>
+              <select id="gender" name="gender">
+                <option value="">Prefer not to specify</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+                <option value="PREFER_NOT_TO_SAY">Prefer not to say</option>
+              </select>
+            </div>
+
+            <div class="profile-field">
+              <label for="maritalStatus">Marital Status</label>
+              <select id="maritalStatus" name="maritalStatus">
+                <option value="">Select status</option>
+                <option value="SINGLE">Single</option>
+                <option value="MARRIED">Married</option>
+                <option value="DIVORCED">Divorced</option>
+                <option value="WIDOWED">Widowed</option>
+                <option value="SEPARATED">Separated</option>
+              </select>
+            </div>
+
+            <div class="profile-field">
+              <label for="employmentStatus">Employment Status</label>
+              <select id="employmentStatus" name="employmentStatus">
+                <option value="">Select status</option>
+                <option value="STUDENT">Student</option>
+                <option value="EMPLOYED">Employed</option>
+                <option value="SELF_EMPLOYED">Self-employed</option>
+                <option value="UNEMPLOYED">Unemployed</option>
+                <option value="HOMEMAKER">Homemaker</option>
+                <option value="PENSIONER">Pensioner</option>
+                <option value="RETIRED">Retired</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+
+          </div>
+
+          <div class="profile-field">
+            <label for="email">Email Address</label>
             <input id="email" type="email" readonly>
             <p class="profile-help">
               Email address is read-only on this page.
@@ -215,12 +371,15 @@
           </div>
 
           <div class="profile-field">
-            <label for="whatsapp">Verified WhatsApp</label>
+            <label for="whatsapp">Verified WhatsApp Number</label>
             <input id="whatsapp" type="text" readonly>
+            <p class="profile-help">
+              This number comes from your verified WhatsApp identity. Changing it requires a separate verification process.
+            </p>
           </div>
 
           <div class="profile-field">
-            <label for="accountStatus">Account status</label>
+            <label for="accountStatus">Account Status</label>
             <input id="accountStatus" type="text" readonly>
           </div>
 
@@ -229,7 +388,7 @@
           </h2>
 
           <div class="profile-field">
-            <label for="addressLine1">Address line 1</label>
+            <label for="addressLine1">Unit / Lot No.</label>
             <input
               id="addressLine1"
               name="addressLine1"
@@ -237,10 +396,13 @@
               maxlength="200"
               autocomplete="address-line1"
             >
+            <p class="profile-help">
+              Optional. Enter your house, unit, apartment or lot number.
+            </p>
           </div>
 
           <div class="profile-field">
-            <label for="addressLine2">Address line 2</label>
+            <label for="addressLine2">Street / Jalan</label>
             <input
               id="addressLine2"
               name="addressLine2"
@@ -248,61 +410,79 @@
               maxlength="200"
               autocomplete="address-line2"
             >
-          </div>
-
-          <div class="profile-field">
-            <label for="city">City / town</label>
-            <input
-              id="city"
-              name="city"
-              type="text"
-              maxlength="100"
-              autocomplete="address-level2"
-            >
-          </div>
-
-          <div class="profile-field">
-            <label for="stateRegion">State / region</label>
-            <input
-              id="stateRegion"
-              name="stateRegion"
-              type="text"
-              maxlength="100"
-              autocomplete="address-level1"
-            >
-          </div>
-
-          <div class="profile-field">
-            <label for="postalCode">Postal code</label>
-            <input
-              id="postalCode"
-              name="postalCode"
-              type="text"
-              maxlength="20"
-              autocomplete="postal-code"
-            >
-          </div>
-
-          <div class="profile-field">
-            <label for="countryId">Country</label>
-            <select
-              id="countryId"
-              name="countryId"
-              autocomplete="country"
-            >
-              <option value="">Select country</option>
-            </select>
-
-            <p class="profile-help">
-              Select your current country of residence.
-              This is not your nationality or Admin country assignment.
+            <div
+              id="addressSuggestions"
+              class="address-suggestions"
+              role="listbox"
+              aria-label="Address suggestions"
+            ></div>
+            <p id="addressSearchHelp" class="profile-help">
+              Start typing a street or area to see address suggestions. You can also enter the address manually.
             </p>
           </div>
+
+          <div class="profile-grid">
+
+            <div class="profile-field">
+              <label for="city">City / Town</label>
+              <input
+                id="city"
+                name="city"
+                type="text"
+                maxlength="100"
+                autocomplete="address-level2"
+              >
+            </div>
+
+            <div class="profile-field">
+              <label for="stateRegion">State / Region</label>
+              <input
+                id="stateRegion"
+                name="stateRegion"
+                type="text"
+                maxlength="100"
+                autocomplete="address-level1"
+              >
+            </div>
+
+            <div class="profile-field">
+              <label for="postalCode">Postal Code</label>
+              <input
+                id="postalCode"
+                name="postalCode"
+                type="text"
+                maxlength="20"
+                autocomplete="postal-code"
+              >
+            </div>
+
+            <div class="profile-field">
+              <label for="countryId">Country</label>
+              <select
+                id="countryId"
+                name="countryId"
+                autocomplete="country"
+              >
+                <option value="">Select country</option>
+              </select>
+            </div>
+
+          </div>
+
+          <p class="profile-help">
+            Select your current country of residence. This is not your nationality or Admin country assignment.
+          </p>
 
           <p id="addressPermissionMessage"
              class="profile-help"
              hidden>
             Your account currently has read-only access to residential address.
+          </p>
+
+          <p id="personalPermissionMessage"
+             class="profile-help"
+             hidden>
+            Your account currently has read-only access to additional personal information.
           </p>
 
           <div class="profile-actions">
