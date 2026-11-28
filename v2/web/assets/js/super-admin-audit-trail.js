@@ -11,6 +11,25 @@ let currentPage = 0;
 let hasNextPage = false;
 let requestSequence = 0;
 
+function initializeCollapsiblePanels() {
+    document.querySelectorAll("[data-panel-toggle]").forEach(button => {
+        const panelId = button.getAttribute("aria-controls");
+        const panel = document.getElementById(panelId);
+        const label = button.querySelector("[data-toggle-label]");
+
+        if (!panel || !label) return;
+
+        button.addEventListener("click", () => {
+            const isExpanded = button.getAttribute("aria-expanded") === "true";
+            const nextExpanded = !isExpanded;
+
+            button.setAttribute("aria-expanded", String(nextExpanded));
+            panel.hidden = !nextExpanded;
+            label.textContent = nextExpanded ? "Collapse" : "Expand";
+        });
+    });
+}
+
 function getToken() {
     return sessionStorage.getItem(ACCESS_TOKEN_KEY);
 }
@@ -366,6 +385,8 @@ async function logout() {
         );
     }
 }
+
+initializeCollapsiblePanels();
 
 $("filterForm").addEventListener("submit", event => {
     event.preventDefault();
