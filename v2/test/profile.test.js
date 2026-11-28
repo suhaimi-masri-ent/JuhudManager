@@ -1,13 +1,16 @@
-
 import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
   ADDRESS_FIELDS,
+  PERSONAL_PROFILE_FIELDS,
   httpError,
   readProfileJson,
   validateFullName,
   validateDateOfBirth,
+  validateGender,
+  validateMaritalStatus,
+  validateEmploymentStatus,
   normalizeAddressText,
   getAddressFromRow,
   addressHasContent
@@ -31,6 +34,14 @@ test("ADDRESS_FIELDS contains the expected address fields", () => {
     "stateRegion",
     "postalCode",
     "countryId"
+  ]);
+});
+
+test("PERSONAL_PROFILE_FIELDS contains the expected fields", () => {
+  assert.deepEqual(PERSONAL_PROFILE_FIELDS, [
+    "gender",
+    "maritalStatus",
+    "employmentStatus"
   ]);
 });
 
@@ -78,25 +89,25 @@ test("readProfileJson rejects an empty body", async () => {
   );
 });
 
-test("readProfileJson accepts a body within 4096 bytes", async () => {
+test("readProfileJson accepts a body within 8192 bytes", async () => {
   const body = JSON.stringify({
-    fullName: "A".repeat(4000)
+    fullName: "A".repeat(8000)
   });
 
   assert.ok(
-    new TextEncoder().encode(body).byteLength <= 4096
+    new TextEncoder().encode(body).byteLength <= 8192
   );
 
   const result = await readProfileJson(
     createRequest(body)
   );
 
-  assert.equal(result.fullName, "A".repeat(4000));
+  assert.equal(result.fullName, "A".repeat(8000));
 });
 
-test("readProfileJson rejects a body exceeding 4096 bytes", async () => {
+test("readProfileJson rejects a body exceeding 8192 bytes", async () => {
   const body = JSON.stringify({
-    fullName: "A".repeat(4100)
+    fullName: "A".repeat(8200)
   });
 
   await assert.rejects(
@@ -169,6 +180,80 @@ test("validateDateOfBirth rejects a future date", () => {
   );
 });
 
+test("validateGender accepts all supported values", () => {
+  for (const value of [
+    "MALE",
+    "FEMALE",
+    "OTHER",
+    "PREFER_NOT_TO_SAY"
+  ]) {
+    assert.equal(validateGender(value), value);
+  }
+});
+
+test("validateGender accepts null and empty string", () => {
+  assert.equal(validateGender(null), null);
+  assert.equal(validateGender(""), null);
+});
+
+test("validateGender rejects unsupported values", () => {
+  assert.throws(
+    () => validateGender("UNKNOWN"),
+    error => error.status === 400
+  );
+});
+
+test("validateMaritalStatus accepts all supported values", () => {
+  for (const value of [
+    "SINGLE",
+    "MARRIED",
+    "DIVORCED",
+    "WIDOWED",
+    "SEPARATED"
+  ]) {
+    assert.equal(validateMaritalStatus(value), value);
+  }
+});
+
+test("validateMaritalStatus accepts null and empty string", () => {
+  assert.equal(validateMaritalStatus(null), null);
+  assert.equal(validateMaritalStatus(""), null);
+});
+
+test("validateMaritalStatus rejects unsupported values", () => {
+  assert.throws(
+    () => validateMaritalStatus("ENGAGED"),
+    error => error.status === 400
+  );
+});
+
+test("validateEmploymentStatus accepts all supported values", () => {
+  for (const value of [
+    "STUDENT",
+    "EMPLOYED",
+    "SELF_EMPLOYED",
+    "UNEMPLOYED",
+    "HOMEMAKER",
+    "PENSIONER",
+    "RETIRED",
+    "OTHER"
+  ]) {
+    assert.equal(validateEmploymentStatus(value), value);
+  }
+});
+
+test("validateEmploymentStatus accepts null and empty string", () => {
+  assert.equal(validateEmploymentStatus(null), null);
+  assert.equal(validateEmploymentStatus(""), null);
+});
+
+test("validateEmploymentStatus rejects unsupported values", () => {
+  assert.throws(
+    () => validateEmploymentStatus("CONTRACTOR"),
+    error => error.status === 400
+  );
+});
+
 test("normalizeAddressText trims whitespace", () => {
   assert.equal(
     normalizeAddressText("  Kuala Lumpur  ", "City", 100),
@@ -209,8 +294,8 @@ test("normalizeAddressText rejects values exceeding the limit", () => {
 
 test("getAddressFromRow maps database fields correctly", () => {
   const result = getAddressFromRow({
-    address_line1: "Street 1",
-    address_line2: null,
+    address_line1: "Unit 10",
+    address_line2: "Jalan Ampang",
     city: "Kuala Lumpur",
     state_region: "Wilayah Persekutuan",
     postal_code: "50000",
@@ -218,8 +303,8 @@ test("getAddressFromRow maps database fields correctly", () => {
   });
 
   assert.deepEqual(result, {
-    addressLine1: "Street 1",
-    addressLine2: null,
+    addressLine1: "Unit 10",
+    addressLine2: "Jalan Ampang",
     city: "Kuala Lumpur",
     stateRegion: "Wilayah Persekutuan",
     postalCode: "50000",
@@ -257,8 +342,8 @@ test("addressHasContent returns false for an empty address", () => {
 test("addressHasContent returns true when an address field has content", () => {
   assert.equal(
     addressHasContent({
-      addressLine1: "Street 1",
-      addressLine2: null,
+      addressLine1: null,
+      addressLine2: "Jalan Ampang",
       city: null,
       stateRegion: null,
       postalCode: null,
