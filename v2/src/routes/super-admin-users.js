@@ -502,20 +502,32 @@ async function archiveUser({
   }
 
   const current = await db.prepare(
-    `SELECT user_id, account_status
-     FROM users
-     WHERE user_id = ?1
+    `SELECT
+       u.user_id,
+       u.account_status,
+       r.registration_status
+     FROM users u
+     LEFT JOIN user_registration_reviews r
+       ON r.user_id = u.user_id
+     WHERE u.user_id = ?1
      LIMIT 1`
   ).bind(userId).first();
-
+  
   if (!current) {
     throw httpError("User not found.", 404);
+  }
+
+  if (current.registration_status === "CANCELLED") {
+    throw httpError(
+      "A user with a cancelled registration cannot be archived.",
+      409
+    );
   }
 
   if (!["ACTIVE", "DISABLED"].includes(current.account_status)) {
     throw httpError("This account cannot be archived.", 409);
   }
-
+  
   const now = new Date().toISOString();
   const archiveId = crypto.randomUUID();
   const eventId = crypto.randomUUID();
