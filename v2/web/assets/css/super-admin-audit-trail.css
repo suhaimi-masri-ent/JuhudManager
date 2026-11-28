@@ -88,7 +88,8 @@ body {
 }
 
 .page-description,
-.section-heading p {
+.section-heading p,
+.audit-panel-heading p {
     margin: 0;
     color: var(--audit-muted);
     font-size: 13px;
@@ -104,6 +105,65 @@ body {
     box-shadow: var(--audit-shadow);
 }
 
+.audit-control-panel {
+    margin-top: 16px;
+}
+
+.audit-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.audit-panel-heading h2 {
+    margin: 0 0 6px;
+    color: var(--audit-primary);
+    font-size: 19px;
+}
+
+.audit-panel-content {
+    padding-top: 20px;
+}
+
+.panel-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 7px 11px;
+    border: 1px solid var(--audit-border);
+    border-radius: 8px;
+    background: #f8fbf8;
+    color: var(--audit-primary);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.panel-toggle:hover {
+    background: #edf5ef;
+}
+
+.panel-toggle:focus-visible {
+    outline: 2px solid var(--audit-success);
+    outline-offset: 2px;
+}
+
+.panel-toggle-icon {
+    display: inline-block;
+    font-size: 16px;
+    line-height: 1;
+    transition: transform 160ms ease;
+}
+
+.panel-toggle[aria-expanded="false"] .panel-toggle-icon {
+    transform: rotate(180deg);
+}
+
 .section-heading {
     display: flex;
     align-items: center;
@@ -116,6 +176,11 @@ body {
     margin: 0 0 6px;
     color: var(--audit-primary);
     font-size: 19px;
+}
+
+.filter-count-heading {
+    justify-content: flex-end;
+    margin: 0 0 15px;
 }
 
 .count-label {
@@ -160,8 +225,12 @@ body {
 
 .filter-grid {
     display: grid;
-    grid-template-columns: 1.5fr 1.3fr 1.3fr 1fr 1fr;
+    grid-template-columns: 1.3fr 1.3fr 1fr 1fr;
     gap: 13px;
+}
+
+.search-grid {
+    grid-template-columns: minmax(0, 1fr);
 }
 
 .form-field {
@@ -385,10 +454,6 @@ body {
     .filter-grid {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-
-    .search-field {
-        grid-column: 1 / -1;
-    }
 }
 
 @media (max-width: 650px) {
@@ -429,16 +494,21 @@ body {
         margin-top: 15px;
     }
 
-    .section-heading {
+    .audit-panel-heading {
         align-items: flex-start;
+    }
+
+    .audit-panel-heading h2 {
+        font-size: 17px;
+    }
+
+    .panel-toggle {
+        min-height: 34px;
+        padding: 6px 8px;
     }
 
     .filter-grid {
         grid-template-columns: 1fr;
-    }
-
-    .search-field {
-        grid-column: auto;
     }
 
     .filter-actions .button {
