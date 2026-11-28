@@ -1,4 +1,3 @@
-
 import { json } from "../../lib/http.js";
 import { decryptValue } from "../../auth/crypto.js";
 
@@ -16,22 +15,33 @@ export async function getProfile({
        u.account_status,
        u.created_at,
        u.updated_at,
+
        p.full_name AS profile_full_name,
        p.date_of_birth,
+       p.gender,
+       p.marital_status,
+       p.employment_status,
+
        p.address_line1,
        p.address_line2,
        p.city,
        p.state_region,
        p.postal_code,
        p.country_id,
+
        c.country_name,
+
        p.created_at AS profile_created_at,
        p.updated_at AS profile_updated_at
+
      FROM users u
+
      LEFT JOIN user_profiles p
        ON p.user_id = u.user_id
+
      LEFT JOIN countries c
        ON c.country_id = p.country_id
+
      WHERE u.user_id = ?1
      LIMIT 1`
   ).bind(userId).first();
@@ -65,8 +75,16 @@ export async function getProfile({
     ok: true,
     profile: {
       userId: user.user_id,
-      fullName: user.profile_full_name ?? user.account_full_name,
-      dateOfBirth: user.date_of_birth,
+
+      fullName:
+        user.profile_full_name ?? user.account_full_name,
+
+      dateOfBirth: user.date_of_birth ?? null,
+
+      gender: user.gender ?? null,
+      maritalStatus: user.marital_status ?? null,
+      employmentStatus: user.employment_status ?? null,
+
       email: user.email,
       whatsapp: verifiedWhatsApp,
       accountStatus: user.account_status,
@@ -80,8 +98,11 @@ export async function getProfile({
       countryId: user.country_id ?? null,
       countryName: user.country_name ?? null,
 
-      createdAt: user.profile_created_at ?? user.created_at,
-      updatedAt: user.profile_updated_at ?? user.updated_at
+      createdAt:
+        user.profile_created_at ?? user.created_at,
+
+      updatedAt:
+        user.profile_updated_at ?? user.updated_at
     }
   });
 }
@@ -102,4 +123,3 @@ export async function getProfileCountries(db) {
     countries: result?.results ?? []
   });
 }
-
