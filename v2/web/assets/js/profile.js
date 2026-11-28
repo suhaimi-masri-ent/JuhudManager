@@ -1,4 +1,5 @@
 import { apiRequest } from "./api.js";
+import { searchAddressSuggestions } from "./address-lookup.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -7,6 +8,10 @@ const USER_KEY = "jm_user";
 
 let currentAccessLevel = "LIMITED";
 let countriesLoaded = false;
+let currentProfile = null;
+
+let addressSearchTimer = null;
+let addressSearchController = null;
 
 const ADDRESS_INPUTS = [
   "addressLine1",
@@ -15,6 +20,12 @@ const ADDRESS_INPUTS = [
   "stateRegion",
   "postalCode",
   "countryId"
+];
+
+const PERSONAL_PROFILE_INPUTS = [
+  "gender",
+  "maritalStatus",
+  "employmentStatus"
 ];
 
 function showMessage(message, type = "error") {
@@ -64,6 +75,157 @@ function handleAuthError(error) {
   return false;
 }
 
+function getDateOfBirth() {
+  const yearValue = $("dobYear").value.trim();
+  const monthValue = $("dobMonth").value.trim();
+  const dayValue = $("dobDay").value.trim();
+
+  const values = [yearValue, monthValue, dayValue];
+  const filledCount = values.filter(Boolean).length;
+
+  if (filledCount === 0) {
+    return {
+      valid: true,
+      value: null
+    };
+  }
+
+  if (filledCount !== 3) {
+    return {
+      valid: false,
+      message: "Please enter the complete date of birth: Year, Month and Day."
+    };
+  }
+
+  if (
+    !/^\d{4}$/.test(yearValue) ||
+    !/^\d{1,2}$/.test(monthValue) ||
+    !/^\d{1,2}$/.test(dayValue)
+  ) {
+    return {
+      valid: false,
+      message: "Please enter a valid date of birth."
+    };
+  }
+
+  const year = Number(yearValue);
+  const month = Number(monthValue);
+  const day = Number(dayValue);
+
+  if (
+    year < 1900 ||
+    year > 2100 ||
+    month < 1 ||
+    month > 12 ||
+    day < 1 ||
+    day > 31
+  ) {
+    return {
+      valid: false,
+      message: "Please enter a valid date of birth."
+    };
+  }
+
+  const date = new Date(year, month - 1, day);
+
+  if (
+    date.getFullYear() !== year ||
+    date.getMonth() !== month - 1 ||
+    date.getDate() !== day
+  ) {
+    return {
+      valid: false,
+      message: "The date of birth is not a valid calendar date."
+    };
+  }
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (date > today) {
+    return {
+      valid: false,
+      message: "Date of birth cannot be in the future."
+    };
+  }
+
+  return {
+    valid: true,
+    value: [
+      String(year).padStart(4, "0"),
+      String(month).padStart(2, "0"),
+      String(day).padStart(2, "0")
+    ].join("-")
+  };
+}
+
+function calculateAge(dateOfBirth) {
+  if (!dateOfBirth) return null;
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateOfBirth);
+
+  if (!match) return null;
+
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+
+  const today = new Date();
+
+  let age = today.getFullYear() - year;
+
+  const birthdayNotReached =
+    today.getMonth() + 1 < month ||
+    (
+      today.getMonth() + 1 === month &&
+      today.getDate() < day
+    );
+
+  if (birthdayNotReached) {
+    age -= 1;
+  }
+
+  return age >= 0 ? age : null;
+}
+
+function updateAgeDisplay() {
+  const result = getDateOfBirth();
+
+  if (!result.valid || !result.value) {
+    $("ageDisplay").textContent = "—";
+    return;
+  }
+
+  const age = calculateAge(result.value);
+
+  $("ageDisplay").textContent =
+    age === null ? "—" : `${age} years`;
+}
+
+function displayDateOfBirth(value) {
+  $("dobYear").value = "";
+  $("dobMonth").value = "";
+  $("dobDay").value = "";
+
+  if (!value) {
+    updateAgeDisplay();
+    return;
+  }
+
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+
+  if (!match) {
+    updateAgeDisplay();
+    return;
+  }
+
+  $("dobYear").value = match[1];
+  $("dobMonth").value = String(Number(match[2]));
+  $("dobDay").value = String(Number(match[3]));
+
+  updateAgeDisplay();
+}
+
 function setAddressPermission() {
   const canEditAddress = currentAccessLevel === "FULL";
 
@@ -74,12 +236,23 @@ function setAddressPermission() {
   $("addressPermissionMessage").hidden = canEditAddress;
 }
 
+function setPersonalProfilePermission() {
+  const canEditPersonalProfile = currentAccessLevel === "FULL";
+
+  for (const id of PERSONAL_PROFILE_INPUTS) {
+    $(id).disabled = !canEditPersonalProfile;
+  }
+
+  $("personalPermissionMessage").hidden =
+    canEditPersonalProfile;
+}
+
 async function loadCountries() {
   const token = sessionStorage.getItem(ACCESS_TOKEN_KEY);
 
   if (!token) {
     redirectToLogin();
-    return;
+    return false;
   }
 
   const select = $("countryId");
@@ -112,18 +285,29 @@ async function loadCountries() {
     }
 
     countriesLoaded = true;
+    return true;
   } catch (error) {
-    if (handleAuthError(error)) return;
+    if (handleAuthError(error)) return false;
 
     showMessage(
       `Unable to load countries: ${error.message}`
     );
+
+    return false;
   }
 }
 
 function displayProfile(profile) {
+  currentProfile = { ...profile };
+
   $("fullName").value = profile.fullName || "";
-  $("dateOfBirth").value = profile.dateOfBirth || "";
+
+  displayDateOfBirth(profile.dateOfBirth || null);
+
+  $("gender").value = profile.gender || "";
+  $("maritalStatus").value = profile.maritalStatus || "";
+  $("employmentStatus").value = profile.employmentStatus || "";
+
   $("email").value = profile.email || "";
   $("whatsapp").value = profile.whatsapp || "Not verified";
   $("accountStatus").value = profile.accountStatus || "—";
@@ -139,7 +323,9 @@ function displayProfile(profile) {
   }
 
   currentAccessLevel = profile.accessLevel || "LIMITED";
+
   setAddressPermission();
+  setPersonalProfilePermission();
 
   $("createdAt").textContent = formatDate(profile.createdAt);
   $("updatedAt").textContent = formatDate(profile.updatedAt);
@@ -157,13 +343,14 @@ async function loadProfile() {
   reloadButton.disabled = true;
 
   clearMessage();
+  closeAddressSuggestions();
 
   try {
     if (!countriesLoaded) {
       await loadCountries();
 
       if (!countriesLoaded) {
-        throw new Error("Country list is unavailable.");
+        throw new Error("Country list is unavailable. Please reload and try again.");
       }
     }
 
@@ -190,7 +377,7 @@ async function loadProfile() {
 }
 
 function validateAddress() {
-  const addressLine1 = $("addressLine1").value.trim();
+  const street = $("addressLine2").value.trim();
   const city = $("city").value.trim();
   const countryId = $("countryId").value;
 
@@ -200,15 +387,169 @@ function validateAddress() {
 
   if (
     hasAddress &&
-    (!addressLine1 || !city || !countryId)
+    (!street || !city || !countryId)
   ) {
     showMessage(
-      "Address line 1, city and country are required when providing an address."
+      "Street, city and country are required when providing an address. Unit / Lot No. is optional."
     );
+
     return false;
   }
 
   return true;
+}
+
+function closeAddressSuggestions() {
+  $("addressSuggestions").replaceChildren();
+  $("addressSuggestions").classList.remove("show");
+}
+
+function findCountryId(countryName) {
+  if (!countryName) return "";
+
+  const normalized = countryName.trim().toLowerCase();
+
+  const options = Array.from(
+    $("countryId").options
+  );
+
+  const match = options.find(option =>
+    option.textContent.trim().toLowerCase() === normalized
+  );
+
+  return match?.value || "";
+}
+
+function applyAddressSuggestion(suggestion) {
+  /*
+   * Unit / Lot No. is intentionally not populated.
+   * Photon does not consistently provide this information.
+   */
+  if (suggestion.street) {
+    $("addressLine2").value = [
+      suggestion.housenumber,
+      suggestion.street
+    ].filter(Boolean).join(" ");
+  }
+
+  if (suggestion.city) {
+    $("city").value = suggestion.city;
+  }
+
+  if (suggestion.state) {
+    $("stateRegion").value = suggestion.state;
+  }
+
+  if (suggestion.postcode) {
+    $("postalCode").value = suggestion.postcode;
+  }
+
+  const countryId = findCountryId(suggestion.country);
+
+  if (countryId) {
+    $("countryId").value = countryId;
+  }
+
+  closeAddressSuggestions();
+
+  $("addressSearchHelp").textContent =
+    "Suggestion selected. Please review and edit the address before saving.";
+}
+
+function renderAddressSuggestions(suggestions) {
+  const container = $("addressSuggestions");
+
+  container.replaceChildren();
+
+  if (!suggestions.length) {
+    closeAddressSuggestions();
+
+    $("addressSearchHelp").textContent =
+      "No suggestions found. You can continue entering the address manually.";
+
+    return;
+  }
+
+  for (const suggestion of suggestions) {
+    const button = document.createElement("button");
+
+    button.type = "button";
+    button.className = "address-suggestion";
+    button.setAttribute("role", "option");
+
+    const title = document.createElement("span");
+    title.textContent = suggestion.displayName;
+
+    const detail = document.createElement("small");
+    detail.textContent = "Address suggestion · Review before saving";
+
+    button.append(title, detail);
+
+    button.addEventListener("click", () => {
+      applyAddressSuggestion(suggestion);
+    });
+
+    container.appendChild(button);
+  }
+
+  container.classList.add("show");
+
+  $("addressSearchHelp").textContent =
+    "Choose a suggestion to populate the address fields, then review the details.";
+}
+
+async function performAddressSearch(query) {
+  if (addressSearchController) {
+    addressSearchController.abort();
+  }
+
+  addressSearchController = new AbortController();
+
+  $("addressSearchHelp").textContent =
+    "Searching for address suggestions...";
+
+  try {
+    const suggestions = await searchAddressSuggestions(
+      query,
+      addressSearchController.signal
+    );
+
+    renderAddressSuggestions(suggestions);
+  } catch (error) {
+    if (error.name === "AbortError") return;
+
+    closeAddressSuggestions();
+
+    $("addressSearchHelp").textContent =
+      "Address suggestions are unavailable right now. You can enter the address manually.";
+  }
+}
+
+function handleAddressInput() {
+  if (currentAccessLevel !== "FULL") return;
+
+  if (addressSearchTimer) {
+    clearTimeout(addressSearchTimer);
+  }
+
+  if (addressSearchController) {
+    addressSearchController.abort();
+  }
+
+  const query = $("addressLine2").value.trim();
+
+  closeAddressSuggestions();
+
+  if (query.length < 3) {
+    $("addressSearchHelp").textContent =
+      "Enter at least 3 characters to search for suggestions, or continue typing manually.";
+
+    return;
+  }
+
+  addressSearchTimer = setTimeout(() => {
+    performAddressSearch(query);
+  }, 400);
 }
 
 async function saveProfile(event) {
@@ -224,7 +565,7 @@ async function saveProfile(event) {
   const button = $("saveProfileButton");
 
   const fullName = $("fullName").value.trim();
-  const dateOfBirth = $("dateOfBirth").value || null;
+  const dateResult = getDateOfBirth();
 
   if (fullName.length < 2 || fullName.length > 150) {
     showMessage(
@@ -233,30 +574,47 @@ async function saveProfile(event) {
     return;
   }
 
+  if (!dateResult.valid) {
+    showMessage(dateResult.message);
+    return;
+  }
+
   const body = {
     fullName,
-    dateOfBirth
+    dateOfBirth: dateResult.value
   };
 
-  /*
-   * LIMITED users can update only the existing permitted
-   * personal fields. Address inputs are not submitted.
-   */
   if (currentAccessLevel === "FULL") {
     if (!validateAddress()) return;
 
-    body.addressLine1 = $("addressLine1").value.trim() || null;
-    body.addressLine2 = $("addressLine2").value.trim() || null;
-    body.city = $("city").value.trim() || null;
-    body.stateRegion = $("stateRegion").value.trim() || null;
-    body.postalCode = $("postalCode").value.trim() || null;
-    body.countryId = $("countryId").value || null;
+    body.gender = $("gender").value || null;
+    body.maritalStatus = $("maritalStatus").value || null;
+    body.employmentStatus = $("employmentStatus").value || null;
+
+    body.addressLine1 =
+      $("addressLine1").value.trim() || null;
+
+    body.addressLine2 =
+      $("addressLine2").value.trim() || null;
+
+    body.city =
+      $("city").value.trim() || null;
+
+    body.stateRegion =
+      $("stateRegion").value.trim() || null;
+
+    body.postalCode =
+      $("postalCode").value.trim() || null;
+
+    body.countryId =
+      $("countryId").value || null;
   }
 
   button.disabled = true;
   button.textContent = "Saving...";
 
   clearMessage();
+  closeAddressSuggestions();
 
   try {
     const result = await apiRequest(
@@ -271,13 +629,9 @@ async function saveProfile(event) {
     }
 
     displayProfile({
+      ...currentProfile,
       ...result.profile,
-      accessLevel: currentAccessLevel,
-      email: $("email").value,
-      whatsapp: $("whatsapp").value,
-      accountStatus: $("accountStatus").value,
-      createdAt: $("createdAt").textContent,
-      updatedAt: result.profile.updatedAt
+      accessLevel: currentAccessLevel
     });
 
     showMessage(
@@ -297,6 +651,35 @@ async function saveProfile(event) {
 }
 
 $("profileForm").addEventListener("submit", saveProfile);
-$("reloadProfileButton").addEventListener("click", loadProfile);
+
+$("reloadProfileButton").addEventListener(
+  "click",
+  loadProfile
+);
+
+for (const id of ["dobYear", "dobMonth", "dobDay"]) {
+  $(id).addEventListener("input", updateAgeDisplay);
+}
+
+$("addressLine2").addEventListener(
+  "input",
+  handleAddressInput
+);
+
+$("addressLine2").addEventListener(
+  "blur",
+  () => {
+    setTimeout(closeAddressSuggestions, 200);
+  }
+);
+
+$("addressLine2").addEventListener(
+  "focus",
+  () => {
+    if ($("addressSuggestions").children.length > 0) {
+      $("addressSuggestions").classList.add("show");
+    }
+  }
+);
 
 loadProfile();
