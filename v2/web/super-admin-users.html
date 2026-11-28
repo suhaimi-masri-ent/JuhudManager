@@ -292,6 +292,80 @@
                         </details>
                     </article>
                 </div>
+
+
+                <section
+                    id="registrationCancellationPanel"
+                    class="account-action-section"
+                    hidden
+                >
+                    <h3>Cancel Incomplete Registration</h3>
+                
+                    <p>
+                        This action cancels an incomplete registration.
+                        It does not permanently delete the user record.
+                        Unverified identity claims will be revoked and active OTP
+                        requests will be invalidated.
+                    </p>
+                
+                    <div
+                        id="registrationCancellationEligibility"
+                        class="notice"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        Checking eligibility…
+                    </div>
+                
+                    <form id="registrationCancellationForm">
+                        <div class="action-panel">
+                            <label for="registrationCancellationReason">
+                                Cancellation Reason
+                            </label>
+                
+                            <textarea
+                                id="registrationCancellationReason"
+                                rows="4"
+                                minlength="10"
+                                maxlength="1000"
+                                required
+                                placeholder="Explain why this incomplete registration is being cancelled."
+                            ></textarea>
+                
+                            <label>
+                                <input
+                                    id="confirmRegistrationCancellation"
+                                    type="checkbox"
+                                    required
+                                >
+                                I confirm that this registration should be cancelled.
+                            </label>
+                
+                            <button
+                                id="submitRegistrationCancellation"
+                                type="submit"
+                                class="button button-danger"
+                                disabled
+                            >
+                                Cancel Registration
+                            </button>
+                        </div>
+                    </form>
+                
+                    <div
+                        id="registrationCancellationStatus"
+                        class="notice"
+                        role="status"
+                        aria-live="polite"
+                        hidden
+                    ></div>
+                
+                    <p class="security-note">
+                        Permanent Removal is not available through this action.
+                        Cancellation is recorded in the audit history.
+                    </p>
+                </section>
+
                 
                 <section id="accountActionSection" class="account-action-section">
                     <h3>Account Actions</h3>
@@ -406,5 +480,6 @@
     </div>
 
     <script type="module" src="./assets/js/super-admin-users.js?v=5"></script>
+    <script type="module" src="./assets/js/registration-cancellation.js?v=2"></script>
 </body>
 </html>
