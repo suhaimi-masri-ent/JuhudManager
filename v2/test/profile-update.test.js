@@ -1,4 +1,3 @@
-
 import test from "node:test";
 import assert from "node:assert/strict";
 
@@ -12,6 +11,9 @@ const currentProfile = {
   account_full_name: "Original Name",
   profile_full_name: "Original Name",
   date_of_birth: "1990-01-01",
+  gender: null,
+  marital_status: null,
+  employment_status: null,
   address_line1: null,
   address_line2: null,
   city: null,
@@ -56,7 +58,7 @@ class MockStatement {
 }
 
 function createMockDb(options = {}) {
-  const db = {
+  return {
     current: options.current === undefined
       ? { ...currentProfile }
       : options.current,
@@ -78,15 +80,13 @@ function createMockDb(options = {}) {
         return this.batchResults;
       }
 
-      return statements.map(statement => ({
+      return statements.map(() => ({
         meta: {
           changes: 1
         }
       }));
     }
   };
-
-  return db;
 }
 
 test("FULL user can update profile name", async () => {
@@ -107,7 +107,7 @@ test("FULL user can update profile name", async () => {
   assert.equal(db.batchCalls[0].length, 3);
 });
 
-test("FULL user can update a complete address", async () => {
+test("FULL user can update gender, marital status and employment status", async () => {
   const db = createMockDb();
 
   const result = await updateProfile({
@@ -115,13 +115,66 @@ test("FULL user can update a complete address", async () => {
     userId: USER_ID,
     accessLevel: "FULL",
     body: {
-      addressLine1: "Street 1",
+      gender: "MALE",
+      maritalStatus: "MARRIED",
+      employmentStatus: "EMPLOYED"
+    }
+  });
+
+  assert.equal(result.gender, "MALE");
+  assert.equal(result.maritalStatus, "MARRIED");
+  assert.equal(result.employmentStatus, "EMPLOYED");
+
+  const profileStatement = db.batchCalls[0][0];
+
+  assert.equal(profileStatement.args[3], "MALE");
+  assert.equal(profileStatement.args[4], "MARRIED");
+  assert.equal(profileStatement.args[5], "EMPLOYED");
+});
+
+test("FULL user can clear optional personal profile fields", async () => {
+  const db = createMockDb({
+    current: {
+      ...currentProfile,
+      gender: "MALE",
+      marital_status: "MARRIED",
+      employment_status: "EMPLOYED"
+    }
+  });
+
+  const result = await updateProfile({
+    db,
+    userId: USER_ID,
+    accessLevel: "FULL",
+    body: {
+      gender: null,
+      maritalStatus: "",
+      employmentStatus: null
+    }
+  });
+
+  assert.equal(result.gender, null);
+  assert.equal(result.maritalStatus, null);
+  assert.equal(result.employmentStatus, null);
+});
+
+test("FULL user can update a complete address without Unit or Lot number", async () => {
+  const db = createMockDb();
+
+  const result = await updateProfile({
+    db,
+    userId: USER_ID,
+    accessLevel: "FULL",
+    body: {
+      addressLine1: null,
+      addressLine2: "Jalan Ampang",
       city: "Kuala Lumpur",
       countryId: "MY"
     }
   });
 
-  assert.equal(result.addressLine1, "Street 1");
+  assert.equal(result.addressLine1, null);
+  assert.equal(result.addressLine2, "Jalan Ampang");
   assert.equal(result.city, "Kuala Lumpur");
   assert.equal(result.countryId, "MY");
 
@@ -150,7 +203,25 @@ test("LIMITED user cannot update address", async () => {
       userId: USER_ID,
       accessLevel: "LIMITED",
       body: {
-        addressLine1: "Street 1"
+        addressLine2: "Jalan Ampang"
+      }
+    }),
+    error => error.status === 403
+  );
+
+  assert.equal(db.batchCalls.length, 0);
+});
+
+test("LIMITED user cannot update additional personal profile fields", async () => {
+  const db = createMockDb();
+
+  await assert.rejects(
+    () => updateProfile({
+      db,
+      userId: USER_ID,
+      accessLevel: "LIMITED",
+      body: {
+        gender: "MALE"
       }
     }),
     error => error.status === 403
@@ -226,7 +297,7 @@ test("Inactive country cannot be selected", async () => {
       userId: USER_ID,
       accessLevel: "FULL",
       body: {
-        addressLine1: "Street 1",
+        addressLine2: "Jalan Ampang",
         city: "Kuala Lumpur",
         countryId: "MY"
       }
@@ -237,7 +308,7 @@ test("Inactive country cannot be selected", async () => {
   assert.equal(db.batchCalls.length, 0);
 });
 
-test("Incomplete address is rejected", async () => {
+test("Address without Street is rejected", async () => {
   const db = createMockDb();
 
   await assert.rejects(
@@ -246,7 +317,27 @@ test("Incomplete address is rejected", async () => {
       userId: USER_ID,
       accessLevel: "FULL",
       body: {
-        addressLine1: "Street 1",
+        addressLine1: "Unit 10",
+        city: "Kuala Lumpur",
+        countryId: "MY"
+      }
+    }),
+    error => error.status === 400
+  );
+
+  assert.equal(db.batchCalls.length, 0);
+});
+
+test("Address without City is rejected", async () => {
+  const db = createMockDb();
+
+  await assert.rejects(
+    () => updateProfile({
+      db,
+      userId: USER_ID,
+      accessLevel: "FULL",
+      body: {
+        addressLine2: "Jalan Ampang",
         countryId: "MY"
       }
     }),
@@ -275,6 +366,26 @@ test("Unknown profile fields are rejected", async () => {
   assert.equal(db.batchCalls.length, 0);
 });
 
+test("Email and WhatsApp cannot be updated through profile", async () => {
+  for (const field of ["email", "whatsapp", "phone"]) {
+    const db = createMockDb();
+
+    await assert.rejects(
+      () => updateProfile({
+        db,
+        userId: USER_ID,
+        accessLevel: "FULL",
+        body: {
+          [field]: "changed-value"
+        }
+      }),
+      error => error.status === 400
+    );
+
+    assert.equal(db.batchCalls.length, 0);
+  }
+});
+
 test("Empty profile update is rejected", async () => {
   const db = createMockDb();
 
@@ -295,7 +406,8 @@ test("Unchanged address does not create address history", async () => {
   const db = createMockDb({
     current: {
       ...currentProfile,
-      address_line1: "Street 1",
+      address_line1: null,
+      address_line2: "Jalan Ampang",
       city: "Kuala Lumpur",
       country_id: "MY"
     }
@@ -306,7 +418,8 @@ test("Unchanged address does not create address history", async () => {
     userId: USER_ID,
     accessLevel: "FULL",
     body: {
-      addressLine1: "Street 1",
+      addressLine1: null,
+      addressLine2: "Jalan Ampang",
       city: "Kuala Lumpur",
       countryId: "MY"
     }
@@ -328,7 +441,8 @@ test("Address update records previous and new address", async () => {
   const db = createMockDb({
     current: {
       ...currentProfile,
-      address_line1: "Old Street",
+      address_line1: "Unit 2",
+      address_line2: "Old Street",
       city: "Old City",
       country_id: "MY"
     }
@@ -339,7 +453,8 @@ test("Address update records previous and new address", async () => {
     userId: USER_ID,
     accessLevel: "FULL",
     body: {
-      addressLine1: "New Street",
+      addressLine1: null,
+      addressLine2: "New Street",
       city: "New City",
       countryId: "MY"
     }
@@ -353,17 +468,22 @@ test("Address update records previous and new address", async () => {
   assert.ok(historyStatement);
 
   assert.equal(
-    JSON.parse(historyStatement.args[2]).addressLine1,
+    JSON.parse(historyStatement.args[2]).addressLine2,
     "Old Street"
   );
 
   assert.equal(
     JSON.parse(historyStatement.args[3]).addressLine1,
+    null
+  );
+
+  assert.equal(
+    JSON.parse(historyStatement.args[3]).addressLine2,
     "New Street"
   );
 
   assert.equal(historyStatement.args[1], USER_ID);
-  assert.equal(historyStatement.args[2] !== null, true);
+  assert.notEqual(historyStatement.args[2], null);
 });
 
 test("D1 batch failure is propagated", async () => {
