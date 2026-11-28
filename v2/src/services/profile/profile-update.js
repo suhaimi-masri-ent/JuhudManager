@@ -216,7 +216,7 @@ export async function updateProfile({
   if (
     addressHasContent(address) &&
     (
-      !address.addressLine1 ||
+      !address.addressLine2 ||
       !address.city ||
       !address.countryId
     )
