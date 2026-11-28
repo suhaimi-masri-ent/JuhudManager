@@ -1,4 +1,3 @@
-
 export const ADDRESS_FIELDS = [
   "addressLine1",
   "addressLine2",
@@ -8,6 +7,38 @@ export const ADDRESS_FIELDS = [
   "countryId"
 ];
 
+export const PERSONAL_PROFILE_FIELDS = [
+  "gender",
+  "maritalStatus",
+  "employmentStatus"
+];
+
+const GENDER_VALUES = [
+  "MALE",
+  "FEMALE",
+  "OTHER",
+  "PREFER_NOT_TO_SAY"
+];
+
+const MARITAL_STATUS_VALUES = [
+  "SINGLE",
+  "MARRIED",
+  "DIVORCED",
+  "WIDOWED",
+  "SEPARATED"
+];
+
+const EMPLOYMENT_STATUS_VALUES = [
+  "STUDENT",
+  "EMPLOYED",
+  "SELF_EMPLOYED",
+  "UNEMPLOYED",
+  "HOMEMAKER",
+  "PENSIONER",
+  "RETIRED",
+  "OTHER"
+];
+
 export function httpError(message, status) {
   const error = new Error(message);
   error.status = status;
@@ -15,7 +46,7 @@ export function httpError(message, status) {
 }
 
 export async function readProfileJson(request) {
-  const maxBodyBytes = 4096;
+  const maxBodyBytes = 8192;
   const reader = request.body?.getReader();
 
   if (!reader) {
@@ -113,6 +144,45 @@ export function validateDateOfBirth(value) {
   }
 
   return value;
+}
+
+function validateOptionalEnum(value, field, allowedValues) {
+  if (value === null || value === "") {
+    return null;
+  }
+
+  if (
+    typeof value !== "string" ||
+    !allowedValues.includes(value)
+  ) {
+    throw httpError(`Invalid ${field}.`, 400);
+  }
+
+  return value;
+}
+
+export function validateGender(value) {
+  return validateOptionalEnum(
+    value,
+    "gender",
+    GENDER_VALUES
+  );
+}
+
+export function validateMaritalStatus(value) {
+  return validateOptionalEnum(
+    value,
+    "marital status",
+    MARITAL_STATUS_VALUES
+  );
+}
+
+export function validateEmploymentStatus(value) {
+  return validateOptionalEnum(
+    value,
+    "employment status",
+    EMPLOYMENT_STATUS_VALUES
+  );
 }
 
 export function normalizeAddressText(value, field, maxLength) {
