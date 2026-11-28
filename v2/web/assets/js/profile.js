@@ -426,12 +426,9 @@ function applyAddressSuggestion(suggestion) {
    * Photon does not consistently provide this information.
    */
   if (suggestion.street) {
-    $("addressLine2").value = [
-      suggestion.housenumber,
-      suggestion.street
-    ].filter(Boolean).join(" ");
+    $("addressLine2").value = suggestion.street;
   }
-
+  
   if (suggestion.city) {
     $("city").value = suggestion.city;
   }
