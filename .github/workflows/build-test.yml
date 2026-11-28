@@ -1,14 +1,7 @@
+
 name: JuhudManager V2 - Build & Test
 
 on:
-  push:
-    branches:
-      - main
-      - v2
-  pull_request:
-    branches:
-      - main
-      - v2
   workflow_dispatch:
 
 permissions:
