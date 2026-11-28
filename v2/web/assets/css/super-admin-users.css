@@ -138,6 +138,51 @@ body {
     white-space: nowrap;
 }
 
+.section-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 0 0 auto;
+}
+
+.panel-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    flex: 0 0 auto;
+    min-height: 36px;
+    padding: 7px 11px;
+    border: 1px solid var(--users-border);
+    border-radius: 8px;
+    background: #f8fbf8;
+    color: var(--users-primary);
+    font: inherit;
+    font-size: 11px;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.panel-toggle:hover {
+    background: #edf5ef;
+}
+
+.panel-toggle:focus-visible {
+    outline: 2px solid var(--users-primary);
+    outline-offset: 2px;
+}
+
+.panel-toggle-icon {
+    display: inline-block;
+    font-size: 16px;
+    line-height: 1;
+    transition: transform 160ms ease;
+}
+
+.panel-toggle[aria-expanded="false"] .panel-toggle-icon {
+    transform: rotate(180deg);
+}
+
 .button {
     display: inline-flex;
     align-items: center;
