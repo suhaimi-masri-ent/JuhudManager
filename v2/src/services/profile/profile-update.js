@@ -1,9 +1,12 @@
-
 import {
   ADDRESS_FIELDS,
+  PERSONAL_PROFILE_FIELDS,
   httpError,
   validateFullName,
   validateDateOfBirth,
+  validateGender,
+  validateMaritalStatus,
+  validateEmploymentStatus,
   normalizeAddressText,
   getAddressFromRow,
   addressHasContent
@@ -30,6 +33,7 @@ export async function updateProfile({
   const allowedFields = [
     "fullName",
     "dateOfBirth",
+    ...PERSONAL_PROFILE_FIELDS,
     ...ADDRESS_FIELDS
   ];
 
@@ -49,14 +53,27 @@ export async function updateProfile({
     field => Object.hasOwn(body, field)
   );
 
+  const hasPersonalProfileUpdate =
+    PERSONAL_PROFILE_FIELDS.some(
+      field => Object.hasOwn(body, field)
+    );
+
   /*
-   * Address changes are FULL-only.
-   * LIMITED users retain their existing permitted
-   * name/date-of-birth update eligibility.
+   * Address and additional personal profile fields
+   * are FULL-only.
+   *
+   * LIMITED users retain their existing permission
+   * to update name and date of birth only.
    */
-  if (hasAddressUpdate && accessLevel !== "FULL") {
+  if (
+    (
+      hasAddressUpdate ||
+      hasPersonalProfileUpdate
+    ) &&
+    accessLevel !== "FULL"
+  ) {
     throw httpError(
-      "Your account does not have permission to update its address.",
+      "Your account does not have permission to update these profile fields.",
       403
     );
   }
@@ -64,17 +81,25 @@ export async function updateProfile({
   const current = await db.prepare(
     `SELECT
        u.full_name AS account_full_name,
+
        p.full_name AS profile_full_name,
        p.date_of_birth,
+       p.gender,
+       p.marital_status,
+       p.employment_status,
+
        p.address_line1,
        p.address_line2,
        p.city,
        p.state_region,
        p.postal_code,
        p.country_id
+
      FROM users u
+
      LEFT JOIN user_profiles p
        ON p.user_id = u.user_id
+
      WHERE u.user_id = ?1
      LIMIT 1`
   ).bind(userId).first();
@@ -89,7 +114,19 @@ export async function updateProfile({
 
   const dateOfBirth = Object.hasOwn(body, "dateOfBirth")
     ? validateDateOfBirth(body.dateOfBirth)
-    : current.date_of_birth;
+    : current.date_of_birth ?? null;
+
+  const gender = Object.hasOwn(body, "gender")
+    ? validateGender(body.gender)
+    : current.gender ?? null;
+
+  const maritalStatus = Object.hasOwn(body, "maritalStatus")
+    ? validateMaritalStatus(body.maritalStatus)
+    : current.marital_status ?? null;
+
+  const employmentStatus = Object.hasOwn(body, "employmentStatus")
+    ? validateEmploymentStatus(body.employmentStatus)
+    : current.employment_status ?? null;
 
   const currentAddress = getAddressFromRow(current);
 
@@ -112,7 +149,11 @@ export async function updateProfile({
           : currentAddress.addressLine2,
 
         city: Object.hasOwn(body, "city")
-          ? normalizeAddressText(body.city, "City", 100)
+          ? normalizeAddressText(
+              body.city,
+              "City",
+              100
+            )
           : currentAddress.city,
 
         stateRegion: Object.hasOwn(body, "stateRegion")
@@ -194,12 +235,19 @@ export async function updateProfile({
   const before = {
     fullName:
       current.profile_full_name ?? current.account_full_name,
-    dateOfBirth: current.date_of_birth
+
+    dateOfBirth: current.date_of_birth ?? null,
+    gender: current.gender ?? null,
+    maritalStatus: current.marital_status ?? null,
+    employmentStatus: current.employment_status ?? null
   };
 
   const after = {
     fullName,
-    dateOfBirth
+    dateOfBirth,
+    gender,
+    maritalStatus,
+    employmentStatus
   };
 
   const profileEligibility = getWriteEligibilitySql(
@@ -243,6 +291,9 @@ export async function updateProfile({
          user_id,
          full_name,
          date_of_birth,
+         gender,
+         marital_status,
+         employment_status,
          address_line1,
          address_line2,
          city,
@@ -253,11 +304,16 @@ export async function updateProfile({
          updated_at
        )
        SELECT
-         ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?10
+         ?1, ?2, ?3, ?4, ?5, ?6,
+         ?7, ?8, ?9, ?10, ?11, ?12,
+         ?13, ?13
        WHERE ${profileEligibility}
        ON CONFLICT(user_id) DO UPDATE SET
          full_name = excluded.full_name,
          date_of_birth = excluded.date_of_birth,
+         gender = excluded.gender,
+         marital_status = excluded.marital_status,
+         employment_status = excluded.employment_status,
          address_line1 = excluded.address_line1,
          address_line2 = excluded.address_line2,
          city = excluded.city,
@@ -269,6 +325,9 @@ export async function updateProfile({
       userId,
       fullName,
       dateOfBirth,
+      gender,
+      maritalStatus,
+      employmentStatus,
       address.addressLine1,
       address.addressLine2,
       address.city,
@@ -435,6 +494,9 @@ export async function updateProfile({
     userId,
     fullName,
     dateOfBirth,
+    gender,
+    maritalStatus,
+    employmentStatus,
 
     addressLine1: address.addressLine1,
     addressLine2: address.addressLine2,
@@ -446,4 +508,3 @@ export async function updateProfile({
     updatedAt: now
   };
 }
-
