@@ -17,6 +17,7 @@ import { handleSuperAdminOwnerVerificationRequest } from "./routes/super-admin-o
 import { handleSuperAdminCountryRequest } from "./routes/super-admin-countries.js";
 import { handleSuperAdminCountryAdminRequest } from "./routes/super-admin-country-admins.js";
 import { handleSuperAdminUserRequest } from "./routes/super-admin-users.js";
+import { handleSuperAdminAuditTrailRequest } from "./routes/super-admin-audit-trail.js";
 
 import { cleanupExpiredRateLimits } from "./lib/rate-limit.js";
 
@@ -147,6 +148,14 @@ export default {
             url
           );
         }
+
+        if (!response) {
+          response = await handleSuperAdminAuditTrailRequest(
+            request,
+            env,
+            url
+          );
+        }        
 
         if (!response) {
           response = await handleLoginRequest(
