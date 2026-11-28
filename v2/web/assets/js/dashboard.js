@@ -144,6 +144,11 @@ function renderRoleNavigation(user) {
         "User Management",
         "View user profiles, roles, account status and activity history. Archive or restore eligible accounts.",
         "./super-admin-users.html"
+      ),
+      createWorkspaceCard(
+        "Audit Trail",
+        "Review system-wide audit records, actions and changes. Read-only access.",
+        "./super-admin-audit-trail.html"
       )
     );
   }
