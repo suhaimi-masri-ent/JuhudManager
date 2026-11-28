@@ -222,7 +222,7 @@ export async function updateProfile({
     )
   ) {
     throw httpError(
-      "Address line 1, city and country are required when providing an address.",
+      "Street, city and country are required when providing an address.",
       400
     );
   }
