@@ -113,6 +113,43 @@ body {
     box-shadow: var(--users-shadow);
 }
 
+.audit-control-panel {
+    margin-top: 16px;
+}
+
+.audit-panel-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 15px;
+}
+
+.audit-panel-heading h2 {
+    margin: 0 0 6px;
+    color: var(--users-primary);
+    font-size: 19px;
+}
+
+.audit-panel-heading p {
+    margin: 0;
+    color: var(--users-muted);
+    font-size: 13px;
+    line-height: 1.7;
+}
+
+.audit-panel-content {
+    padding-top: 20px;
+}
+
+.filter-count-heading {
+    justify-content: flex-end;
+    margin: 0 0 15px;
+}
+
+.search-grid {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .section-heading {
     display: flex;
     align-items: center;
