@@ -60,10 +60,24 @@
                         <h2>Search and Filter Users</h2>
                         <p>Find accounts by name, email or User ID.</p>
                     </div>
-                    <span id="userCount" class="count-label">0 records</span>
+            
+                    <div class="section-heading-actions">
+                        <span id="userCount" class="count-label">0 records</span>
+            
+                        <button
+                            id="userFilterPanelToggle"
+                            type="button"
+                            class="panel-toggle"
+                            aria-controls="filterForm"
+                            aria-expanded="false"
+                        >
+                            <span class="panel-toggle-icon" aria-hidden="true">⌃</span>
+                            <span class="panel-toggle-label">Expand</span>
+                        </button>
+                    </div>
                 </div>
-
-                <form id="filterForm" class="filter-form">
+            
+                <form id="filterForm" class="filter-form" hidden>
                     <div class="filter-grid">
                         <div class="form-field search-field">
                             <label for="searchInput">Search</label>
