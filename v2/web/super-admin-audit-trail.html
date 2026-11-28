@@ -1,0 +1,158 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#14532d">
+    <meta name="referrer" content="no-referrer">
+    <title>Audit Trail | JuhudManager</title>
+    <link rel="stylesheet" href="./assets/css/app.css">
+    <link rel="stylesheet" href="./assets/css/super-admin-audit-trail.css?v=1">
+</head>
+<body>
+    <div class="app-shell">
+        <header class="app-header">
+            <div class="header-brand">
+                <a href="./dashboard.html" class="brand-link">
+                    <span class="brand-name">JuhudManager</span>
+                </a>
+                <span class="page-context">Super Admin</span>
+            </div>
+
+            <div class="header-actions">
+                <a href="./dashboard.html" class="button button-secondary">
+                    Dashboard
+                </a>
+                <button id="logoutButton" type="button" class="button button-secondary">
+                    Logout
+                </button>
+            </div>
+        </header>
+
+        <main class="page-content">
+            <section class="page-heading">
+                <div>
+                    <p class="eyebrow">PLATFORM SECURITY</p>
+                    <h1>Audit Trail</h1>
+                    <p class="page-description">
+                        System-wide record of important actions and changes.
+                        This page is read-only.
+                    </p>
+                </div>
+
+                <button id="refreshButton" type="button" class="button button-secondary">
+                    Refresh
+                </button>
+            </section>
+
+            <div id="pageNotice" class="notice" role="status" aria-live="polite" hidden></div>
+
+            <section class="management-section">
+                <div class="section-heading">
+                    <div>
+                        <h2>Search and Filter Audit Records</h2>
+                        <p>Search by action, record, user, reason or identifier.</p>
+                    </div>
+                    <span id="recordCount" class="count-label">0 records</span>
+                </div>
+
+                <form id="filterForm">
+                    <div class="filter-grid">
+                        <div class="form-field search-field">
+                            <label for="searchInput">Search</label>
+                            <input
+                                id="searchInput"
+                                type="search"
+                                maxlength="100"
+                                placeholder="Name, email, ID or reason"
+                                autocomplete="off"
+                            >
+                        </div>
+
+                        <div class="form-field">
+                            <label for="actionFilter">Action</label>
+                            <input
+                                id="actionFilter"
+                                type="text"
+                                maxlength="100"
+                                placeholder="e.g. REGISTRATION_CANCELLED"
+                            >
+                        </div>
+
+                        <div class="form-field">
+                            <label for="entityTypeFilter">Record Type</label>
+                            <input
+                                id="entityTypeFilter"
+                                type="text"
+                                maxlength="100"
+                                placeholder="e.g. USER_REGISTRATION"
+                            >
+                        </div>
+
+                        <div class="form-field">
+                            <label for="dateFromFilter">Date From</label>
+                            <input id="dateFromFilter" type="date">
+                        </div>
+
+                        <div class="form-field">
+                            <label for="dateToFilter">Date To</label>
+                            <input id="dateToFilter" type="date">
+                        </div>
+                    </div>
+
+                    <div class="filter-actions">
+                        <button type="submit" class="button button-primary">
+                            Apply Filters
+                        </button>
+                        <button id="resetFilterButton" type="button" class="button button-secondary">
+                            Reset Filters
+                        </button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="management-section">
+                <div class="section-heading">
+                    <div>
+                        <h2>Audit Records</h2>
+                        <p>Newest records appear first.</p>
+                    </div>
+                </div>
+
+                <div id="loadingState" class="empty-state">
+                    Loading audit records...
+                </div>
+
+                <div id="emptyState" class="empty-state" hidden>
+                    <h3>No audit records found</h3>
+                    <p>No records match the selected search and filters.</p>
+                </div>
+
+                <div id="auditRecordList" class="audit-record-list"></div>
+
+                <div id="pagination" class="pagination" hidden>
+                    <button id="previousPageButton" type="button" class="button button-secondary">
+                        Previous
+                    </button>
+                    <span id="pageInformation">Page 1</span>
+                    <button id="nextPageButton" type="button" class="button button-secondary">
+                        Next
+                    </button>
+                </div>
+            </section>
+
+            <p class="security-note">
+                Audit records are displayed for review only. This interface
+                does not provide any function to modify or delete audit records.
+            </p>
+        </main>
+
+        <footer class="app-footer">
+            <p>JuhudManager V2</p>
+        </footer>
+    </div>
+
+    <script type="module" src="./assets/js/super-admin-audit-trail.js?v=1"></script>
+</body>
+</html>
