@@ -8,7 +8,7 @@
     <meta name="referrer" content="no-referrer">
     <title>Audit Trail | JuhudManager</title>
     <link rel="stylesheet" href="./assets/css/app.css">
-    <link rel="stylesheet" href="./assets/css/super-admin-audit-trail.css?v=1">
+    <link rel="stylesheet" href="./assets/css/super-admin-audit-trail.css?v=2">
 </head>
 <body>
     <div class="app-shell">
@@ -48,69 +48,107 @@
 
             <div id="pageNotice" class="notice" role="status" aria-live="polite" hidden></div>
 
-            <section class="management-section">
-                <div class="section-heading">
-                    <div>
-                        <h2>Search and Filter Audit Records</h2>
-                        <p>Search by action, record, user, reason or identifier.</p>
-                    </div>
-                    <span id="recordCount" class="count-label">0 records</span>
-                </div>
-
-                <form id="filterForm">
-                    <div class="filter-grid">
-                        <div class="form-field search-field">
-                            <label for="searchInput">Search</label>
-                            <input
-                                id="searchInput"
-                                type="search"
-                                maxlength="100"
-                                placeholder="Name, email, ID or reason"
-                                autocomplete="off"
-                            >
+            <form id="filterForm">
+                <section class="management-section audit-control-panel">
+                    <div class="audit-panel-heading">
+                        <div>
+                            <h2>Search Audit Records</h2>
+                            <p>Search by action, record, user, reason or identifier.</p>
                         </div>
-
-                        <div class="form-field">
-                            <label for="actionFilter">Action</label>
-                            <input
-                                id="actionFilter"
-                                type="text"
-                                maxlength="100"
-                                placeholder="e.g. REGISTRATION_CANCELLED"
-                            >
-                        </div>
-
-                        <div class="form-field">
-                            <label for="entityTypeFilter">Record Type</label>
-                            <input
-                                id="entityTypeFilter"
-                                type="text"
-                                maxlength="100"
-                                placeholder="e.g. USER_REGISTRATION"
-                            >
-                        </div>
-
-                        <div class="form-field">
-                            <label for="dateFromFilter">Date From</label>
-                            <input id="dateFromFilter" type="date">
-                        </div>
-
-                        <div class="form-field">
-                            <label for="dateToFilter">Date To</label>
-                            <input id="dateToFilter" type="date">
-                        </div>
-                    </div>
-
-                    <div class="filter-actions">
-                        <button type="submit" class="button button-primary">
-                            Apply Filters
-                        </button>
-                        <button id="resetFilterButton" type="button" class="button button-secondary">
-                            Reset Filters
+                        <button
+                            class="panel-toggle"
+                            type="button"
+                            data-panel-toggle
+                            aria-controls="searchPanelContent"
+                            aria-expanded="true"
+                        >
+                            <span data-toggle-label>Collapse</span>
+                            <span class="panel-toggle-icon" aria-hidden="true">⌃</span>
                         </button>
                     </div>
-                </form>
-            </section>
+
+                    <div id="searchPanelContent" class="audit-panel-content">
+                        <div class="filter-grid search-grid">
+                            <div class="form-field search-field">
+                                <label for="searchInput">Search</label>
+                                <input
+                                    id="searchInput"
+                                    type="search"
+                                    maxlength="100"
+                                    placeholder="Name, email, ID or reason"
+                                    autocomplete="off"
+                                >
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="management-section audit-control-panel">
+                    <div class="audit-panel-heading">
+                        <div>
+                            <h2>Filter Audit Records</h2>
+                            <p>Filter records by action, record type and date range.</p>
+                        </div>
+                        <button
+                            class="panel-toggle"
+                            type="button"
+                            data-panel-toggle
+                            aria-controls="filterPanelContent"
+                            aria-expanded="true"
+                        >
+                            <span data-toggle-label>Collapse</span>
+                            <span class="panel-toggle-icon" aria-hidden="true">⌃</span>
+                        </button>
+                    </div>
+
+                    <div id="filterPanelContent" class="audit-panel-content">
+                        <div class="section-heading filter-count-heading">
+                            <span id="recordCount" class="count-label">0 records</span>
+                        </div>
+
+                        <div class="filter-grid">
+                            <div class="form-field">
+                                <label for="actionFilter">Action</label>
+                                <input
+                                    id="actionFilter"
+                                    type="text"
+                                    maxlength="100"
+                                    placeholder="e.g. REGISTRATION_CANCELLED"
+                                >
+                            </div>
+
+                            <div class="form-field">
+                                <label for="entityTypeFilter">Record Type</label>
+                                <input
+                                    id="entityTypeFilter"
+                                    type="text"
+                                    maxlength="100"
+                                    placeholder="e.g. USER_REGISTRATION"
+                                >
+                            </div>
+
+                            <div class="form-field">
+                                <label for="dateFromFilter">Date From</label>
+                                <input id="dateFromFilter" type="date">
+                            </div>
+
+                            <div class="form-field">
+                                <label for="dateToFilter">Date To</label>
+                                <input id="dateToFilter" type="date">
+                            </div>
+                        </div>
+
+                        <div class="filter-actions">
+                            <button type="submit" class="button button-primary">
+                                Apply Filters
+                            </button>
+                            <button id="resetFilterButton" type="button" class="button button-secondary">
+                                Reset Filters
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            </form>
 
             <section class="management-section">
                 <div class="section-heading">
@@ -153,6 +191,6 @@
         </footer>
     </div>
 
-    <script type="module" src="./assets/js/super-admin-audit-trail.js?v=1"></script>
+    <script type="module" src="./assets/js/super-admin-audit-trail.js?v=2"></script>
 </body>
 </html>
