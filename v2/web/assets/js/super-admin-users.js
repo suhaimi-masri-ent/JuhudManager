@@ -1095,18 +1095,6 @@ async function logout() {
     }
 }
 
-$("userFilterPanelToggle").addEventListener("click", () => {
-    const button = $("userFilterPanelToggle");
-    const panel = $("filterForm");
-    const expanded = button.getAttribute("aria-expanded") === "true";
-
-    button.setAttribute("aria-expanded", String(!expanded));
-    panel.hidden = expanded;
-
-    button.querySelector(".panel-toggle-label").textContent =
-        expanded ? "Expand" : "Collapse";
-});
-
 $("filterForm").addEventListener("submit", event => {
     event.preventDefault();
     currentPage = 0;
