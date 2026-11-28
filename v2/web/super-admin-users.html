@@ -54,88 +54,142 @@
                 hidden
             ></div>
 
-            <section class="management-section">
-                <div class="section-heading">
-                    <div>
-                        <h2>Search and Filter Users</h2>
-                        <p>Find accounts by name, email or User ID.</p>
-                    </div>
+            <form id="filterForm">
             
-                    <div class="section-heading-actions">
-                        <span id="userCount" class="count-label">0 records</span>
+                <!-- SEARCH PANEL -->
+                <section class="management-section audit-control-panel">
+                    <div class="audit-panel-heading">
+                        <div>
+                            <h2>Search Users</h2>
+                            <p>Search accounts by name, email or User ID.</p>
+                        </div>
             
                         <button
-                            id="userFilterPanelToggle"
                             type="button"
                             class="panel-toggle"
-                            aria-controls="filterForm"
+                            data-panel-toggle
+                            aria-controls="userSearchPanelContent"
                             aria-expanded="false"
                         >
+                            <span data-toggle-label>Expand</span>
                             <span class="panel-toggle-icon" aria-hidden="true">⌃</span>
-                            <span class="panel-toggle-label">Expand</span>
                         </button>
                     </div>
-                </div>
             
-                <form id="filterForm" class="filter-form" hidden>
-                    <div class="filter-grid">
-                        <div class="form-field search-field">
-                            <label for="searchInput">Search</label>
-                            <input
-                                id="searchInput"
-                                type="search"
-                                maxlength="100"
-                                placeholder="Name, email or User ID"
-                                autocomplete="off"
+                    <div
+                        id="userSearchPanelContent"
+                        class="audit-panel-content"
+                        hidden
+                    >
+                        <div class="filter-grid search-grid">
+                            <div class="form-field search-field">
+                                <label for="searchInput">Search</label>
+                                <input
+                                    id="searchInput"
+                                    type="search"
+                                    maxlength="100"
+                                    placeholder="Name, email or User ID"
+                                    autocomplete="off"
+                                >
+                            </div>
+                        </div>
+            
+                        <div class="filter-actions">
+                            <button
+                                id="searchButton"
+                                type="submit"
+                                class="button button-primary"
                             >
-                        </div>
-
-                        <div class="form-field">
-                            <label for="roleFilter">Role</label>
-                            <select id="roleFilter">
-                                <option value="ALL">All Roles</option>
-                                <option value="SUPER_ADMIN">Super Admin</option>
-                                <option value="ADMIN">Admin</option>
-                                <option value="AHBAB">Ahbab</option>
-                                <option value="NO_ROLE">No Role</option>
-                            </select>
-                        </div>
-
-                        <div class="form-field">
-                            <label for="accountStatusFilter">Account Status</label>
-                            <select id="accountStatusFilter">
-                                <option value="ALL">All Statuses</option>
-                                <option value="ACTIVE">Active</option>
-                                <option value="DISABLED">Disabled</option>
-                                <option value="SUSPENDED">Suspended / Archived</option>
-                            </select>
-                        </div>
-
-                        <div class="form-field">
-                            <label for="registrationStatusFilter">Registration Status</label>
-                            <select id="registrationStatusFilter">
-                                <option value="ALL">All Registration Statuses</option>
-                                <option value="AWAITING_EMAIL_VERIFICATION">Awaiting Email Verification</option>
-                                <option value="PENDING_REVIEW">Pending Review</option>
-                                <option value="APPROVED">Approved</option>
-                                <option value="REJECTED">Rejected</option>
-                                <option value="CANCELLED">Cancelled</option>
-                            </select>
+                                Search Users
+                            </button>
                         </div>
                     </div>
-
-                    <div class="filter-actions">
-                        <button id="searchButton" type="submit" class="button button-primary">
-                            Search Users
-                        </button>
-
-                        <button id="resetFilterButton" type="button" class="button button-secondary">
-                            Reset Filters
+                </section>
+            
+                <!-- FILTER PANEL -->
+                <section class="management-section audit-control-panel">
+                    <div class="audit-panel-heading">
+                        <div>
+                            <h2>Filter Users</h2>
+                            <p>Filter accounts by role and account or registration status.</p>
+                        </div>
+            
+                        <button
+                            type="button"
+                            class="panel-toggle"
+                            data-panel-toggle
+                            aria-controls="userFilterPanelContent"
+                            aria-expanded="false"
+                        >
+                            <span data-toggle-label>Expand</span>
+                            <span class="panel-toggle-icon" aria-hidden="true">⌃</span>
                         </button>
                     </div>
-                </form>
-            </section>
-
+            
+                    <div
+                        id="userFilterPanelContent"
+                        class="audit-panel-content"
+                        hidden
+                    >
+                        <div class="section-heading filter-count-heading">
+                            <span id="userCount" class="count-label">0 records</span>
+                        </div>
+            
+                        <div class="filter-grid">
+                            <div class="form-field">
+                                <label for="roleFilter">Role</label>
+                                <select id="roleFilter">
+                                    <option value="ALL">All Roles</option>
+                                    <option value="SUPER_ADMIN">Super Admin</option>
+                                    <option value="ADMIN">Admin</option>
+                                    <option value="AHBAB">Ahbab</option>
+                                    <option value="NO_ROLE">No Role</option>
+                                </select>
+                            </div>
+            
+                            <div class="form-field">
+                                <label for="accountStatusFilter">Account Status</label>
+                                <select id="accountStatusFilter">
+                                    <option value="ALL">All Statuses</option>
+                                    <option value="ACTIVE">Active</option>
+                                    <option value="DISABLED">Disabled</option>
+                                    <option value="SUSPENDED">Suspended / Archived</option>
+                                </select>
+                            </div>
+            
+                            <div class="form-field">
+                                <label for="registrationStatusFilter">Registration Status</label>
+                                <select id="registrationStatusFilter">
+                                    <option value="ALL">All Registration Statuses</option>
+                                    <option value="AWAITING_EMAIL_VERIFICATION">Awaiting Email Verification</option>
+                                    <option value="PENDING_REVIEW">Pending Review</option>
+                                    <option value="APPROVED">Approved</option>
+                                    <option value="REJECTED">Rejected</option>
+                                    <option value="CANCELLED">Cancelled</option>
+                                </select>
+                            </div>
+                        </div>
+            
+                        <div class="filter-actions">
+                            <button
+                                type="submit"
+                                class="button button-primary"
+                            >
+                                Apply Filters
+                            </button>
+            
+                            <button
+                                id="resetFilterButton"
+                                type="button"
+                                class="button button-secondary"
+                            >
+                                Reset Filters
+                            </button>
+                        </div>
+                    </div>
+                </section>
+            
+            </form>
             <section class="management-section">
                 <div class="section-heading">
                     <div>
