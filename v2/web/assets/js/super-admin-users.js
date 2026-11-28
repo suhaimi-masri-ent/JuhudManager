@@ -613,17 +613,12 @@ function updateAccountActions(user) {
         );
 
     const canArchive =
+        user.registrationStatus !== "CANCELLED" &&
         !isSuperAdmin &&
         !isCurrentUser(user.userId) &&
         !hasActiveCountryAssignment &&
         ["ACTIVE", "DISABLED"].includes(user.accountStatus) &&
         !user.isArchived;
-
-    if (user.isArchived && user.accountStatus === "SUSPENDED") {
-        $("restoreActionPanel").hidden = false;
-    } else if (canArchive) {
-        $("archiveActionPanel").hidden = false;
-    }
 }
 
 async function openUserDetail(userId, options = {}) {
